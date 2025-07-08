@@ -1,0 +1,48 @@
+<%= form_with url: foreman_bolt.task_exec_path, local: true do |f| %>
+  <div class="form-group">
+    <label for="smart_proxy_id">Smart Proxy</label>
+    <%= f.collection_select :smart_proxy_id, @smart_proxies, :id, :name,
+          { prompt: 'Select Proxy' },
+          { id: 'proxy_select', class: 'form-control' } %>
+  </div>
+
+  <div class="form-group">
+    <label for="task_select">Task Name</label>
+    <select id="task_select" name="task_name" class="form-control">
+      <option value="">Select Task</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <%= f.submit 'Run Task', class: 'btn btn-primary' %>
+  </div>
+<% end %>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var proxy = document.getElementById('proxy_select'),
+      task  = document.getElementById('task_select'),
+      url   = '<%= foreman_bolt.get_tasks_path %>';
+
+  function refreshTasks() {
+    if (!proxy.value) {
+      task.innerHTML = '<option value="">Select Task</option>';
+      return;
+    }
+    task.innerHTML = '<option>Loading...</option>';
+    fetch(url + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
+      .then(function(res){ return res.json() })
+      .then(function(names){
+        task.innerHTML = names.length
+          ? names.map(function(n){ return '<option value="'+n+'">'+n+'</option>' }).join('')
+          : '<option value="">No tasks available</option>';
+      })
+      .catch(function(){
+        task.innerHTML = '<option value="">Error loading tasks</option>';
+      });
+  }
+
+  proxy.addEventListener('change', refreshTasks);
+  refreshTasks();
+});
+</script>
