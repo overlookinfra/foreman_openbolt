@@ -12,7 +12,7 @@
       <select id="task_select" name="task_name" class="form-control">
         <option value="">Select Task</option>
       </select>
-      <button type="button" id="reload_tasks" class="btn btn-secondary" title="Reload tasks">
+      <button type="button" id="reload_tasks" class="btn btn-secondary" title="Reload tasks&#10;This will cause the proxy to reload all&#10;tasks from disk and will take some time.">
         &#x21bb;
       </button>
     </div>
@@ -31,48 +31,46 @@ document.addEventListener('DOMContentLoaded', function() {
       runBtn    = document.getElementById('run_task_btn'),
       tasksUrl  = '<%= foreman_bolt.get_tasks_path %>',
       reloadUrl = '<%= foreman_bolt.reload_tasks_path %>';
-
   var loading = false;
 
-  function updateRunButton() {
+  function setLoading(val) {
+    loading = val;
     runBtn.disabled = (!proxy.value || !task.value || loading);
+    reloadBtn.disabled = (!proxy.value || loading);
   }
 
   function refreshTasks(force) {
     if (!proxy.value) {
       task.innerHTML = '<option value="">Choose a Smart Proxy first</option>';
-      loading = false;
-      updateRunButton();
+      setLoading(false);
       return;
     }
-    task.innerHTML = '<option>Loading...</option>';
-    loading = true;
-    updateRunButton();
+
+    if (loading) return; // Prevent multiple concurrent fetches
+    task.innerHTML = '<option value="">Loading...</option>';
+    setLoading(true);
+
     var fetchUrl = force ? reloadUrl : tasksUrl;
     fetch(fetchUrl + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
-      .then(function(res){ return res.json().then(function(data){ return {status: res.status, data: data}; }); })
-      .then(function(result){
-        if (result.status !== 200 || result.data.error) {
-          task.innerHTML = '<option value="">Error: ' + (result.data.error || 'Unable to load tasks') + '</option>';
+      .then(res => res.json().then(data => ({ status: res.status, data: data })))
+      .then(({ status, data }) => {
+        if (status !== 200 || data.error) {
+          task.innerHTML = '<option value="">Error: ' + (data.error || 'Unable to load tasks') + '</option>';
         } else {
-          var names = result.data;
-          task.innerHTML = names.length
-            ? names.map(function(n){ return '<option value="'+n+'">'+n+'</option>' }).join('')
+          task.innerHTML = data.length
+            ? data.map(n => '<option value="'+n+'">'+n+'</option>').join('')
             : '<option value="">No tasks available</option>';
         }
-        loading = false;
-        updateRunButton();
+        setLoading(false);
       })
       .catch(function(){
-        loading = false;
         task.innerHTML = '<option value="">Error loading tasks</option>';
-        updateRunButton();
+        setLoading(false);
       });
   }
 
   proxy.addEventListener('change', function() { refreshTasks(false); });
   reloadBtn.addEventListener('click', function()  { refreshTasks(true); });
-  updateRunButton();
   refreshTasks(false);
 });
 </script>
