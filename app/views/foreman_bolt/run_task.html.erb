@@ -2,47 +2,77 @@
   <div class="form-group">
     <label for="smart_proxy_id">Smart Proxy</label>
     <%= f.collection_select :smart_proxy_id, @smart_proxies, :id, :name,
-          { prompt: 'Select Proxy' },
+          { prompt: 'Select Smart Proxy' },
           { id: 'proxy_select', class: 'form-control' } %>
   </div>
 
   <div class="form-group">
     <label for="task_select">Task Name</label>
-    <select id="task_select" name="task_name" class="form-control">
-      <option value="">Select Task</option>
-    </select>
+    <div style="display: flex; gap: 0.5em; align-items: center;">
+      <select id="task_select" name="task_name" class="form-control">
+        <option value="">Select Task</option>
+      </select>
+      <button type="button" id="reload_tasks" class="btn btn-secondary" title="Reload tasks">
+        &#x21bb;
+      </button>
+    </div>
   </div>
 
   <div class="form-group">
-    <%= f.submit 'Run Task', class: 'btn btn-primary' %>
+    <%= f.submit 'Run Task', class: 'btn btn-primary', id: 'run_task_btn', disabled: true %>
   </div>
 <% end %>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  var proxy = document.getElementById('proxy_select'),
-      task  = document.getElementById('task_select'),
-      url   = '<%= foreman_bolt.get_tasks_path %>';
+  var proxy     = document.getElementById('proxy_select'),
+      task      = document.getElementById('task_select'),
+      reloadBtn = document.getElementById('reload_tasks'),
+      runBtn    = document.getElementById('run_task_btn'),
+      tasksUrl  = '<%= foreman_bolt.get_tasks_path %>',
+      reloadUrl = '<%= foreman_bolt.reload_tasks_path %>';
 
-  function refreshTasks() {
+  var loading = false;
+
+  function updateRunButton() {
+    runBtn.disabled = (!proxy.value || !task.value || loading);
+  }
+
+  function refreshTasks(force) {
     if (!proxy.value) {
-      task.innerHTML = '<option value="">Select Task</option>';
+      task.innerHTML = '<option value="">Choose a Smart Proxy first</option>';
+      loading = false;
+      updateRunButton();
       return;
     }
     task.innerHTML = '<option>Loading...</option>';
-    fetch(url + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
-      .then(function(res){ return res.json() })
-      .then(function(names){
-        task.innerHTML = names.length
-          ? names.map(function(n){ return '<option value="'+n+'">'+n+'</option>' }).join('')
-          : '<option value="">No tasks available</option>';
+    loading = true;
+    updateRunButton();
+    var fetchUrl = force ? reloadUrl : tasksUrl;
+    fetch(fetchUrl + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
+      .then(function(res){ return res.json().then(function(data){ return {status: res.status, data: data}; }); })
+      .then(function(result){
+        if (result.status !== 200 || result.data.error) {
+          task.innerHTML = '<option value="">Error: ' + (result.data.error || 'Unable to load tasks') + '</option>';
+        } else {
+          var names = result.data;
+          task.innerHTML = names.length
+            ? names.map(function(n){ return '<option value="'+n+'">'+n+'</option>' }).join('')
+            : '<option value="">No tasks available</option>';
+        }
+        loading = false;
+        updateRunButton();
       })
       .catch(function(){
+        loading = false;
         task.innerHTML = '<option value="">Error loading tasks</option>';
+        updateRunButton();
       });
   }
 
-  proxy.addEventListener('change', refreshTasks);
-  refreshTasks();
+  proxy.addEventListener('change', function() { refreshTasks(false); });
+  reloadBtn.addEventListener('click', function()  { refreshTasks(true); });
+  updateRunButton();
+  refreshTasks(false);
 });
 </script>

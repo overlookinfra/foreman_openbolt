@@ -7,8 +7,20 @@ module ProxyAPI
       super args
     end
 
+    def fetch_tasks
+      @tasks = JSON.parse(get('/bolt/tasks').body)
+    end
+
+    def tasks
+      @tasks ||= fetch_tasks
+    end
+
+    def reload_tasks
+      @tasks = JSON.parse(get('/bolt/tasks/reload').body)
+    end
+
     def task_names
-      JSON.parse(get('/bolt/tasks').body).keys
+      tasks.keys
     end
   end
 end
