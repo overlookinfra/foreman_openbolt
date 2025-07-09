@@ -18,7 +18,7 @@ module ForemanBolt
     # Used in JS on run_task page to populate task name dropdown
     def get_tasks
       return bad_proxy_response(params[:proxy_id]) unless load_api(params[:proxy_id])
-      render json: @api.task_names
+      render json: @api.tasks
     rescue ProxyAPI::ProxyException => e
       render json: { error: e.message }, status: :bad_gateway
     end
@@ -26,7 +26,7 @@ module ForemanBolt
     def reload_tasks
       return bad_proxy_response(params[:proxy_id]) unless load_api(params[:proxy_id])
       @api.reload_tasks
-      render json: @api.task_names
+      render json: @api.tasks
     rescue ProxyAPI::ProxyException => e
       render json: { error: e.message }, status: :bad_gateway
     end

@@ -18,7 +18,11 @@
     </div>
   </div>
 
-  <div class="form-group">
+<div class="form-group" style="margin-top:1em; margin-bottom:1em;">
+  <label>Parameters</label>
+  <div id="task_params" style="border:1px solid #ccc; border-radius:4px; padding:1em; min-height:2em;"></div>
+
+  <div class="form-group" style="margin-top:1em; margin-bottom:1em;">
     <%= f.submit 'Run Task', class: 'btn btn-primary', id: 'run_task_btn', disabled: true %>
   </div>
 <% end %>
@@ -29,20 +33,94 @@ document.addEventListener('DOMContentLoaded', function() {
       task      = document.getElementById('task_select'),
       reloadBtn = document.getElementById('reload_tasks'),
       runBtn    = document.getElementById('run_task_btn'),
+      paramsDiv = document.getElementById('task_params'),
       tasksUrl  = '<%= foreman_bolt.get_tasks_path %>',
       reloadUrl = '<%= foreman_bolt.reload_tasks_path %>';
   var loading = false;
+  var taskMetadata = {};
 
   function setLoading(val) {
     loading = val;
     runBtn.disabled = (!proxy.value || !task.value || loading);
     reloadBtn.disabled = (!proxy.value || loading);
+    if (runBtn.disabled) paramsDiv.innerHTML = '';
+  }
+
+  function createLabel(name, isOptional, type) {
+    var label = document.createElement('label');
+    label.style.marginBottom = '0.25em';
+    label.innerHTML = 
+      name + 
+      (isOptional ? '' : ' <span style="color:red">*</span>') +
+      '<span style="color:#888; font-size:90%; padding:0.5em;">' + type + '</span>';
+    return label;
+  }
+
+  function createInput(name, metadata, isOptional) {
+    var input = document.createElement('input');
+    input.name = 'params[' + name + ']';
+    input.id = 'param_' + name;
+    input.required = !isOptional;
+    if (metadata.type === 'Boolean') {
+      input.type = 'checkbox';
+      if (metadata.default) input.checked = metadata.default;
+    } else {
+      input.type = 'text';
+      input.className = 'form-control';
+      if (metadata.default) input.value = metadata.default;
+    }
+    return input;
+  }
+
+  function createDescription(description) {
+    var desc = document.createElement('small');
+    desc.className = 'form-text text-muted';
+    desc.textContent = description;
+    desc.style.display = 'block';
+    desc.style.marginTop = '0.25em';
+    return desc;
+  }
+
+  function renderParams() {
+    paramsDiv.innerHTML = '';
+    noParams = '<span style="color:#888;">No parameters for this task.</span>';
+    var selected = task.value;
+    var params = (selected && taskMetadata[selected] && taskMetadata[selected].parameters) || null;
+    if (!params || Object.keys(params).length === 0) {
+      paramsDiv.innerHTML = noParams;
+      return;
+    }
+    Object.entries(params).forEach(function([name, metadata]) {
+      var isOptional = metadata.type && metadata.type.startsWith('Optional')
+      var group = document.createElement('div');
+      group.className = 'form-group';
+      group.style.marginBottom = '1em';
+
+       var label = createLabel(name, isOptional, metadata.type || 'Unknown Type');
+      var input = createInput(name, metadata, isOptional);
+      if (metadata.type === 'Boolean') {
+        var flexRow = document.createElement('div');
+        flexRow.style.display = 'flex';
+        flexRow.style.alignItems = 'center';
+        flexRow.style.gap = '0.5em';
+        flexRow.appendChild(label);
+        flexRow.appendChild(input);
+        group.appendChild(flexRow);
+      } else {
+        // Text: label above input
+        group.appendChild(label);
+        group.appendChild(input);
+      }
+      if (metadata.description) group.appendChild(createDescription(metadata.description));
+      paramsDiv.appendChild(group);
+    });
   }
 
   function refreshTasks(force) {
     if (!proxy.value) {
       task.innerHTML = '<option value="">Choose a Smart Proxy first</option>';
       setLoading(false);
+      taskMetadata = {};
       return;
     }
 
@@ -56,21 +134,32 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(({ status, data }) => {
         if (status !== 200 || data.error) {
           task.innerHTML = '<option value="">Error: ' + (data.error || 'Unable to load tasks') + '</option>';
+          taskMetadata = {};
         } else {
-          task.innerHTML = data.length
-            ? data.map(n => '<option value="'+n+'">'+n+'</option>').join('')
+          taskMetadata = data;
+          var names = Object.keys(data);
+          task.innerHTML = names.length
+            ? names.map(n => '<option value="'+n+'">'+n+'</option>').join('')
             : '<option value="">No tasks available</option>';
+        }
+        paramsDiv.innerHTML = ''; // Clear previous parameters
+        if (names.length) {
+          task.value = names[0]; // Select first task by default
+          renderParams(); // Render parameters for the first task
         }
         setLoading(false);
       })
       .catch(function(){
         task.innerHTML = '<option value="">Error loading tasks</option>';
         setLoading(false);
+        taskMetadata = {};
+        paramsDiv.innerHTML = '';
       });
   }
 
   proxy.addEventListener('change', function() { refreshTasks(false); });
   reloadBtn.addEventListener('click', function()  { refreshTasks(true); });
+  task.addEventListener('change', function () { renderParams(); });
   refreshTasks(false);
 });
 </script>
