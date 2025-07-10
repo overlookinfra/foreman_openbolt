@@ -18,9 +18,15 @@
     </div>
   </div>
 
-<div class="form-group" style="margin-top:1em; margin-bottom:1em;">
-  <label>Parameters</label>
-  <div id="task_params" style="border:1px solid #ccc; border-radius:4px; padding:1em; min-height:2em;"></div>
+  <div class="form-group" style="margin-top:1em; margin-bottom:1em;">
+    <label>Parameters</label>
+    <div id="task_params" style="border:1px solid #ccc; border-radius:4px; padding:1em; min-height:2em;"></div>
+  </div>
+
+  <div class="form-group" style="margin-top:1em; margin-bottom:1em;">
+    <label>Bolt Options</label>
+    <div id="bolt_options" style="border:1px solid #ccc; border-radius:4px; padding:1em; min-height:2em;"></div>
+  </div>
 
   <div class="form-group" style="margin-top:1em; margin-bottom:1em;">
     <%= f.submit 'Run Task', class: 'btn btn-primary', id: 'run_task_btn', disabled: true %>
@@ -29,46 +35,62 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  var proxy     = document.getElementById('proxy_select'),
-      task      = document.getElementById('task_select'),
-      reloadBtn = document.getElementById('reload_tasks'),
-      runBtn    = document.getElementById('run_task_btn'),
-      paramsDiv = document.getElementById('task_params'),
-      tasksUrl  = '<%= foreman_bolt.get_tasks_path %>',
-      reloadUrl = '<%= foreman_bolt.reload_tasks_path %>';
-  var loading = false;
+  var proxy          = document.getElementById('proxy_select'),
+      task           = document.getElementById('task_select'),
+      reloadBtn      = document.getElementById('reload_tasks'),
+      runBtn         = document.getElementById('run_task_btn'),
+      paramsDiv      = document.getElementById('task_params'),
+      boltOptionsDiv = document.getElementById('bolt_options'),
+      tasksUrl       = '<%= foreman_bolt.get_tasks_path %>',
+      reloadUrl      = '<%= foreman_bolt.reload_tasks_path %>',
+      boltOptionsUrl = '<%= foreman_bolt.get_bolt_options_path %>';
+  var loadingTasks = false;
+  var loadingOptions = false;
   var taskMetadata = {};
 
-  function setLoading(val) {
-    loading = val;
-    runBtn.disabled = (!proxy.value || !task.value || loading);
-    reloadBtn.disabled = (!proxy.value || loading);
+  function setLoading() {
+    runBtn.disabled = (!proxy.value || !task.value || loadingTasks || loadingOptions);
+    reloadBtn.disabled = (!proxy.value || loadingTasks);
     if (runBtn.disabled) paramsDiv.innerHTML = '';
   }
 
-  function createLabel(name, isOptional, type) {
+  function createLabel(name, isOptional, displayType, prefix) {
     var label = document.createElement('label');
     label.style.marginBottom = '0.25em';
-    label.innerHTML = 
-      name + 
+    label.htmlFor = prefix + '_' + name;
+    label.innerHTML =
+      name +
       (isOptional ? '' : ' <span style="color:red">*</span>') +
-      '<span style="color:#888; font-size:90%; padding:0.5em;">' + type + '</span>';
+      (displayType ? '<span style="color:#888; font-size:90%; padding:0.5em;">' + displayType + '</span>' : '');
     return label;
   }
 
-  function createInput(name, metadata, isOptional) {
-    var input = document.createElement('input');
-    input.name = 'params[' + name + ']';
-    input.id = 'param_' + name;
-    input.required = !isOptional;
-    if (metadata.type === 'Boolean') {
+  function createInput(name, metadata, isOptional, prefix) {
+    var input;
+    var type = Array.isArray(metadata.type) ? 'enum' : (metadata.type || '').toLowerCase();
+    if (type === 'enum') {
+      input = document.createElement('select');
+      input.className = 'form-control';
+      metadata.type.forEach(function(opt){
+        var option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        input.appendChild(option);
+      });
+      input.value = metadata.default || metadata.type[0] || '';
+    } else if (type === 'boolean') {
+      input = document.createElement('input');
       input.type = 'checkbox';
-      if (metadata.default) input.checked = metadata.default;
+      input.checked = metadata.default || false;
     } else {
+      input = document.createElement('input');
       input.type = 'text';
       input.className = 'form-control';
-      if (metadata.default) input.value = metadata.default;
+      input.value = metadata.default || '';
     }
+    input.name = prefix + '[' + name + ']';
+    input.id = prefix + '_' + name;
+    input.required = !isOptional;
     return input;
   }
 
@@ -116,17 +138,85 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  function renderBoltOptions(data) {
+    boltOptionsDiv.innerHTML = '';
+    if (!data || Object.keys(data).length === 0) {
+      boltOptionsDiv.innerHTML = '<span style="color:#888;">No Bolt options available. This is unexpected. Check that the Smart Proxy is running correctly.</span>';
+      return;
+    }
+    Object.entries(data).forEach(function([name, metadata]) {
+      var type = metadata.type || 'string';
+      var isOptional = name !== 'transport';
+
+      var group = document.createElement('div');
+      group.className = 'form-group';
+      group.style.marginBottom = '1em';
+
+      var label = createLabel(name, isOptional, null, 'option');
+      var input = createInput(name, metadata, isOptional, 'option');
+      if (metadata.type === 'boolean') {
+        var flexRow = document.createElement('div');
+        flexRow.style.display = 'flex';
+        flexRow.style.alignItems = 'center';
+        flexRow.style.gap = '0.5em';
+        flexRow.appendChild(label);
+        flexRow.appendChild(input);
+        group.appendChild(flexRow);
+      } else {
+        // Text: label above input
+        group.appendChild(label);
+        group.appendChild(input);
+      }
+      // Don't currently have descriptions here, but we should
+      if (metadata.description) group.appendChild(createDescription(metadata.description));
+      boltOptionsDiv.appendChild(group);
+    });
+  }
+
+  function fetchBoltOptions() {
+    if (!proxy.value) {
+      boltOptions.innerHTML = '<option value="">Choose a Smart Proxy</option>';
+      loadingOptions = false;
+      setLoading();
+      return;
+    }
+
+    if (loadingOptions) return; // Prevent multiple concurrent fetches
+    boltOptionsDiv.innerHTML = '<span style="color:#888;">Loading...</span>';
+    loadingOptions = true;
+    setLoading();
+
+    fetch(boltOptionsUrl + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
+      .then(res => res.json().then(data => ({ status: res.status, data: data })))
+      .then(function({ status, data }) {
+        if (status !== 200 || data.error) {
+          boltOptionsDiv.innerHTML = '<span style="color:red;">Error loading Bolt options</span>';
+        } else {
+          renderBoltOptions(data);
+        }
+        loadingOptions = false;
+        setLoading();
+      })
+      .catch(function() {
+        boltOptionsDiv.innerHTML = '<span style="color:red;">Failed to load Bolt options.</span>';
+        loadingOptions = false;
+        setLoading();
+      });
+  }
+
   function refreshTasks(force) {
     if (!proxy.value) {
-      task.innerHTML = '<option value="">Choose a Smart Proxy first</option>';
-      setLoading(false);
+      task.innerHTML = '<option value="">Choose a Smart Proxy</option>';
+      loadingTasks = false;
+      setLoading();
       taskMetadata = {};
       return;
     }
 
-    if (loading) return; // Prevent multiple concurrent fetches
+    if (loadingTasks) return; // Prevent multiple concurrent fetches
     task.innerHTML = '<option value="">Loading...</option>';
-    setLoading(true);
+    loadingTasks = true;
+    setLoading();
 
     var fetchUrl = force ? reloadUrl : tasksUrl;
     fetch(fetchUrl + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
@@ -147,19 +237,25 @@ document.addEventListener('DOMContentLoaded', function() {
           task.value = names[0]; // Select first task by default
           renderParams(); // Render parameters for the first task
         }
-        setLoading(false);
+        loadingTasks = false;
+        setLoading();
       })
       .catch(function(){
         task.innerHTML = '<option value="">Error loading tasks</option>';
-        setLoading(false);
+        loadingTasks = false;
+        setLoading();
         taskMetadata = {};
         paramsDiv.innerHTML = '';
       });
   }
 
-  proxy.addEventListener('change', function() { refreshTasks(false); });
+  proxy.addEventListener('change', function() { 
+    fetchBoltOptions();
+    refreshTasks(false); 
+  });
   reloadBtn.addEventListener('click', function()  { refreshTasks(true); });
   task.addEventListener('change', function () { renderParams(); });
+  if (proxy.value) fetchBoltOptions();
   refreshTasks(false);
 });
 </script>

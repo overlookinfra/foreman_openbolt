@@ -17,18 +17,19 @@ module ForemanBolt
     # Expects a proxy_id parameter
     # Used in JS on run_task page to populate task name dropdown
     def get_tasks
-      return bad_proxy_response(params[:proxy_id]) unless load_api(params[:proxy_id])
-      render json: @api.tasks
-    rescue ProxyAPI::ProxyException => e
-      render json: { error: e.message }, status: :bad_gateway
+      return call_api(:tasks, params[:proxy_id])
     end
 
+    # Expects a proxy_id parameter
+    # Used in JS on run_task page to reload tasks on the proxy
     def reload_tasks
-      return bad_proxy_response(params[:proxy_id]) unless load_api(params[:proxy_id])
-      @api.reload_tasks
-      render json: @api.tasks
-    rescue ProxyAPI::ProxyException => e
-      render json: { error: e.message }, status: :bad_gateway
+      return call_api(:reload_tasks, params[:proxy_id])
+    end
+
+    # Expects a proxy_id parameter
+    # Used in JS on run_task page to get the bolt options
+    def get_bolt_options
+      return call_api(:bolt_options, params[:proxy_id])
     end
 
     def task_exec
@@ -58,6 +59,13 @@ module ForemanBolt
     def bad_proxy_response(proxy_id)
       flash[:error] = "Smart Proxy with ID #{proxy_id} not found."
       redirect_to action: :render_run_task
+    end
+
+    def call_api(function, proxy_id)
+      return bad_proxy_response(proxy_id) unless load_api(proxy_id)
+      render json: @api.send(function)
+    rescue ProxyAPI::ProxyException => e
+      render json: { error: e.message }, status: :bad_gateway
     end
   end
 end

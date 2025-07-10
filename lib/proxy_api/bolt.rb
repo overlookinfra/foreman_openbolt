@@ -22,5 +22,9 @@ module ProxyAPI
     def task_names
       tasks.keys
     end
+
+    def bolt_options
+      @bolt_options ||= JSON.parse(get('/bolt/tasks/options').body)
+    end
   end
 end
