@@ -33,20 +33,9 @@ module ForemanBolt
           sub_menu :top_menu, :bolt, icon: 'pficon pficon-enterprise', caption: N_('Bolt'), after: :hosts_menu do
             menu :top_menu, :run_task, caption: N_('Run Task'), engine: ForemanBolt::Engine
           end
-
-          # add dashboard widget
-          #widget 'foreman_bolt_widget', name: N_('Foreman plugin template widget'), sizex: 4, sizey: 1
         end
       end
     end
-
-    # Include concerns in this config.to_prepare block
-    #config.to_prepare do
-    #  Host::Managed.include ForemanBolt::HostExtensions
-    #  HostsHelper.include ForemanBolt::HostsHelperExtensions
-    #rescue StandardError => e
-    #  Rails.logger.warn "ForemanBolt: skipping engine hook (#{e})"
-    #end
 
     rake_tasks do
       Rake::Task['db:seed'].enhance do

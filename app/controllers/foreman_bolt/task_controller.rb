@@ -17,19 +17,19 @@ module ForemanBolt
     # Expects a proxy_id parameter
     # Used in JS on run_task page to populate task name dropdown
     def get_tasks
-      return call_api(:tasks, params[:proxy_id])
+      call_api(:tasks, params[:proxy_id])
     end
 
     # Expects a proxy_id parameter
     # Used in JS on run_task page to reload tasks on the proxy
     def reload_tasks
-      return call_api(:reload_tasks, params[:proxy_id])
+      call_api(:reload_tasks, params[:proxy_id])
     end
 
     # Expects a proxy_id parameter
     # Used in JS on run_task page to get the bolt options
     def get_bolt_options
-      return call_api(:bolt_options, params[:proxy_id])
+      call_api(:bolt_options, params[:proxy_id])
     end
 
     def task_exec

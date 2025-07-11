@@ -1,261 +1,351 @@
-<%= form_with url: foreman_bolt.task_exec_path, local: true do |f| %>
-  <div class="form-group">
-    <label for="smart_proxy_id">Smart Proxy</label>
-    <%= f.collection_select :smart_proxy_id, @smart_proxies, :id, :name,
-          { prompt: 'Select Smart Proxy' },
-          { id: 'proxy_select', class: 'form-control' } %>
-  </div>
+<%= title _('Run Bolt Task') %>
 
+<style>
+  #task_params, #bolt_options {
+    padding-top: 10px !important;
+    padding-bottom: 30px !important;
+    padding-left: 30px !important;
+    padding-right: 30px !important;
+    min-height: 150px !important;
+    max-height: 400px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .blank-slate-pf {
+    margin-top: 20px !important;
+    padding-bottom: 10px !important;
+    border: none !important;
+  }
+  .blank-slate-pf-icon { padding-top: 10px !important; }
+  .help-inline.text-muted { 
+    margin-left: 0.5em !important;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: bottom;
+    cursor: help;
+  }
+  .required-input { color: #cc0000 !important; margin-left: 3px; }
+</style>
+
+<%= form_with url: foreman_bolt.task_exec_path, local: true, class: 'form-horizontal' do |f| %>
   <div class="form-group">
-    <label for="task_select">Task Name</label>
-    <div style="display: flex; gap: 0.5em; align-items: center;">
-      <select id="task_select" name="task_name" class="form-control">
-        <option value="">Select Task</option>
+    <label for="smart_proxy_id" class="col-md-2 control-label"><%= _('Smart Proxy') %></label>
+    <div class="col-md-6">
+      <%= f.collection_select :smart_proxy_id, @smart_proxies, :id, :name,
+            { prompt: _('Select Smart Proxy') },
+            { id: 'proxy_select', class: 'form-control', data: { 'proxy-url': foreman_bolt.get_bolt_options_path } } %>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="task_select" class="col-md-2 control-label"><%= _('Task Name') %></label>
+    <div class="col-md-6" style="display: flex; gap: 0.5rem; align-items: center;">
+      <select id="task_select" name="task_name" class="form-control" disabled>
+        <option value=""><%= _('Select Task') %></option>
       </select>
-      <button type="button" id="reload_tasks" class="btn btn-secondary" title="Reload tasks&#10;This will cause the proxy to reload all&#10;tasks from disk and will take some time.">
-        &#x21bb;
+      <button type="button" id="reload_tasks" class="btn btn-default" disabled
+              title="<%= _('Reload tasks from Bolt. This may take some time.') %>">
+        <span class="pficon pficon-restart"></span>
       </button>
     </div>
   </div>
-
-  <div class="form-group" style="margin-top:1em; margin-bottom:1em;">
-    <label>Parameters</label>
-    <div id="task_params" style="border:1px solid #ccc; border-radius:4px; padding:1em; min-height:2em;"></div>
+  <div class="form-group">
+    <label class="col-md-2 control-label"><%= _('Parameters') %></label>
+    <div class="col-md-8">
+      <div id="task_params" class="well">
+        <div class="blank-slate-pf">
+          <div class="blank-slate-pf-icon"><span class="pficon pficon-info"></span></div>
+          <h4><%= _('Select a task to see parameters') %></h4>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="form-group" style="margin-top:1em; margin-bottom:1em;">
-    <label>Bolt Options</label>
-    <div id="bolt_options" style="border:1px solid #ccc; border-radius:4px; padding:1em; min-height:2em;"></div>
+  <div class="form-group">
+    <label class="col-md-2 control-label"><%= _('Bolt Options') %></label>
+    <div class="col-md-8">
+      <div id="bolt_options" class="well">
+        <div class="blank-slate-pf">
+          <div class="blank-slate-pf-icon"><span class="pficon pficon-settings"></span></div>
+          <h4><%= _('Select a Smart Proxy to see Bolt options') %></h4>
+        </div>
+      </div>
+    </div>
   </div>
-
-  <div class="form-group" style="margin-top:1em; margin-bottom:1em;">
-    <%= f.submit 'Run Task', class: 'btn btn-primary', id: 'run_task_btn', disabled: true %>
+  <div class="form-group">
+    <div class="col-md-offset-2 col-md-6">
+      <%= f.submit _('Run Task'), class: 'btn btn-primary', id: 'run_task_btn', disabled: true %>
+    </div>
   </div>
 <% end %>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  var proxy          = document.getElementById('proxy_select'),
-      task           = document.getElementById('task_select'),
-      reloadBtn      = document.getElementById('reload_tasks'),
-      runBtn         = document.getElementById('run_task_btn'),
-      paramsDiv      = document.getElementById('task_params'),
-      boltOptionsDiv = document.getElementById('bolt_options'),
-      tasksUrl       = '<%= foreman_bolt.get_tasks_path %>',
-      reloadUrl      = '<%= foreman_bolt.reload_tasks_path %>',
-      boltOptionsUrl = '<%= foreman_bolt.get_bolt_options_path %>';
-  var loadingTasks = false;
-  var loadingOptions = false;
-  var taskMetadata = {};
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', () => {
+  const proxySel    = document.getElementById('proxy_select'),
+        taskSel     = document.getElementById('task_select'),
+        reloadBtn   = document.getElementById('reload_tasks'),
+        runBtn      = document.getElementById('run_task_btn'),
+        paramsDiv   = document.getElementById('task_params'),
+        optsDiv     = document.getElementById('bolt_options');
 
-  function setLoading() {
-    runBtn.disabled = (!proxy.value || !task.value || loadingTasks || loadingOptions);
-    reloadBtn.disabled = (!proxy.value || loadingTasks);
-    if (runBtn.disabled) paramsDiv.innerHTML = '';
+  const URLS = {
+    tasks:  '<%= foreman_bolt.get_tasks_path %>',
+    reload: '<%= foreman_bolt.reload_tasks_path %>',
+    opts:   '<%= foreman_bolt.get_bolt_options_path %>'
+  };
+
+  let loading = { tasks: false, opts: false },
+      taskMeta = {};
+
+  /**
+   * Displays a notification message. Falls back to other methods
+   * if we don't have access to tfm for some reason.
+   * 
+   * @param {string} msg  - The message to display.
+   * @param {string} type - The type of notification (e.g., 'error', 'info').
+   */
+  function notify(msg, type = 'error') {
+    if (tfm?.toastNotifications?.notify) {
+      tfm.toastNotifications.notify({ message: msg, type });
+    } else if (typeof notify === 'function') {
+      window.notify(msg, type);
+    } else {
+      console[type === 'error' ? 'error' : 'log'](msg);
+    }
   }
 
-  function createLabel(name, isOptional, displayType, prefix) {
-    var label = document.createElement('label');
-    label.style.marginBottom = '0.25em';
-    label.htmlFor = prefix + '_' + name;
-    label.innerHTML =
-      name +
-      (isOptional ? '' : ' <span style="color:red">*</span>') +
-      (displayType ? '<span style="color:#888; font-size:90%; padding:0.5em;">' + displayType + '</span>' : '');
-    return label;
+  /**
+   * Fetches JSON data from a given URL and handles errors.
+   * @param {string} url        - The URL to fetch data from.
+   * @param {function} callback - The callback function to handle the response.
+   */
+  function fetchJson(url, callback) {
+    fetch(url, {
+      credentials: 'same-origin',
+      // Not entirely necessary, but for correctness, this says we are loading
+      // in an AJAX-y way and should always return JSON.
+      headers: { 'Accept':'application/json','X-Requested-With':'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => data.error ? (notify(data.error), callback(null)) : callback(data))
+    .catch(e => (notify(e.message), callback(null)));
   }
 
-  function createInput(name, metadata, isOptional, prefix) {
-    var input;
-    var type = Array.isArray(metadata.type) ? 'enum' : (metadata.type || '').toLowerCase();
+  /**
+   * Enable/disable buttons & dropdown based on if we're loading
+   * and the right things have selections made.
+   */
+  function updateComponentStates() {
+    runBtn.disabled    = !proxySel.value || !taskSel.value || loading.tasks || loading.opts;
+    reloadBtn.disabled = !proxySel.value || loading.tasks;
+    taskSel.disabled   = !proxySel.value || loading.tasks;
+  }
+
+  /**
+   * Creates an input element for a form field.
+   * 
+   * @param {string} name      - The field name.
+   * @param {Object} meta      - The metadata for the field. Must contain `type`, and 
+   *                             optionally `default` and `description`. Any type that is
+   *                             not an array or boolean will be treated as a string (for now).
+   * @param {string} prefix    - The prefix for the field's ID and name.
+   * @returns {HTMLElement}    - The created input element.
+   */
+  function createInput(name, meta, prefix) {
+    let input;
+    // We mostly don't want to handle parsing the wide variety of Puppet types yet.
+    // For now, we will just handle enum and boolean types, and treat everything else as a string.
+    // Because the Puppet boolean type is capitalized, normalize to lowercase.
+    const type = Array.isArray(meta.type) ? 'enum' : (meta.type || '').toLowerCase();
     if (type === 'enum') {
       input = document.createElement('select');
       input.className = 'form-control';
-      metadata.type.forEach(function(opt){
-        var option = document.createElement('option');
-        option.value = opt;
-        option.textContent = opt;
-        input.appendChild(option);
-      });
-      input.value = metadata.default || metadata.type[0] || '';
-    } else if (type === 'boolean') {
+      // Option(displayText, value)
+      meta.type.forEach(v => input.append(new Option(v,v)));
+      input.value = meta.default || (input.options[0] && input.options[0].value) || '';
+    } else if (type === 'boolean' || type == 'optional[boolean]') {
       input = document.createElement('input');
       input.type = 'checkbox';
-      input.checked = metadata.default || false;
+      input.checked = !!meta.default;
     } else {
       input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'form-control';
-      input.value = metadata.default || '';
+      input.type = 'text'; input.className = 'form-control';
+      input.value = meta.default || '';
     }
-    input.name = prefix + '[' + name + ']';
-    input.id = prefix + '_' + name;
-    input.required = !isOptional;
+    input.id       = `${prefix}_${name}`;
+    input.name     = `${prefix}[${name}]`;
+    input.required = !type.startsWith('optional[');
     return input;
   }
 
-  function createDescription(description) {
-    var desc = document.createElement('small');
-    desc.className = 'form-text text-muted';
-    desc.textContent = description;
-    desc.style.display = 'block';
-    desc.style.marginTop = '0.25em';
-    return desc;
+  /**
+   * Creates a form group for a field, including its label and input.
+   * 
+   * @param {string} name        - The field name.
+   * @param {Object} meta        - The metadata for the field.
+   * @param {string} prefix      - The prefix for the field's ID and name.
+   * @param {boolean} showType   - Whether to show the field type.
+   * @returns {HTMLElement}      - The created form group element.
+   */
+  function createGroup(name, meta, prefix, showType = true) {
+    const group = document.createElement('div');
+    // Cast to String in case it's an array or other type
+    const typeString = String(meta.type || '').toLowerCase();
+    const isBoolean = typeString === 'boolean' || typeString === 'optional[boolean]';
+    // Don't show required asterisk for Bolt options or if the param type is optional
+    const required = prefix !== 'options' && !typeString.startsWith('optional[');
+    group.classList.add('form-group');
+
+    const label = document.createElement('label');
+    label.className = 'control-label';
+    label.htmlFor = `${prefix}_${name}`;
+    label.textContent = name;
+
+    if (required) {
+        const star = document.createElement('span');
+        star.className = 'required-input';
+        star.textContent = '*';
+        label.appendChild(star);
+    }
+
+    if (showType && !isBoolean && meta.type) {
+      const typeText = Array.isArray(meta.type) ? String(meta.type) : meta.type;
+      const typeBadge = document.createElement('span');
+      typeBadge.className = 'help-inline text-muted';
+      typeBadge.textContent = typeText;
+      typeBadge.title = typeText;
+      label.appendChild(typeBadge);
+    }
+
+    const input = createInput(name, meta, prefix);
+    group.append(label, input);
+
+    if (meta.description) {
+      const help = document.createElement('span');
+      help.className = 'help-block';
+      help.textContent = meta.description;
+      group.appendChild(help);
+    }
+
+    return group;
   }
 
+  /**
+   * Renders a set of fields into a container element.
+   * 
+   * @param {Object} data           - The data object containing field metadata.
+   * @param {HTMLElement} container - The container element to render fields into.
+   * @param {string} prefix         - The prefix for the field's ID and name.
+   * @param {boolean} showType      - Whether to show the field type.
+   */
+  function renderFields(data, container, prefix, showType = true) {
+    container.innerHTML = '';
+    if (!data || !Object.keys(data).length) {
+      container.innerHTML = `
+        <div class="blank-slate-pf">
+          <div class="blank-slate-pf-icon">
+            <span class="pficon pficon-info"></span>
+          </div>
+          <h4>No ${prefix} available</h4>
+        </div>`;
+      return;
+    }
+    Object.entries(data).forEach(([name, metadata]) => {
+      container.appendChild(
+        createGroup(name, metadata, prefix, showType)
+      );
+    });
+  }
+
+  /**
+   * Loads Bolt options for the selected Smart Proxy.
+   * If no proxy is selected, it shows a message prompting the user to select one.
+   */
+  function loadOptions() {
+    if (!proxySel.value) {
+      optsDiv.innerHTML = `
+        <div class="blank-slate-pf">
+          <div class="blank-slate-pf-icon"><span class="pficon pficon-settings"></span></div>
+          <h4><%= _('Select a Smart Proxy to see Bolt options') %></h4>
+        </div>`;
+      return;
+    }
+    loading.opts = true; updateComponentStates();
+    optsDiv.innerHTML = `<div class="spinner-container">
+      <div class="spinner spinner-lg"></div>
+      <p class="text-center"><%= _('Loading Bolt options...') %></p>
+    </div>`;
+    fetchJson(`${URLS.opts}?proxy_id=${encodeURIComponent(proxySel.value)}`, data => {
+      loading.opts = false;
+      if (data) renderFields(data, optsDiv, 'options', false);
+      updateComponentStates();
+    });
+  }
+
+  /**
+   * Loads tasks for the selected Smart Proxy.
+   * If no proxy is selected, it shows a message prompting the user to select one.
+   * If tasks are already loading, it does nothing.
+   * If `force` is true, it reloads the tasks from the server.
+   */
+  function loadTasks(force = false) {
+    if (!proxySel.value) {
+      taskSel.innerHTML = '<option><%= _('Select a Smart Proxy first') %></option>';
+      paramsDiv.innerHTML = `<div class="blank-slate-pf">
+        <div class="blank-slate-pf-icon"><span class="pficon pficon-info"></span></div>
+        <h4><%= _('Select a Smart Proxy and task to see parameters') %></h4>
+      </div>`;
+      taskMeta = {}; taskSel.disabled = true; return;
+    }
+    if (loading.tasks) return;
+    loading.tasks = true; updateComponentStates();
+    taskSel.innerHTML = '<option><%= _('Loading tasks...') %></option>';
+    fetchJson(
+      `${force ? URLS.reload : URLS.tasks}?proxy_id=${encodeURIComponent(proxySel.value)}`,
+      data => {
+        loading.tasks = false;
+        taskMeta = data || {};
+        if (data) {
+          const keys = Object.keys(data);
+          if (!keys.length) {
+            taskSel.innerHTML = '<option><%= _('No tasks available') %></option>';
+          } else {
+            taskSel.innerHTML = '<option><%= _('Select a task') %></option>'
+              + keys.map(k => `<option value="${k}">${k}</option>`).join('');
+            taskSel.value = keys[0];
+            renderParams();
+          }
+        }
+        updateComponentStates();
+      }
+    );
+  }
+
+  /**
+   * Renders the parameters for the selected task.
+   * If no task is selected, it shows a message prompting the user to select one.
+   */
   function renderParams() {
-    paramsDiv.innerHTML = '';
-    noParams = '<span style="color:#888;">No parameters for this task.</span>';
-    var selected = task.value;
-    var params = (selected && taskMetadata[selected] && taskMetadata[selected].parameters) || null;
-    if (!params || Object.keys(params).length === 0) {
-      paramsDiv.innerHTML = noParams;
-      return;
-    }
-    Object.entries(params).forEach(function([name, metadata]) {
-      var isOptional = metadata.type && metadata.type.startsWith('Optional')
-      var group = document.createElement('div');
-      group.className = 'form-group';
-      group.style.marginBottom = '1em';
-
-       var label = createLabel(name, isOptional, metadata.type || 'Unknown Type');
-      var input = createInput(name, metadata, isOptional);
-      if (metadata.type === 'Boolean') {
-        var flexRow = document.createElement('div');
-        flexRow.style.display = 'flex';
-        flexRow.style.alignItems = 'center';
-        flexRow.style.gap = '0.5em';
-        flexRow.appendChild(label);
-        flexRow.appendChild(input);
-        group.appendChild(flexRow);
-      } else {
-        // Text: label above input
-        group.appendChild(label);
-        group.appendChild(input);
-      }
-      if (metadata.description) group.appendChild(createDescription(metadata.description));
-      paramsDiv.appendChild(group);
-    });
+    paramsDiv.innerHTML = `<div class="spinner-container">
+      <div class="spinner spinner-lg"></div>
+      <p class="text-center"><%= _('Loading parameters...') %></p>
+    </div>`;
+    // Using setTimeout to ensure the spinner shows up before we render fields
+    // and we don't get any weird race conditions.
+    setTimeout(() => {
+      const taskName = taskSel.value,
+            params   = taskMeta[taskName]?.parameters;
+      renderFields(params, paramsDiv, 'params');
+    }, 0);
   }
 
-  function renderBoltOptions(data) {
-    boltOptionsDiv.innerHTML = '';
-    if (!data || Object.keys(data).length === 0) {
-      boltOptionsDiv.innerHTML = '<span style="color:#888;">No Bolt options available. This is unexpected. Check that the Smart Proxy is running correctly.</span>';
-      return;
-    }
-    Object.entries(data).forEach(function([name, metadata]) {
-      var type = metadata.type || 'string';
-      var isOptional = name !== 'transport';
+  // Event wiring
+  proxySel.onchange  = () => { loadOptions(); loadTasks(false); };
+  reloadBtn.onclick  = () => loadTasks(true);
+  taskSel.onchange   = () => { renderParams(); updateComponentStates(); };
 
-      var group = document.createElement('div');
-      group.className = 'form-group';
-      group.style.marginBottom = '1em';
-
-      var label = createLabel(name, isOptional, null, 'option');
-      var input = createInput(name, metadata, isOptional, 'option');
-      if (metadata.type === 'boolean') {
-        var flexRow = document.createElement('div');
-        flexRow.style.display = 'flex';
-        flexRow.style.alignItems = 'center';
-        flexRow.style.gap = '0.5em';
-        flexRow.appendChild(label);
-        flexRow.appendChild(input);
-        group.appendChild(flexRow);
-      } else {
-        // Text: label above input
-        group.appendChild(label);
-        group.appendChild(input);
-      }
-      // Don't currently have descriptions here, but we should
-      if (metadata.description) group.appendChild(createDescription(metadata.description));
-      boltOptionsDiv.appendChild(group);
-    });
-  }
-
-  function fetchBoltOptions() {
-    if (!proxy.value) {
-      boltOptions.innerHTML = '<option value="">Choose a Smart Proxy</option>';
-      loadingOptions = false;
-      setLoading();
-      return;
-    }
-
-    if (loadingOptions) return; // Prevent multiple concurrent fetches
-    boltOptionsDiv.innerHTML = '<span style="color:#888;">Loading...</span>';
-    loadingOptions = true;
-    setLoading();
-
-    fetch(boltOptionsUrl + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
-      .then(res => res.json().then(data => ({ status: res.status, data: data })))
-      .then(function({ status, data }) {
-        if (status !== 200 || data.error) {
-          boltOptionsDiv.innerHTML = '<span style="color:red;">Error loading Bolt options</span>';
-        } else {
-          renderBoltOptions(data);
-        }
-        loadingOptions = false;
-        setLoading();
-      })
-      .catch(function() {
-        boltOptionsDiv.innerHTML = '<span style="color:red;">Failed to load Bolt options.</span>';
-        loadingOptions = false;
-        setLoading();
-      });
-  }
-
-  function refreshTasks(force) {
-    if (!proxy.value) {
-      task.innerHTML = '<option value="">Choose a Smart Proxy</option>';
-      loadingTasks = false;
-      setLoading();
-      taskMetadata = {};
-      return;
-    }
-
-    if (loadingTasks) return; // Prevent multiple concurrent fetches
-    task.innerHTML = '<option value="">Loading...</option>';
-    loadingTasks = true;
-    setLoading();
-
-    var fetchUrl = force ? reloadUrl : tasksUrl;
-    fetch(fetchUrl + '?proxy_id=' + encodeURIComponent(proxy.value), { credentials: 'same-origin' })
-      .then(res => res.json().then(data => ({ status: res.status, data: data })))
-      .then(({ status, data }) => {
-        if (status !== 200 || data.error) {
-          task.innerHTML = '<option value="">Error: ' + (data.error || 'Unable to load tasks') + '</option>';
-          taskMetadata = {};
-        } else {
-          taskMetadata = data;
-          var names = Object.keys(data);
-          task.innerHTML = names.length
-            ? names.map(n => '<option value="'+n+'">'+n+'</option>').join('')
-            : '<option value="">No tasks available</option>';
-        }
-        paramsDiv.innerHTML = ''; // Clear previous parameters
-        if (names.length) {
-          task.value = names[0]; // Select first task by default
-          renderParams(); // Render parameters for the first task
-        }
-        loadingTasks = false;
-        setLoading();
-      })
-      .catch(function(){
-        task.innerHTML = '<option value="">Error loading tasks</option>';
-        loadingTasks = false;
-        setLoading();
-        taskMetadata = {};
-        paramsDiv.innerHTML = '';
-      });
-  }
-
-  proxy.addEventListener('change', function() { 
-    fetchBoltOptions();
-    refreshTasks(false); 
-  });
-  reloadBtn.addEventListener('click', function()  { refreshTasks(true); });
-  task.addEventListener('change', function () { renderParams(); });
-  if (proxy.value) fetchBoltOptions();
-  refreshTasks(false);
+  // Initial load 
+  if (proxySel.value) { loadOptions(); loadTasks(false); }
+  updateComponentStates();
 });
 </script>
