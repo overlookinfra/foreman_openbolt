@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ForemanBolt::Engine.routes.draw do
   # Form page to run a task
   get 'new_task', to: 'task#new_task'
