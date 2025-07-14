@@ -21,7 +21,7 @@ module ForemanBolt
 
           # Add permissions
           security_block :foreman_bolt do
-            permission :view_foreman_bolt, { :'foreman_bolt/run_task' => [:render_run_task, :task_exec]}
+            permission :view_foreman_bolt, { :'foreman_bolt/new_task' => [:new_task, :task_exec]}
             permission :execute_foreman_bolt_tasks, { :'foreman_bolt/task' => [:task_exec]}
           end
           #add_all_permissions_to_default_roles
@@ -31,7 +31,7 @@ module ForemanBolt
 
           # add menu entry
           sub_menu :top_menu, :bolt, icon: 'pficon pficon-enterprise', caption: N_('Bolt'), after: :hosts_menu do
-            menu :top_menu, :run_task, caption: N_('Run Task'), engine: ForemanBolt::Engine
+            menu :top_menu, :new_task, caption: N_('Run Task'), engine: ForemanBolt::Engine
           end
         end
       end

@@ -8,26 +8,25 @@ module ForemanBolt
     @tasks = nil
     @proxy = nil
 
-    ### Endpoint functions ###
-    def render_run_task
+    def new_task
       @smart_proxies = SmartProxy.all.order(:name)
-      render template: 'foreman_bolt/run_task'
+      render template: 'foreman_bolt/new_task'
     end
 
     # Expects a proxy_id parameter
-    # Used in JS on run_task page to populate task name dropdown
+    # Used in JS on new_task page to populate task name dropdown
     def get_tasks
       call_api(:tasks, params[:proxy_id])
     end
 
     # Expects a proxy_id parameter
-    # Used in JS on run_task page to reload tasks on the proxy
+    # Used in JS on new_task page to reload tasks on the proxy
     def reload_tasks
       call_api(:reload_tasks, params[:proxy_id])
     end
 
     # Expects a proxy_id parameter
-    # Used in JS on run_task page to get the bolt options
+    # Used in JS on new_task page to get the bolt options
     def get_bolt_options
       call_api(:bolt_options, params[:proxy_id])
     end
@@ -39,11 +38,10 @@ module ForemanBolt
         render template: 'foreman_bolt/task_exec'
       else
         flash[:error] = 'Please select a Smart Proxy.'
-        redirect_to action: :render_run_task
+        redirect_to action: :new_task
       end
     end
 
-    ### Helper functions ###
     private
 
     def load_api(proxy_id)
@@ -58,7 +56,7 @@ module ForemanBolt
 
     def bad_proxy_response(proxy_id)
       flash[:error] = "Smart Proxy with ID #{proxy_id} not found."
-      redirect_to action: :render_run_task
+      redirect_to action: :new_task
     end
 
     def call_api(function, proxy_id)

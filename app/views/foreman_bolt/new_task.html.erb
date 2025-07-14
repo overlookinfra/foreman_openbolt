@@ -15,6 +15,7 @@
     margin-top: 20px !important;
     padding-bottom: 10px !important;
     border: none !important;
+    text-align: center !important;
   }
   .blank-slate-pf-icon { padding-top: 10px !important; }
   .help-inline.text-muted { 
@@ -27,35 +28,50 @@
     cursor: help;
   }
   .required-input { color: #cc0000 !important; margin-left: 3px; }
+
+  /* High contrast for accessibility */
+  .form-control:focus, .btn:focus {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
+  }
 </style>
 
-<%= form_with url: foreman_bolt.task_exec_path, local: true, class: 'form-horizontal' do |f| %>
+<%= form_with url: foreman_bolt.task_exec_path, local: true, class: 'form-horizontal', html: { role: 'form' } do |f| %>
   <div class="form-group">
     <label for="smart_proxy_id" class="col-md-2 control-label"><%= _('Smart Proxy') %></label>
     <div class="col-md-6">
       <%= f.collection_select :smart_proxy_id, @smart_proxies, :id, :name,
             { prompt: _('Select Smart Proxy') },
-            { id: 'proxy_select', class: 'form-control', data: { 'proxy-url': foreman_bolt.get_bolt_options_path } } %>
+            { id: 'proxy_select', class: 'form-control', data: { 'proxy-url': foreman_bolt.get_bolt_options_path }, 'aria-required': 'true' } %>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="targets" class="col-md-2 control-label"><%= _('Targets') %></label>
+    <div class="col-md-6">
+      <input type="text" id="targets" name="targets" class="form-control"
+             required aria-required="true" aria-describedby="targets-help">
+      <span id="targets-help" class="help-block"><%= _('Comma-separated list of targets (e.g., host1,host2,host3)') %></span>
     </div>
   </div>
   <div class="form-group">
     <label for="task_select" class="col-md-2 control-label"><%= _('Task Name') %></label>
     <div class="col-md-6" style="display: flex; gap: 0.5rem; align-items: center;">
-      <select id="task_select" name="task_name" class="form-control" disabled>
+      <select id="task_select" name="task_name" class="form-control" disabled aria-required="true">
         <option value=""><%= _('Select Task') %></option>
       </select>
       <button type="button" id="reload_tasks" class="btn btn-default" disabled
-              title="<%= _('Reload tasks from Bolt. This may take some time.') %>">
-        <span class="pficon pficon-restart"></span>
+              title="<%= _('Reload tasks from Bolt. This may take some time.') %>"
+              aria-label="<%= _('Reload tasks from Bolt. This may take some time.') %>">
+        <span class="pficon pficon-restart" aria-hidden="true"></span>
       </button>
     </div>
   </div>
   <div class="form-group">
     <label class="col-md-2 control-label"><%= _('Parameters') %></label>
     <div class="col-md-8">
-      <div id="task_params" class="well">
-        <div class="blank-slate-pf">
-          <div class="blank-slate-pf-icon"><span class="pficon pficon-info"></span></div>
+      <div id="task_params" class="well" role="region" aria-label="<%= _('Task Parameters') %>" aria-live="polite" aria-busy="false">
+        <div class="blank-slate-pf" role="status">
+          <div class="blank-slate-pf-icon"><span class="pficon pficon-info" aria-hidden="true"></span></div>
           <h4><%= _('Select a task to see parameters') %></h4>
         </div>
       </div>
@@ -64,9 +80,9 @@
   <div class="form-group">
     <label class="col-md-2 control-label"><%= _('Bolt Options') %></label>
     <div class="col-md-8">
-      <div id="bolt_options" class="well">
-        <div class="blank-slate-pf">
-          <div class="blank-slate-pf-icon"><span class="pficon pficon-settings"></span></div>
+      <div id="bolt_options" class="well" role="region" aria-label="<%= _('Bolt Options') %>" aria-live="polite" aria-busy="false">
+        <div class="blank-slate-pf" role="status">
+          <div class="blank-slate-pf-icon"><span class="pficon pficon-settings" aria-hidden="true"></span></div>
           <h4><%= _('Select a Smart Proxy to see Bolt options') %></h4>
         </div>
       </div>
@@ -143,7 +159,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /**
    * Creates an input element for a form field.
-   * 
    * @param {string} name      - The field name.
    * @param {Object} meta      - The metadata for the field. Must contain `type`, and 
    *                             optionally `default` and `description`. Any type that is
@@ -153,28 +168,29 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function createInput(name, meta, prefix) {
     let input;
-    // We mostly don't want to handle parsing the wide variety of Puppet types yet.
-    // For now, we will just handle enum and boolean types, and treat everything else as a string.
-    // Because the Puppet boolean type is capitalized, normalize to lowercase.
     const type = Array.isArray(meta.type) ? 'enum' : (meta.type || '').toLowerCase();
+    const required = prefix !== 'options' && !type.startsWith('optional[');
     if (type === 'enum') {
       input = document.createElement('select');
       input.className = 'form-control';
-      // Option(displayText, value)
-      meta.type.forEach(v => input.append(new Option(v,v)));
+      meta.type.forEach(v => input.append(new Option(v, v)));
       input.value = meta.default || (input.options[0] && input.options[0].value) || '';
+      input.required = required;
     } else if (type === 'boolean' || type == 'optional[boolean]') {
       input = document.createElement('input');
       input.type = 'checkbox';
       input.checked = !!meta.default;
+      // Never set required for checkboxes
     } else {
       input = document.createElement('input');
-      input.type = 'text'; input.className = 'form-control';
+      input.type = 'text';
+      input.className = 'form-control';
       input.value = meta.default || '';
+      input.required = required;
     }
     input.id       = `${prefix}_${name}`;
     input.name     = `${prefix}[${name}]`;
-    input.required = !type.startsWith('optional[');
+    if (input.required) input.setAttribute('aria-required', 'true');
     return input;
   }
 
@@ -189,10 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function createGroup(name, meta, prefix, showType = true) {
     const group = document.createElement('div');
-    // Cast to String in case it's an array or other type
     const typeString = String(meta.type || '').toLowerCase();
     const isBoolean = typeString === 'boolean' || typeString === 'optional[boolean]';
-    // Don't show required asterisk for Bolt options or if the param type is optional
     const required = prefix !== 'options' && !typeString.startsWith('optional[');
     group.classList.add('form-group');
 
@@ -202,10 +216,11 @@ document.addEventListener('DOMContentLoaded', () => {
     label.textContent = name;
 
     if (required) {
-        const star = document.createElement('span');
-        star.className = 'required-input';
-        star.textContent = '*';
-        label.appendChild(star);
+      const star = document.createElement('span');
+      star.className = 'required-input';
+      star.textContent = '*';
+      star.setAttribute('aria-hidden', 'true');
+      label.appendChild(star);
     }
 
     if (showType && !isBoolean && meta.type) {
@@ -214,18 +229,25 @@ document.addEventListener('DOMContentLoaded', () => {
       typeBadge.className = 'help-inline text-muted';
       typeBadge.textContent = typeText;
       typeBadge.title = typeText;
+      typeBadge.setAttribute('aria-label', typeText);
       label.appendChild(typeBadge);
     }
 
     const input = createInput(name, meta, prefix);
-    group.append(label, input);
 
+    // If there's a description, link it for screen readers
+    let help;
     if (meta.description) {
-      const help = document.createElement('span');
+      help = document.createElement('span');
       help.className = 'help-block';
       help.textContent = meta.description;
-      group.appendChild(help);
+      const helpId = `${prefix}_${name}_help`;
+      help.id = helpId;
+      input.setAttribute('aria-describedby', helpId);
     }
+
+    group.append(label, input);
+    if (help) group.appendChild(help);
 
     return group;
   }
@@ -239,12 +261,13 @@ document.addEventListener('DOMContentLoaded', () => {
    * @param {boolean} showType      - Whether to show the field type.
    */
   function renderFields(data, container, prefix, showType = true) {
+    container.removeAttribute('aria-busy');
     container.innerHTML = '';
     if (!data || !Object.keys(data).length) {
       container.innerHTML = `
-        <div class="blank-slate-pf">
+        <div class="blank-slate-pf" role="status" aria-live="polite">
           <div class="blank-slate-pf-icon">
-            <span class="pficon pficon-info"></span>
+            <span class="pficon pficon-info" aria-hidden="true"></span>
           </div>
           <h4>No ${prefix} available</h4>
         </div>`;
@@ -264,17 +287,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadOptions() {
     if (!proxySel.value) {
       optsDiv.innerHTML = `
-        <div class="blank-slate-pf">
-          <div class="blank-slate-pf-icon"><span class="pficon pficon-settings"></span></div>
+        <div class="blank-slate-pf" role="status" aria-live="polite">
+          <div class="blank-slate-pf-icon">
+            <span class="pficon pficon-settings" aria-hidden="true"></span>
+          </div>
           <h4><%= _('Select a Smart Proxy to see Bolt options') %></h4>
         </div>`;
       return;
     }
     loading.opts = true; updateComponentStates();
-    optsDiv.innerHTML = `<div class="spinner-container">
-      <div class="spinner spinner-lg"></div>
-      <p class="text-center"><%= _('Loading Bolt options...') %></p>
-    </div>`;
+    showSpinner(optsDiv, '<%= _('Loading Bolt options...') %>');
     fetchJson(`${URLS.opts}?proxy_id=${encodeURIComponent(proxySel.value)}`, data => {
       loading.opts = false;
       if (data) renderFields(data, optsDiv, 'options', false);
@@ -291,8 +313,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function loadTasks(force = false) {
     if (!proxySel.value) {
       taskSel.innerHTML = '<option><%= _('Select a Smart Proxy first') %></option>';
-      paramsDiv.innerHTML = `<div class="blank-slate-pf">
-        <div class="blank-slate-pf-icon"><span class="pficon pficon-info"></span></div>
+      paramsDiv.innerHTML = `<div class="blank-slate-pf" role="status" aria-live="polite">
+        <div class="blank-slate-pf-icon">
+          <span class="pficon pficon-info" aria-hidden="true"></span>
+        </div>
         <h4><%= _('Select a Smart Proxy and task to see parameters') %></h4>
       </div>`;
       taskMeta = {}; taskSel.disabled = true; return;
@@ -326,10 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
    * If no task is selected, it shows a message prompting the user to select one.
    */
   function renderParams() {
-    paramsDiv.innerHTML = `<div class="spinner-container">
-      <div class="spinner spinner-lg"></div>
-      <p class="text-center"><%= _('Loading parameters...') %></p>
-    </div>`;
+    showSpinner(paramsDiv, '<%= _('Loading task parameters...') %>');
     // Using setTimeout to ensure the spinner shows up before we render fields
     // and we don't get any weird race conditions.
     setTimeout(() => {
@@ -337,6 +358,16 @@ document.addEventListener('DOMContentLoaded', () => {
             params   = taskMeta[taskName]?.parameters;
       renderFields(params, paramsDiv, 'params');
     }, 0);
+  }
+
+  function showSpinner(container, message) {
+    container.setAttribute('aria-busy', 'true');
+    container.innerHTML = `
+        <div class="spinner-container" role="status" aria-live="polite">
+          <div class="spinner spinner-lg" aria-hidden="true"></div>
+          <p class="text-center">${message}</p>
+        </div>
+      `;
   }
 
   // Event wiring
