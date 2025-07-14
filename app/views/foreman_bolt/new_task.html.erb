@@ -42,7 +42,7 @@
     <div class="col-md-6">
       <%= f.collection_select :smart_proxy_id, @smart_proxies, :id, :name,
             { prompt: _('Select Smart Proxy') },
-            { id: 'proxy_select', class: 'form-control', data: { 'proxy-url': foreman_bolt.get_bolt_options_path }, 'aria-required': 'true' } %>
+            { id: 'proxy_select', class: 'form-control', data: { 'proxy-url': foreman_bolt.fetch_bolt_options_path }, 'aria-required': 'true' } %>
     </div>
   </div>
   <div class="form-group">
@@ -105,9 +105,9 @@ document.addEventListener('DOMContentLoaded', () => {
         optsDiv     = document.getElementById('bolt_options');
 
   const URLS = {
-    tasks:  '<%= foreman_bolt.get_tasks_path %>',
+    tasks:  '<%= foreman_bolt.fetch_tasks_path %>',
     reload: '<%= foreman_bolt.reload_tasks_path %>',
-    opts:   '<%= foreman_bolt.get_bolt_options_path %>'
+    opts:   '<%= foreman_bolt.fetch_bolt_options_path %>'
   };
 
   let loading = { tasks: false, opts: false },

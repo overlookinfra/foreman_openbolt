@@ -3,7 +3,6 @@ require 'proxy_api/bolt'
 
 module ForemanBolt
   class TaskController < ::ApplicationController
-
     # These are used in order to cache state to avoid multiple calls to the API
     @tasks = nil
     @proxy = nil
@@ -15,7 +14,7 @@ module ForemanBolt
 
     # Expects a proxy_id parameter
     # Used in JS on new_task page to populate task name dropdown
-    def get_tasks
+    def fetch_tasks
       call_api(:tasks, params[:proxy_id])
     end
 
@@ -27,7 +26,7 @@ module ForemanBolt
 
     # Expects a proxy_id parameter
     # Used in JS on new_task page to get the bolt options
-    def get_bolt_options
+    def fetch_bolt_options
       call_api(:bolt_options, params[:proxy_id])
     end
 
@@ -45,7 +44,7 @@ module ForemanBolt
     private
 
     def load_api(proxy_id)
-      return false unless proxy_id.present?
+      return false if proxy_id.blank?
       if @proxy.nil? || @proxy.id != proxy_id.to_i
         @proxy = SmartProxy.find_by(id: proxy_id)
         return false unless @proxy
