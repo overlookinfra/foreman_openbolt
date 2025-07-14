@@ -40,21 +40,21 @@ end
 
 LINTERS = {
   ruby: { cmd: 'rubocop', fix: '--safe-auto-correct', glob: '' },
-  erb:  { cmd: 'erb-lint', fix: '--autocorrect', glob: '**/*.erb' },
-  js:   { cmd: 'npx eslint', fix: '--fix', glob: '**/*.js' }
+  erb: { cmd: 'erb-lint', fix: '--autocorrect', glob: '**/*.erb' },
+  js: { cmd: 'npx eslint', fix: '--fix', glob: '**/*.js' },
 }.freeze
 
 namespace :lint do
-  def autocorrect?
-    ENV['AUTOCORRECT'] == 'true'
+  def fix?
+    ENV['FIX'] == 'true'
   end
 
   LINTERS.each do |name, cfg|
-    desc "Run #{name} linter#{' (autocorrect)' if autocorrect?}"
+    desc "Run #{name} linter#{' (fix)' if fix?}"
     task name do
       cmd = [cfg[:cmd]]
-      cmd << cfg[:fix] if autocorrect?
-      cmd << cfg[:glob] if !cfg[:glob].empty?
+      cmd << cfg[:fix] if fix?
+      cmd << cfg[:glob] unless cfg[:glob].empty?
       sh cmd.join(' ')
     end
   end
@@ -62,9 +62,9 @@ namespace :lint do
   desc 'Run all linters'
   task all: LINTERS.keys
 
-  desc 'Run all linters and apply safe autocorrections'
-  task :autocorrect do
-    ENV['AUTOCORRECT'] = 'true'
+  desc 'Run all linters and apply fixes'
+  task :fix do
+    ENV['FIX'] = 'true'
     Rake::Task['lint:all'].invoke
   end
 end

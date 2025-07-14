@@ -21,10 +21,10 @@ module ForemanBolt
 
           # Add permissions
           security_block :foreman_bolt do
-            permission :view_foreman_bolt, { :'foreman_bolt/new_task' => [:new_task, :task_exec]}
-            permission :execute_foreman_bolt_tasks, { :'foreman_bolt/task' => [:task_exec]}
+            permission :view_foreman_bolt, { :'foreman_bolt/new_task' => [:new_task, :task_exec] }
+            permission :execute_foreman_bolt_tasks, { :'foreman_bolt/task' => [:task_exec] }
           end
-          #add_all_permissions_to_default_roles
+          # add_all_permissions_to_default_roles
 
           # Specific ForemanBolt role
           role 'ForemanBolt', [:view_foreman_bolt, :execute_foreman_bolt_tasks]
