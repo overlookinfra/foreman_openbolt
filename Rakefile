@@ -1,4 +1,4 @@
-#!/usr/bin/env rake
+# !/usr/bin/env rake
 begin
   require 'bundler/setup'
 rescue LoadError
@@ -20,8 +20,6 @@ RDoc::Task.new(:rdoc) do |rdoc|
   rdoc.rdoc_files.include('lib/**/*.rb')
 end
 
-APP_RAKEFILE = File.expand_path('test/dummy/Rakefile', __dir__)
-
 Bundler::GemHelper.install_tasks
 
 require 'rake/testtask'
@@ -33,8 +31,6 @@ Rake::TestTask.new(:test) do |t|
   t.verbose = false
 end
 
-task default: :test
-
 begin
   require 'rubocop/rake_task'
   RuboCop::RakeTask.new
@@ -42,6 +38,35 @@ rescue LoadError
   puts 'Rubocop not loaded.'
 end
 
-task :default do
-  Rake::Task['rubocop'].execute
+LINTERS = {
+  ruby: { cmd: 'rubocop', fix: '--safe-auto-correct', glob: '' },
+  erb:  { cmd: 'erb-lint', fix: '--autocorrect', glob: '**/*.erb' },
+  js:   { cmd: 'npx eslint', fix: '--fix', glob: '**/*.js' }
+}.freeze
+
+namespace :lint do
+  def autocorrect?
+    ENV['AUTOCORRECT'] == 'true'
+  end
+
+  LINTERS.each do |name, cfg|
+    desc "Run #{name} linter#{' (autocorrect)' if autocorrect?}"
+    task name do
+      cmd = [cfg[:cmd]]
+      cmd << cfg[:fix] if autocorrect?
+      cmd << cfg[:glob] if !cfg[:glob].empty?
+      sh cmd.join(' ')
+    end
+  end
+
+  desc 'Run all linters'
+  task all: LINTERS.keys
+
+  desc 'Run all linters and apply safe autocorrections'
+  task :autocorrect do
+    ENV['AUTOCORRECT'] = 'true'
+    Rake::Task['lint:all'].invoke
+  end
 end
+
+task default: ['lint:all', 'test']
