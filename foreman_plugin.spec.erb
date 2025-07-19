@@ -1,0 +1,178 @@
+# template: foreman_plugin
+<%-
+require 'json'
+root = `git rev-parse --show-toplevel`.strip
+LICENSES = JSON.load(File.read(File.join(root, 'licenses.json')))
+-%>
+%global gem_name <%= spec.name %>
+%global plugin_name <%= spec.name.sub(/\Aforeman_/, '') %>
+%global foreman_min_version FIXME
+<%
+has_assets = spec.files.any? { |f| f.start_with?('app/assets/') }
+has_cronjob = spec.files.any? { |f| f =~ %r{\Aextra/.*\.cron\z} }
+has_webpack = spec.files.any? { |f| f.start_with?('webpack/') }
+has_package_json = spec.files.any? { |f| f == 'package.json' }
+
+precompile_flags = ''
+precompile_flags << ' -s' if has_assets || has_webpack
+
+config.rules[:doc] << /\/?CHANGES/
+config.rules[:doc] << /CODE_OF_CONDUCT(\.md)?/
+config.rules[:ignore] << '.hound.yml'
+config.rules[:ignore] << '.rubocop_todo.yml'
+config.rules[:ignore] << '.rubocop-disables.yml'
+config.rules[:ignore] << 'package.json'
+config.rules[:ignore] << '.ruby-gemset'
+config.rules[:ignore] << '.zuul.yaml'
+config.rules[:ignore] << '.coveralls.yml'
+config.rules[:ignore] << /.eslint(rc|ignore)/
+config.rules[:ignore] << /.tx(\/.*)?/
+config.rules[:ignore] << /webpack(\/.*)?/
+config.rules[:ignore] << /(\.)?packit.y(a)?ml/
+-%>
+
+Name: rubygem-%{gem_name}
+Version: <%= spec.version %>
+Release: 1%{?foremandist}%{?dist}
+Summary: <%= spec.summary.gsub(/\.$/, "") %>
+License: <%= spec.licenses.empty? ? 'FIXME' : spec.licenses.map { |l| LICENSES.fetch(l, l) }.join(" and ") %>
+<% if spec.homepage -%>
+URL: <%= spec.homepage.gsub('http://', 'https://') %>
+<% end -%>
+Source0: <%= download_path %>%{gem_name}-%{version}.gem
+
+# start specfile generated dependencies
+Requires: foreman >= %{foreman_min_version}
+<% if has_assets || has_webpack -%>
+BuildRequires: foreman-assets >= %{foreman_min_version}
+<% end -%>
+BuildRequires: foreman-plugin >= %{foreman_min_version}
+<% for req in spec.required_ruby_version -%>
+Requires: ruby<%= " #{req}" unless req.empty? %>
+<% end -%>
+<% for req in spec.required_ruby_version -%>
+BuildRequires: <%= requirement "ruby#{'-devel' unless spec.extensions.empty?}", req %>
+<% end -%>
+<% for req in spec.required_rubygems_version -%>
+BuildRequires: <%= requirement 'rubygems-devel', req %>
+<% end -%>
+<% if !spec.extensions.empty? || has_assets || has_webpack -%>
+<% for dep in runtime_dependencies.virtualize -%>
+<% build_requires = dep.requirement.map { |req| requirement(dep.name, req) } -%>
+BuildRequires: <%= build_requires.size > 1 ? "(#{build_requires.join(' with ')})" : build_requires.first %>
+<% end -%>
+<% end -%>
+<% if spec.extensions.empty? -%>
+BuildArch: noarch
+<% else -%>
+# Compiler is required for build of gem binary extension.
+# https://fedoraproject.org/wiki/Packaging:C_and_C++#BuildRequires_and_Requires
+BuildRequires: gcc
+<% end -%>
+Provides: foreman-plugin-%{plugin_name} = %{version}
+# end specfile generated dependencies
+<% if has_package_json -%>
+
+# start package.json devDependencies BuildRequires
+# end package.json devDependencies BuildRequires
+
+# start package.json dependencies BuildRequires
+# end package.json dependencies BuildRequires
+<% end -%>
+
+%description
+<%= spec.description %>
+
+<% if doc_subpackage -%>
+%package doc
+Summary: Documentation for %{name}
+Requires: %{name} = %{version}-%{release}
+BuildArch: noarch
+
+%description doc
+Documentation for %{name}.
+<% end # if doc_subpackage -%>
+
+%prep
+%setup -q -n  %{gem_name}-%{version}
+
+%build
+# Create the gem as gem install only works on a gem file
+gem build ../%{gem_name}-%{version}.gemspec
+
+# %%gem_install compiles any C extensions and installs the gem into ./%%gem_dir
+# by default, so that we can move it into the buildroot in %%install
+%gem_install
+
+%install
+mkdir -p %{buildroot}%{gem_dir}
+cp -a .%{gem_dir}/* \
+        %{buildroot}%{gem_dir}/
+
+<% if has_cronjob -%>
+mkdir -p %{buildroot}%{_sysconfdir}/cron.d/
+mv %{buildroot}%{gem_instdir}/extra/*.cron %{buildroot}%{_sysconfdir}/cron.d/%{gem_name}
+<% end -%>
+<% unless spec.extensions.empty? -%>
+mkdir -p %{buildroot}%{gem_extdir_mri}/%{gem_name}
+cp -a .%{gem_extdir_mri}/gem.build_complete %{buildroot}%{gem_extdir_mri}/
+cp -a .%{gem_extdir_mri}/%{gem_name}/*.so %{buildroot}%{gem_extdir_mri}/%{gem_name}
+
+<% for ext in spec.extensions -%>
+# Prevent dangling symlink in -debuginfo (rhbz#878863).
+rm -rf %{buildroot}%{gem_instdir}/<%= ext.split(File::SEPARATOR).first %>/
+<% end -%>
+
+<% end -%>
+<% unless spec.executables.nil? or spec.executables.empty? -%>
+mkdir -p %{buildroot}%{_bindir}
+cp -a .%{_bindir}/* \
+        %{buildroot}%{_bindir}/
+find %{buildroot}%{gem_instdir}/<%= spec.bindir %> -type f | xargs chmod a+x
+
+<% end -%>
+%foreman_bundlerd_file
+<% unless precompile_flags.strip.empty? -%>
+%foreman_precompile_plugin <%= precompile_flags.strip %>
+<% end -%>
+
+%files
+%dir %{gem_instdir}
+<% unless spec.executables.nil? or spec.executables.empty? -%>
+<% for f in spec.executables -%>
+%{_bindir}/<%= f %>
+<% end -%>
+<% end -%>
+<% unless spec.extensions.empty? -%>
+%{gem_extdir_mri}
+<% end -%>
+<%= main_file_entries(spec) %>
+<% unless doc_subpackage -%>
+%doc %{gem_docdir}
+<%= doc_file_entries(spec) %>
+<% end -%>
+%exclude %{gem_cache}
+%{gem_spec}
+%{foreman_bundlerd_plugin}
+<% if has_assets || has_webpack -%>
+%{foreman_assets_plugin}
+%{foreman_assets_foreman}
+<% end -%>
+<% if has_cronjob -%>
+%config(noreplace) %{_sysconfdir}/cron.d/%{gem_name}
+<% end -%>
+<% if has_webpack -%>
+%{foreman_webpack_plugin}
+%{foreman_webpack_foreman}
+<% end -%>
+
+<% if doc_subpackage -%>
+%files doc
+%doc %{gem_docdir}
+<%= doc_file_entries(spec) %>
+<% end # if doc_subpackage -%>
+
+%posttrans
+%{foreman_plugin_log}
+
+%changelog
