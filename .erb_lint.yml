@@ -1,0 +1,13 @@
+EnableDefaultLinters: true
+linters:
+  Indentation:
+    enabled: true
+    indent_width: 2
+  TrailingWhitespace:
+    enabled: true
+  LineLength:
+    enabled: true
+    max: 120
+exclude:
+  - 'vendor/**/*'
+  - 'node_modules/**/*'

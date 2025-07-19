@@ -24,7 +24,7 @@ usage if ARGV.size != 1
 
 snake = ARGV[0]
 camel = snake.camel_case
-camel_lower = camel[0].downcase + camel[1..-1]
+camel_lower = camel[0].downcase + camel[1..]
 
 if snake == camel
   puts "Could not camelize '#{snake}' - exiting"

@@ -2,7 +2,7 @@
   "name": "foreman_bolt",
   "version": "1.0.0",
   "description": "DESCRIPTION",
-  "main": "index.js",
+  "main": "webpack/index.js",
   "scripts": {
     "lint": "tfm-lint --plugin -d /webpack",
     "test": "tfm-test --config jest.config.js",

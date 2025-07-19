@@ -41,8 +41,8 @@ rescue LoadError
 end
 
 LINTERS = {
-  ruby: { cmd: 'rubocop', fix: '--safe-auto-correct', glob: '' },
-  erb: { cmd: 'erb-lint', fix: '--autocorrect', glob: '**/*.erb' },
+  ruby: { cmd: 'rubocop', fix: '--auto-correct', glob: '' },
+  erb: { cmd: 'erb_lint', fix: '--autocorrect', glob: '**/*.erb' },
   js: { cmd: 'npx eslint', fix: '--fix', glob: '**/*.js' },
 }.freeze
 

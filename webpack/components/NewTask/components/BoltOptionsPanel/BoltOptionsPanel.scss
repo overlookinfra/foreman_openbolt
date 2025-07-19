@@ -1,0 +1,39 @@
+#task_params, #bolt_options {
+  padding: 10px 30px;
+  min-height: 150px;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.blank-slate-pf {
+  margin-top: 20px;
+  padding-bottom: 10px;
+  border: none;
+  text-align: center;
+}
+
+.blank-slate-pf-icon {
+  padding-top: 10px;
+}
+
+.help-inline.text-muted {
+  margin-left: 0.5em;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+  cursor: help;
+}
+
+.required-input {
+  color: #cc0000;
+  margin-left: 3px;
+}
+
+/* High contrast for accessibility */
+.form-control:focus {
+  outline: 2px solid #005fcc;
+  outline-offset: 2px;
+}

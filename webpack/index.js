@@ -1,8 +1,7 @@
 import componentRegistry from 'foremanReact/components/componentRegistry';
-import ExtendedEmptyState from './src/Components/EmptyState/ExtendedEmptyState';
+import NewTask            from './components/NewTask';
 
-// register components for erb mounting
 componentRegistry.register({
-    name: 'ExtendedEmptyState',
-    type: ExtendedEmptyState,
+  name: 'NewTask',
+  type: NewTask,
 });
