@@ -28,5 +28,22 @@ module ProxyAPI
     def bolt_options
       @bolt_options ||= JSON.parse(get('/bolt/tasks/options').body)
     end
+
+    def run_task(name:, targets:, parameters: {}, options: {})
+      JSON.parse(post({
+        name: name,
+        targets: targets,
+        parameters: parameters,
+        options: options,
+      }.to_json, '/bolt/run/task').body)
+    end
+
+    def job_status(job_id:)
+      JSON.parse(get("/bolt/job/#{job_id}/status").body)
+    end
+
+    def job_result(job_id:)
+      JSON.parse(get("/bolt/job/#{job_id}/result").body)
+    end
   end
 end

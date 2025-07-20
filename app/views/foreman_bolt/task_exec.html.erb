@@ -1,5 +1,123 @@
-<h1>Task Execution</h1>
-<p>Proxy selected: <%= @selected_proxy.name %></p>
-<p>Task selected: <%= @selected_task %></p>
+<%= title _('Task Execution') %>
+<style>
+  #result-box, #log-box {
+    white-space: pre-wrap;
+    font-family: monospace;
+    height: 400px;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding: 10px;
+  }
+</style>
+<div id="task-execution">
+  <div id="task-details">
+    <p><strong><%= _('Proxy Name:') %></strong> <%= @proxy_name %></p>
+    <p><strong><%= _('Job ID:') %></strong> <%= @job_id %></p>
+  </div>
+  <div id="status-container">
+    <p><strong><%= _('Status:') %></strong> <span id="status-text"></span></p>
+  </div>
+  <div id="spinner-container" class="spinner-container" role="status" aria-live="polite">
+    <div class="spinner spinner-lg" aria-hidden="true"></div>
+    <p><%= _('Executing task...') %></p>
+  </div>
+  <div id="result-container" style="display: none;">
+    <h3><%= _('Result') %></h3>
+    <pre id="result-box" class="pf-c-log-viewer__text" aria-label="result" readonly></pre>
+    <h3><%= _('Log') %></h3>
+    <pre id="log-box" class="pf-c-log-viewer__text" aria-label="log" readonly></pre>
+  </div>
+</div>
 
-<p>Task execution will be implemented here.</p>
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function() {
+  const proxyId = '<%= @proxy_id %>';
+  const jobId = '<%= @job_id %>';
+  const statusText = document.getElementById('status-text');
+  const spinnerContainer = document.getElementById('spinner-container');
+  const resultContainer = document.getElementById('result-container');
+  const resultBox = document.getElementById('result-box');
+  const logBox = document.getElementById('log-box');
+
+  const URLS = {
+    status: '<%= foreman_bolt.job_status_path %>',
+    result: '<%= foreman_bolt.job_result_path %>'
+  };
+  
+  let pollingInterval;
+
+  /**
+   * Displays a notification message. Falls back to other methods
+   * if we don't have access to tfm for some reason.
+   * 
+   * @param {string} msg  - The message to display.
+   * @param {string} type - The type of notification (e.g., 'error', 'info').
+   */
+  function notify(msg, type = 'error') {
+    if (tfm?.toastNotifications?.notify) {
+      tfm.toastNotifications.notify({ message: msg, type });
+    } else if (typeof notify === 'function') {
+      window.notify(msg, type);
+    } else {
+      console[type === 'error' ? 'error' : 'log'](msg);
+    }
+  }
+
+  /**
+   * Fetches JSON data from a given URL and handles errors.
+   * @param {string} url        - The URL to fetch data from.
+   * @param {function} callback - The callback function to handle the response.
+   */
+  function fetchJson(url, callback) {
+    fetch(url, {
+      credentials: 'same-origin',
+      // Not entirely necessary, but for correctness, this says we are loading
+      // in an AJAX-y way and should always return JSON.
+      headers: { 'Accept':'application/json','X-Requested-With':'XMLHttpRequest' }
+    })
+    .then(r => r.json())
+    .then(data => data.error ? (notify(data.error), callback(null)) : callback(data))
+    .catch(e => (notify(e.message), callback(null)));
+  }
+
+  function pollStatus() {
+    fetchJson(`${URLS.status}?job_id=${encodeURIComponent(jobId)}&proxy_id=${encodeURIComponent(proxyId)}`, (data) => {
+      if (!data) return;
+
+      const status = data.status;
+      statusText.textContent = status;
+
+      if (!['pending', 'running', 'success', 'failure', 'exception'].includes(status)) {
+        console.error(`Unexpected status: ${status}`);
+        statusText.textContent = `Unexpected status: ${status}`;
+        clearInterval(pollingInterval);
+        spinnerContainer.style.display = 'none';
+        return;
+      }
+      if (status !== 'pending' && status !== 'running') {
+        clearInterval(pollingInterval);
+        spinnerContainer.style.display = 'none';
+        fetchResult();
+      }
+    })
+  }
+
+  function fetchResult() {
+    fetchJson(`${URLS.result}?job_id=${encodeURIComponent(jobId)}&proxy_id=${encodeURIComponent(proxyId)}`, (data) => {
+      if (!data) return;
+      log = data.log;
+      delete data.log;
+
+      resultBox.textContent = JSON.stringify(data, null, 2);
+      resultContainer.style.display = 'block';
+
+      if (log) {
+        logBox.textContent = log;
+      }
+    });
+  }
+
+  pollingInterval = setInterval(pollStatus, 5000);
+  pollStatus(); // Initial call
+});
+</script>

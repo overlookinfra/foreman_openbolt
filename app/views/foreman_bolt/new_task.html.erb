@@ -38,9 +38,9 @@
 
 <%= form_with url: foreman_bolt.task_exec_path, local: true, class: 'form-horizontal', html: { role: 'form' } do |f| %>
   <div class="form-group">
-    <label for="smart_proxy_id" class="col-md-2 control-label"><%= _('Smart Proxy') %></label>
+    <label for="proxy_id" class="col-md-2 control-label"><%= _('Smart Proxy') %></label>
     <div class="col-md-6">
-      <%= f.collection_select :smart_proxy_id, @smart_proxies, :id, :name,
+      <%= f.collection_select :proxy_id, @smart_proxies, :id, :name,
             { prompt: _('Select Smart Proxy') },
             { id: 'proxy_select', class: 'form-control', data: { 'proxy-url': foreman_bolt.fetch_bolt_options_path }, 'aria-required': 'true' } %>
     </div>
@@ -95,7 +95,7 @@
   </div>
 <% end %>
 
-<script type="text/javascript">
+<script>
 document.addEventListener('DOMContentLoaded', () => {
   const proxySel    = document.getElementById('proxy_select'),
         taskSel     = document.getElementById('task_select'),

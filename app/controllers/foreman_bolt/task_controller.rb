@@ -5,9 +5,6 @@ require 'proxy_api/bolt'
 
 module ForemanBolt
   class TaskController < ::ApplicationController
-    # These are used in order to cache state to avoid multiple calls to the API
-    @tasks = nil
-    @proxy = nil
 
     def new_task
       @smart_proxies = SmartProxy.all.order(:name)
@@ -17,30 +14,58 @@ module ForemanBolt
     # Expects a proxy_id parameter
     # Used in JS on new_task page to populate task name dropdown
     def fetch_tasks
-      call_api(:tasks, params[:proxy_id])
+      render_api_call(:tasks, params[:proxy_id])
     end
 
     # Expects a proxy_id parameter
     # Used in JS on new_task page to reload tasks on the proxy
     def reload_tasks
-      call_api(:reload_tasks, params[:proxy_id])
+      render_api_call(:reload_tasks, params[:proxy_id])
     end
 
     # Expects a proxy_id parameter
     # Used in JS on new_task page to get the bolt options
     def fetch_bolt_options
-      call_api(:bolt_options, params[:proxy_id])
+      render_api_call(:bolt_options, params[:proxy_id])
     end
 
     def task_exec
-      selected_proxy_id = params[:smart_proxy_id]
-      if selected_proxy_id.present?
-        @selected_proxy = SmartProxy.find(selected_proxy_id)
-        render template: 'foreman_bolt/task_exec'
+      proxy_id = params[:proxy_id]
+      if proxy_id.present?
+        return bad_proxy_response(proxy_id) unless load_api(proxy_id)
+        begin
+          response = @api.run_task(
+            name: params[:task_name],
+            targets: params[:targets],
+            parameters: params[:params] || {},
+            options: params[:options],
+          )
+          logger.info("Task execution response: #{response.inspect}")
+          if response['error'] || response['id'].nil?
+            flash[:error] = "Error executing task: #{response['error']}"
+            redirect_to action: :new_task
+            return
+          end
+          @proxy_id = @proxy.id
+          @proxy_name = @proxy.name
+          @job_id = response['id']
+          render template: 'foreman_bolt/task_exec'
+        rescue => e
+          flash[:error] = "Error executing task: #{e.full_message}"
+          redirect_to action: :new_task
+        end
       else
         flash[:error] = 'Please select a Smart Proxy.'
         redirect_to action: :new_task
       end
+    end
+
+    def job_status
+      render_api_call(:job_status, params[:proxy_id], job_id: params[:job_id])
+    end
+
+    def job_result
+      render_api_call(:job_result, params[:proxy_id], job_id: params[:job_id])
     end
 
     private
@@ -60,11 +85,14 @@ module ForemanBolt
       redirect_to action: :new_task
     end
 
-    def call_api(function, proxy_id)
+    # Generally used for JS calls on the pages that expect a JSON response
+    def render_api_call(function, proxy_id, **args)
       return bad_proxy_response(proxy_id) unless load_api(proxy_id)
-      render json: @api.send(function)
-    rescue ProxyAPI::ProxyException => e
-      render json: { error: e.message }, status: :bad_gateway
+      begin
+        render json: @api.send(function, **args)
+      rescue ProxyAPI::ProxyException => e
+        render json: { error: e.message }, status: :bad_gateway
+      end
     end
   end
 end

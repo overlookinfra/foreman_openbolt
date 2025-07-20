@@ -9,8 +9,12 @@ ForemanBolt::Engine.routes.draw do
   get 'reload_tasks', to: 'task#reload_tasks'
   get 'fetch_bolt_options', to: 'task#fetch_bolt_options'
 
-  # Submit task execution
+  # Task execution
   post 'task_exec', to: 'task#task_exec'
+
+  # Job status and result
+  get 'job_status', to: 'task#job_status'
+  get 'job_result', to: 'task#job_result'
 end
 
 Foreman::Application.routes.draw do
