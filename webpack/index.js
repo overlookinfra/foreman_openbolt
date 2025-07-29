@@ -1,8 +1,19 @@
 import componentRegistry from 'foremanReact/components/componentRegistry';
-import ExtendedEmptyState from './src/Components/EmptyState/ExtendedEmptyState';
 
-// register components for erb mounting
-componentRegistry.register({
-    name: 'ExtendedEmptyState',
-    type: ExtendedEmptyState,
+import BoltTaskForm from './src/Components/BoltTaskForm';
+import BoltTaskExecution from './src/Components/BoltTaskExecution';
+
+const components = [
+  {
+    name: 'BoltTaskForm',
+    type: BoltTaskForm,
+  },
+  {
+    name: 'BoltTaskExecution', 
+    type: BoltTaskExecution,
+  },
+];
+
+components.forEach(component => {
+  componentRegistry.register(component);
 });

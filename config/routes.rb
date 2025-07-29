@@ -1,18 +1,15 @@
 # frozen_string_literal: true
 
 ForemanBolt::Engine.routes.draw do
-  # Form page to run a task
-  get 'new_task', to: 'task#new_task'
+  # React-rendered pages
+  get 'new_task', to: 'task#new_task', as: :new_task
+  get 'task_exec', to: 'task#task_exec', as: :task_exec
 
-  # JS endpoints for populating the new_task page
+  # API endpoints
   get 'fetch_tasks', to: 'task#fetch_tasks'
   get 'reload_tasks', to: 'task#reload_tasks'
   get 'fetch_bolt_options', to: 'task#fetch_bolt_options'
-
-  # Task execution
-  post 'task_exec', to: 'task#task_exec'
-
-  # Job status and result
+  post 'execute_task', to: 'task#execute_task'
   get 'job_status', to: 'task#job_status'
   get 'job_result', to: 'task#job_result'
 end

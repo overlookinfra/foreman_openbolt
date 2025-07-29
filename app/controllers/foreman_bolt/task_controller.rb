@@ -5,94 +5,144 @@ require 'proxy_api/bolt'
 
 module ForemanBolt
   class TaskController < ::ApplicationController
+    include ::Foreman::Controller::AutoCompleteSearch
 
+    before_action :load_smart_proxy, only: [
+      :fetch_tasks, :reload_tasks, :fetch_bolt_options, :execute_task, :job_status, :job_result
+    ]
+    before_action :load_bolt_api, only: [
+      :fetch_tasks, :reload_tasks, :fetch_bolt_options, :execute_task, :job_status, :job_result
+    ]
+
+    # React-rendered pages
     def new_task
-      @smart_proxies = SmartProxy.all.order(:name)
-      render template: 'foreman_bolt/new_task'
-    end
-
-    # Expects a proxy_id parameter
-    # Used in JS on new_task page to populate task name dropdown
-    def fetch_tasks
-      render_api_call(:tasks, params[:proxy_id])
-    end
-
-    # Expects a proxy_id parameter
-    # Used in JS on new_task page to reload tasks on the proxy
-    def reload_tasks
-      render_api_call(:reload_tasks, params[:proxy_id])
-    end
-
-    # Expects a proxy_id parameter
-    # Used in JS on new_task page to get the bolt options
-    def fetch_bolt_options
-      render_api_call(:bolt_options, params[:proxy_id])
+      render 'foreman_bolt/react_page'
     end
 
     def task_exec
-      proxy_id = params[:proxy_id]
-      if proxy_id.present?
-        return bad_proxy_response(proxy_id) unless load_api(proxy_id)
-        begin
-          response = @api.run_task(
-            name: params[:task_name],
-            targets: params[:targets],
-            parameters: params[:params] || {},
-            options: params[:options],
-          )
-          logger.info("Task execution response: #{response.inspect}")
-          if response['error'] || response['id'].nil?
-            flash[:error] = "Error executing task: #{response['error']}"
-            redirect_to action: :new_task
-            return
-          end
-          @proxy_id = @proxy.id
-          @proxy_name = @proxy.name
-          @job_id = response['id']
-          render template: 'foreman_bolt/task_exec'
-        rescue => e
-          flash[:error] = "Error executing task: #{e.full_message}"
-          redirect_to action: :new_task
-        end
-      else
-        flash[:error] = 'Please select a Smart Proxy.'
-        redirect_to action: :new_task
+      render 'foreman_bolt/react_page'
+    end
+
+    def fetch_tasks
+      render_bolt_api_call(:tasks)
+    end
+
+    def reload_tasks
+      render_bolt_api_call(:reload_tasks)
+    end
+
+    def fetch_bolt_options
+      render_bolt_api_call(:bolt_options)
+    end
+
+    def execute_task
+      required_args = [:task_name, :targets]
+      missing_args = required_args.select { |arg| params[arg].blank? }
+
+      if missing_args.any?
+        return render_error("Missing required arguments to the execute_task function: #{missing_args.join(', ')}",
+          :bad_request)
+      end
+
+      begin
+        task_name = params[:task_name].to_s.strip
+        targets = params[:targets].to_s.strip
+        task_params = params[:params] || {}
+        options = params[:options] || {}
+
+        return render_error('Task name and targets cannot be empty', :bad_request) if task_name.empty? || targets.empty?
+
+        logger.info("Executing Bolt task '#{task_name}' on targets '#{targets}' via proxy #{@smart_proxy.name}")
+
+        response = @bolt_api.run_task(
+          name: task_name,
+          targets: targets,
+          parameters: task_params,
+          options: options
+        )
+
+        logger.info("Task execution response: #{response.inspect}")
+
+        return render_error("Task execution failed: #{response['error']}", :bad_request) if response['error']
+
+        return render_error('Task execution failed: No job ID returned', :bad_request) unless response['id']
+
+        render json: {
+          job_id: response['id'],
+          proxy_id: @smart_proxy.id,
+          proxy_name: @smart_proxy.name,
+        }
+      rescue StandardError => e
+        logger.error("Task execution error: #{e.class}: #{e.message}")
+        logger.error("Backtrace: #{e.backtrace.first(5).join("\n")}")
+        render_error("Error executing task: #{e.message}", :internal_server_error)
       end
     end
 
     def job_status
-      render_api_call(:job_status, params[:proxy_id], job_id: params[:job_id])
+      job_id = params[:job_id]
+      return render_error('Job ID is required', :bad_request) if job_id.blank?
+
+      render_bolt_api_call(:job_status, job_id: job_id)
     end
 
     def job_result
-      render_api_call(:job_result, params[:proxy_id], job_id: params[:job_id])
+      job_id = params[:job_id]
+      return render_error('Job ID is required', :bad_request) if job_id.blank?
+
+      render_bolt_api_call(:job_result, job_id: job_id)
     end
 
     private
 
-    def load_api(proxy_id)
-      return false if proxy_id.blank?
-      if @proxy.nil? || @proxy.id != proxy_id.to_i
-        @proxy = SmartProxy.find_by(id: proxy_id)
-        return false unless @proxy
-        @api = ProxyAPI::Bolt.new(url: @proxy.url)
+    def load_smart_proxy
+      proxy_id = params[:proxy_id]
+      if proxy_id.blank?
+        render_error('Smart Proxy ID is required', :bad_request)
+        return false
       end
+
+      return true if @smart_proxy && @smart_proxy.id.to_s == proxy_id.to_s
+
+      @smart_proxy = SmartProxy.authorized(:view_smart_proxies).find_by(id: proxy_id)
+
+      unless @smart_proxy
+        render_error("Smart Proxy with ID #{proxy_id} not found or not authorized", :not_found)
+        return false
+      end
+
       true
     end
 
-    def bad_proxy_response(proxy_id)
-      flash[:error] = "Smart Proxy with ID #{proxy_id} not found."
-      redirect_to action: :new_task
+    def load_bolt_api
+      return false unless @smart_proxy
+      return true if @bolt_api && @bolt_api.url == @smart_proxy.url
+
+      begin
+        @bolt_api = ProxyAPI::Bolt.new(url: @smart_proxy.url)
+      rescue StandardError => e
+        logger.error("Failed to initialize Bolt API for proxy #{@smart_proxy.name}: #{e.message}")
+        render_error("Failed to connect to Smart Proxy", :bad_gateway)
+        return false
+      end
+
+      true
     end
 
-    # Generally used for JS calls on the pages that expect a JSON response
-    def render_api_call(function, proxy_id, **args)
-      return bad_proxy_response(proxy_id) unless load_api(proxy_id)
-      begin
-        render json: @api.send(function, **args)
-      rescue ProxyAPI::ProxyException => e
-        render json: { error: e.message }, status: :bad_gateway
-      end
+    def render_bolt_api_call(method_name, **args)
+      result = @bolt_api.send(method_name, **args)
+      logger.debug("Bolt API call #{method_name} successful for proxy #{@smart_proxy.name}")
+      render json: result
+    rescue ProxyAPI::ProxyException => e
+      logger.error("Bolt API error for #{method_name}: #{e.message}")
+      render_error("Smart Proxy error: #{e.message}", :bad_gateway)
+    rescue StandardError => e
+      logger.error("Unexpected error in #{method_name}: #{e.class}: #{e.message}")
+      render_error("Internal server error: #{e.message}", :internal_server_error)
+    end
+
+    def render_error(message, status)
+      render json: { error: message }, status: status
     end
   end
 end

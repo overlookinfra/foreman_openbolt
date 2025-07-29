@@ -16,3 +16,4 @@ node_modules
 package-lock.json
 Gemfile.lock
 coverage
+rubygem-*.rpm

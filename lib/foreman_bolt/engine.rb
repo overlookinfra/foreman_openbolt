@@ -12,28 +12,36 @@ module ForemanBolt
       end
     end
 
-    initializer 'foreman_bolt.register_plugin', :before => :finisher_hook do |app|
+    initializer 'foreman_bolt.register_plugin', before: :finisher_hook do |app|
       app.reloader.to_prepare do
         Foreman::Plugin.register :foreman_bolt do
           requires_foreman '>= 3.14.0'
           register_gettext
 
-          # Add Global files for extending foreman-core components and routes
+          # Right now, this is really only pulling in routes. But leaving
+          # it as a general global JS file for future expansion.
           register_global_js_file 'global'
 
-          # Add permissions
           security_block :foreman_bolt do
-            permission :view_foreman_bolt, { :'foreman_bolt/new_task' => [:new_task, :task_exec] }
-            permission :execute_foreman_bolt_tasks, { :'foreman_bolt/task' => [:task_exec] }
+            permission :execute_bolt,
+              { :'foreman_bolt/task' => [
+                :new_task, :task_exec, :fetch_smart_proxies,
+                :fetch_tasks, :reload_tasks, :fetch_bolt_options,
+                :execute_task, :job_status, :job_result
+              ] }
+            permission :view_smart_proxies_bolt, :smart_proxies => [:index, :show], :resource_type => 'SmartProxy'
           end
-          # add_all_permissions_to_default_roles
 
-          # Specific ForemanBolt role
-          role 'ForemanBolt', [:view_foreman_bolt, :execute_foreman_bolt_tasks]
+          role 'Bolt Executor', [:execute_bolt]
+          add_all_permissions_to_default_roles
 
-          # add menu entry
-          sub_menu :top_menu, :bolt, icon: 'pficon pficon-enterprise', caption: N_('Bolt'), after: :hosts_menu do
-            menu :top_menu, :new_task, caption: N_('Run Task'), engine: ForemanBolt::Engine
+          sub_menu :top_menu, :bolt,
+            icon: 'fa fa-bolt',
+            caption: N_('Bolt'),
+            after: :hosts_menu do
+            menu :top_menu, :new_task,
+              caption: N_('Run Task'),
+              engine: ForemanBolt::Engine
           end
         end
       end
