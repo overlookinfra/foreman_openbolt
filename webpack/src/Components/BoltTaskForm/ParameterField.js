@@ -1,13 +1,16 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
-  Checkbox,
   FormGroup,
   FormHelperText,
   FormSelect,
   FormSelectOption,
-  TextInput
+  TextInput,
 } from '@patternfly/react-core';
 
+// TODO: The "required" attribute is being ignored and you can still submit
+// the form to run a task without filling in required parameters. Need to figure
+// out why the browser isn't enforcing this.
 const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
   /* Example task parameter metadata from the proxy:
    * {
@@ -28,7 +31,7 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
    *     "type": "Optional[Boolean]"
    *   }
    * }
-   * 
+   *
    * Example Bolt Options parameter metadata from the proxy (see BOLT_OPTIONS in main.rb of the proxy code):
    * {
    *   "noop": {
@@ -45,79 +48,93 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
    * }
    */
   const { type, default: defaultValue = null, description = null } = metadata;
-  const isRequired = showRequired && !type?.toString().toLowerCase().startsWith('optional[');
+  const isRequired =
+    showRequired &&
+    !type
+      ?.toString()
+      .toLowerCase()
+      .startsWith('optional[');
   const fieldId = `param_${name}`;
 
   const renderInput = () => {
     if (Array.isArray(type)) {
       return (
-        <FormSelect
-          id={fieldId}
-          title={description || name}
-          value={value || defaultValue || ''}
-          onChange={(_event, value) => onChange(name, value)}
-          required={isRequired}
+        <FormGroup
+          label={name}
+          isRequired={isRequired}
+          fieldId={fieldId}
+          className="pf-v5-u-mb-lg"
         >
-          {type.map(option => (
-            <FormSelectOption
-              key={option}
-              value={option}
-              label={option}
-            />
-          ))}
-        </FormSelect>
+          {description && <FormHelperText>{description}</FormHelperText>}
+          <FormSelect
+            id={fieldId}
+            title={description || name}
+            value={value || defaultValue || ''}
+            onChange={(_event, val) => onChange(name, val)}
+            isRequired={isRequired}
+            className="without_select2"
+          >
+            {type.map(option => (
+              <FormSelectOption key={option} value={option} label={option} />
+            ))}
+          </FormSelect>
+        </FormGroup>
       );
     } else if (type === 'boolean' || type === 'Optional[Boolean]') {
+      // PatternFly's Checkbox looks like absolute hot garbage next to
+      // other FormGroup inputs. This is gross, but it looks better I guess.
+      // Should the checkboxes be on the left so they align? But this then
+      // misaligns the labels. Ugh.
       return (
-        // Booleans should never set isRequired since we'll always have a value
-        <Checkbox
-          id={fieldId}
-          label={name}
-          title={description || name}
-          description={description}
-          isChecked={!!(value || defaultValue)}
-          onChange={(_event, checked) => onChange(name, checked)}
-        />
+        <div className="pf-v5-u-mb-lg">
+          <div className="pf-v5-u-display-flex pf-v5-u-align-items-center pf-v5-u-mb-sm">
+            <label
+              htmlFor={fieldId}
+              className="pf-v5-c-form__label pf-v5-u-mr-md"
+            >
+              <span className="pf-v5-c-form__label-text">{name}</span>
+            </label>
+            <input
+              type="checkbox"
+              id={fieldId}
+              checked={!!(value || defaultValue)}
+              onChange={event => onChange(name, event.target.checked)}
+            />
+          </div>
+          {description && (
+            <div className="pf-v5-c-form__helper-text">{description}</div>
+          )}
+        </div>
       );
-    } else {
-      return (
+    }
+    return (
+      <FormGroup
+        label={name}
+        labelInfo={type}
+        isRequired={isRequired}
+        fieldId={fieldId}
+        className="pf-v5-u-mb-lg"
+      >
+        {description && <FormHelperText>{description}</FormHelperText>}
         <TextInput
           id={fieldId}
           value={value || defaultValue || ''}
           onChange={(_event, newValue) => onChange(name, newValue)}
           isRequired={isRequired}
         />
-      );
-    }
+      </FormGroup>
+    );
   };
 
-  let label = name;
-  // Don't show labelInfo for array types because we already render it
-  // as a FormSelect dropdown and this is extra noise. Note that since
-  // right now we are not attempting to interpret task parameter types
-  // due to its complexity (e.g. use of Variant with multiple types),
-  // task parameter Enum types are not handled as arrays and so labelInfo
-  // will always show for those types.
-  let labelInfo = Array.isArray(type) ? null : type;
-  // For boolean types, don't use label or labelInfo on the FormGroup
-  // since the Checkbox component already has a label and its boolean-ness
-  // is obvious.
-  if (type === 'boolean' || type === 'Optional[Boolean]') {
-    label = null;
-    labelInfo = null;
-  }
-  return (
-    <FormGroup
-      label={label}
-      labelInfo={labelInfo}
-      isRequired={isRequired}
-      fieldId={fieldId}
-      className="pf-v5-u-mb-lg"
-    >
-      <FormHelperText>{description}</FormHelperText>
-      {renderInput()}
-    </FormGroup>
-  );
+  return renderInput();
+};
+
+ParameterField.propTypes = {
+  name: PropTypes.string.isRequired,
+  metadata: PropTypes.object.isRequired,
+  value: PropTypes.any.isRequired,
+  showRequired: PropTypes.bool.isRequired,
+  onChange: PropTypes.func.isRequired,
 };
 
 export default ParameterField;

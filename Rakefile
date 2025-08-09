@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 # !/usr/bin/env rake
+
 begin
   require 'bundler/setup'
 rescue LoadError
@@ -40,15 +41,24 @@ rescue LoadError
   puts 'Rubocop not loaded.'
 end
 
+# This is all kinda screwy. Fix it up later.
 LINTERS = {
-  ruby: { cmd: 'rubocop', fix: '--auto-correct', glob: '' },
+  ruby: { cmd: 'rubocop', fix: '--auto-correct' },
   erb: { cmd: 'erb_lint', fix: '--autocorrect', glob: '**/*.erb' },
-  js: { cmd: 'npx eslint', fix: '--fix', glob: '**/*.js' },
+  js: { image: 'registry.access.redhat.com/ubi9/nodejs-20:latest', cmd: 'npm run lint --', fix: '--fix' },
 }.freeze
 
 namespace :lint do
   def fix?
-    ENV['FIX'] == 'true'
+    !ENV['FIX'].nil?
+  end
+
+  def local?
+    !ENV['LOCAL'].nil?
+  end
+
+  def bin
+    ENV['CONTAINER_BIN'] || 'docker'
   end
 
   LINTERS.each do |name, cfg|
@@ -56,8 +66,13 @@ namespace :lint do
     task name do
       cmd = [cfg[:cmd]]
       cmd << cfg[:fix] if fix?
-      cmd << cfg[:glob] unless cfg[:glob].empty?
-      sh cmd.join(' ')
+      cmd << cfg[:glob] unless cfg[:glob].nil? || cfg[:glob].empty? # rubocop:disable Rails/Blank
+      cmd = cmd.join(' ')
+      if cfg[:image] && !local?
+        cmd = "#{bin} run --rm -v #{Dir.pwd}:/code #{cfg[:image]} /bin/bash -c " +
+              "'cd /code && npm install --loglevel=error && #{cmd}'"
+      end
+      sh cmd
     end
   end
 

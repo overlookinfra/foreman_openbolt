@@ -12,14 +12,14 @@ import {
   DescriptionListDescription,
   Label,
   Flex,
-  Spinner
+  Spinner,
 } from '@patternfly/react-core';
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
   InProgressIcon,
   ClockIcon,
-  TimesCircleIcon
+  TimesCircleIcon,
 } from '@patternfly/react-icons';
 import { STATUS, POLLING_CONFIG } from '../common/constants';
 
@@ -27,49 +27,53 @@ const STATUS_CONFIGS = {
   [STATUS.SUCCESS]: {
     icon: CheckCircleIcon,
     color: 'green',
-    label: __('Success')
+    label: __('Success'),
   },
   [STATUS.FAILURE]: {
     icon: ExclamationCircleIcon,
     color: 'red',
-    label: __('Failed')
+    label: __('Failed'),
   },
   [STATUS.EXCEPTION]: {
     icon: ExclamationCircleIcon,
     color: 'red',
-    label: __('Exception')
+    label: __('Exception'),
   },
   [STATUS.INVALID]: {
     icon: ExclamationCircleIcon,
     color: 'red',
-    label: __('Invalid')
+    label: __('Invalid'),
   },
   [STATUS.RUNNING]: {
     icon: InProgressIcon,
     color: 'blue',
-    label: __('Running')
+    label: __('Running'),
   },
   [STATUS.PENDING]: {
     icon: ClockIcon,
     color: 'blue',
-    label: __('Pending')
-  }
+    label: __('Pending'),
+  },
 };
 
-const getStatusConfig = (status) => {
-  return STATUS_CONFIGS[status] || {
+const getStatusConfig = status =>
+  STATUS_CONFIGS[status] || {
     icon: TimesCircleIcon,
     color: 'grey',
-    label: __('Unknown')
+    label: __('Unknown'),
   };
-};
 
 const DescriptionItem = ({ label, children }) => (
   <DescriptionListGroup>
     <DescriptionListTerm>{label}</DescriptionListTerm>
     <DescriptionListDescription>{children}</DescriptionListDescription>
   </DescriptionListGroup>
-)
+);
+
+DescriptionItem.propTypes = {
+  label: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+};
 
 const StatusLabel = ({ status, isPolling }) => {
   const statusConfig = getStatusConfig(status);
@@ -77,7 +81,10 @@ const StatusLabel = ({ status, isPolling }) => {
   const intervalSeconds = Math.round(POLLING_CONFIG.INTERVAL / 1000);
 
   return (
-    <Flex spaceItems={{ default: 'spaceItemsSm' }} alignItems={{ default: 'alignItemsCenter' }}>
+    <Flex
+      spaceItems={{ default: 'spaceItemsSm' }}
+      alignItems={{ default: 'alignItemsCenter' }}
+    >
       <Label color={statusConfig.color} icon={<StatusIcon />}>
         {statusConfig.label}
       </Label>
@@ -93,12 +100,17 @@ const StatusLabel = ({ status, isPolling }) => {
   );
 };
 
-const ExecutionDetails = ({ 
-  proxyName, 
-  jobId, 
-  jobStatus, 
-  pollCount, 
-  isPolling 
+StatusLabel.propTypes = {
+  status: PropTypes.string.isRequired,
+  isPolling: PropTypes.bool.isRequired,
+};
+
+const ExecutionDetails = ({
+  proxyName,
+  jobId,
+  jobStatus,
+  pollCount,
+  isPolling,
 }) => (
   <Card className="pf-v5-u-mb-md">
     <CardHeader>
@@ -129,15 +141,11 @@ const ExecutionDetails = ({
 );
 
 ExecutionDetails.propTypes = {
-  proxyName: PropTypes.string,
+  proxyName: PropTypes.string.isRequired,
   jobId: PropTypes.string.isRequired,
   jobStatus: PropTypes.string.isRequired,
   pollCount: PropTypes.number.isRequired,
-  isPolling: PropTypes.bool.isRequired
-};
-
-ExecutionDetails.defaultProps = {
-  proxyName: null
+  isPolling: PropTypes.bool.isRequired,
 };
 
 export default ExecutionDetails;

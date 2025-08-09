@@ -14,19 +14,25 @@ export const useSmartProxies = () => {
       try {
         const endpoint = `/api/smart_proxies?${new URLSearchParams({
           per_page: 'all',
-          search: 'feature=Bolt'
+          search: 'feature=Bolt',
         })}`;
         const { data, status } = await API.get(endpoint);
-        
+
         if (status !== 200) {
-          const error = data ? data.error || JSON.stringify(data) : 'Unknown error';
+          const error = data
+            ? data.error || JSON.stringify(data)
+            : 'Unknown error';
           throw new Error(`HTTP ${status} - ${error}`);
         }
-        
+
         setSmartProxies(data.results || []);
-        
+
         if (data.results.length === 0) {
-          showMessage(__('No Smart Proxies found. Please check that one or more proxy has the smart_proxy_bolt package installed and enabled.'));
+          showMessage(
+            __(
+              'No Smart Proxies found. Please check that one or more proxy has the smart_proxy_bolt package installed and enabled.'
+            )
+          );
         }
       } catch (error) {
         showMessage(__('Failed to load Smart Proxies: ') + error.message);

@@ -9,7 +9,7 @@ const components = [
     type: BoltTaskForm,
   },
   {
-    name: 'BoltTaskExecution', 
+    name: 'BoltTaskExecution',
     type: BoltTaskExecution,
   },
 ];

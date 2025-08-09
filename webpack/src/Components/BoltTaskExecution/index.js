@@ -14,18 +14,18 @@ const BoltTaskExecution = () => {
   const location = useLocation();
   const history = useHistory();
   const showMessage = useShowMessage();
-  
+
   const params = new URLSearchParams(location.search);
   const proxyId = params.get('proxy_id');
   const jobId = params.get('job_id');
   const proxyName = params.get('proxy_name');
 
-  const { 
+  const {
     status: jobStatus,
     result: jobData,
     error: pollError,
     isPolling,
-    pollCount
+    pollCount,
   } = useJobPolling(proxyId, jobId);
 
   useEffect(() => {
@@ -37,7 +37,9 @@ const BoltTaskExecution = () => {
   // Redirect if missing required params
   useEffect(() => {
     if (!proxyId || !jobId) {
-      showMessage(__('Invalid task execution URL - missing required parameters'));
+      showMessage(
+        __('Invalid task execution URL - missing required parameters')
+      );
       history.push(ROUTES.PAGES.NEW_TASK);
     }
   }, [proxyId, jobId, showMessage, history]);

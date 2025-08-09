@@ -5,11 +5,20 @@ export const STATUS = {
   EXCEPTION: 'exception',
   INVALID: 'invalid',
   RUNNING: 'running',
-  PENDING: 'pending'
+  PENDING: 'pending',
 };
-export const COMPLETED_STATUSES = [STATUS.SUCCESS, STATUS.FAILURE, STATUS.EXCEPTION, STATUS.INVALID];
+export const COMPLETED_STATUSES = [
+  STATUS.SUCCESS,
+  STATUS.FAILURE,
+  STATUS.EXCEPTION,
+  STATUS.INVALID,
+];
 export const RUNNING_STATUSES = [STATUS.RUNNING, STATUS.PENDING];
-export const ERROR_STATUSES = [STATUS.FAILURE, STATUS.EXCEPTION, STATUS.INVALID];
+export const ERROR_STATUSES = [
+  STATUS.FAILURE,
+  STATUS.EXCEPTION,
+  STATUS.INVALID,
+];
 export const SUCCESS_STATUSES = [STATUS.SUCCESS];
 
 export const POLLING_CONFIG = {
@@ -19,7 +28,7 @@ export const POLLING_CONFIG = {
 export const ROUTES = {
   PAGES: {
     NEW_TASK: '/foreman_bolt/new_task',
-    TASK_EXECUTION: '/foreman_bolt/task_exec'
+    TASK_EXECUTION: '/foreman_bolt/task_exec',
   },
   API: {
     RELOAD_TASKS: '/foreman_bolt/reload_tasks',
@@ -28,5 +37,5 @@ export const ROUTES = {
     EXECUTE_TASK: '/foreman_bolt/execute_task',
     JOB_STATUS: '/foreman_bolt/job_status',
     JOB_RESULT: '/foreman_bolt/job_result',
-  }
+  },
 };

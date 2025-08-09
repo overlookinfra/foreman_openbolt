@@ -4,9 +4,7 @@ import PageLayout from 'foremanReact/routes/common/PageLayout/PageLayout';
 import BoltTaskExecution from '../Components/BoltTaskExecution';
 
 const BoltTaskExecutionPage = () => (
-  <PageLayout
-    header={__('Task Execution')}
-  >
+  <PageLayout header={__('Task Execution')}>
     <BoltTaskExecution />
   </PageLayout>
 );

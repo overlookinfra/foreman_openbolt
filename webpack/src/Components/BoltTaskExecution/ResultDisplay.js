@@ -18,19 +18,19 @@ import {
   Tab,
   TabTitleText,
   TabTitleIcon,
-  Alert
 } from '@patternfly/react-core';
-import { 
-  ExclamationCircleIcon, 
-  CodeIcon, 
+import {
+  ExclamationCircleIcon,
+  CodeIcon,
   FileAltIcon,
-  CopyIcon 
+  CopyIcon,
 } from '@patternfly/react-icons';
 
 const CopyButton = ({ getText }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
+    /* eslint-disable promise/prefer-await-to-then */
     navigator.clipboard.writeText(getText()).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -38,21 +38,61 @@ const CopyButton = ({ getText }) => {
   };
 
   return (
-    <Button variant="control" aria-label="Copy" onClick={handleCopy} icon={<CopyIcon />}>
+    <Button
+      variant="control"
+      aria-label="Copy"
+      onClick={handleCopy}
+      icon={<CopyIcon />}
+    >
       {copied ? __('Copied!') : __('Copy')}
     </Button>
   );
 };
 
+CopyButton.propTypes = {
+  getText: PropTypes.func.isRequired,
+};
+
+const EmptyTab = ({ message }) => (
+  <div className="pf-v5-u-mt-md">
+    <EmptyState variant={EmptyStateVariant.sm}>
+      <EmptyStateHeader
+        titleText={__('No data available')}
+        icon={<EmptyStateIcon icon={ExclamationCircleIcon} />}
+        headingLevel="h5"
+      />
+      <EmptyStateBody>{message}</EmptyStateBody>
+    </EmptyState>
+  </div>
+);
+
+EmptyTab.propTypes = {
+  message: PropTypes.string.isRequired,
+};
+
+const DataTab = ({ content }) => (
+  <div className="pf-v5-u-mt-md">
+    <div className="pf-v5-u-display-flex pf-v5-u-justify-content-flex-start pf-v5-u-mb-sm">
+      <CopyButton getText={() => content} />
+    </div>
+    <CodeBlock>
+      <CodeBlockCode>{content}</CodeBlockCode>
+    </CodeBlock>
+  </div>
+);
+
+DataTab.propTypes = {
+  content: PropTypes.string.isRequired,
+};
+
 const ResultDisplay = ({ jobResult, jobLog }) => {
   const [activeTabKey, setActiveTabKey] = useState(0);
 
-  const formatResult = (result) => {
+  const formatResult = result => {
     if (!result) return '';
     try {
       return JSON.stringify(result, null, 2);
     } catch (error) {
-      console.error('Error formatting result JSON:', error);
       return String(result);
     }
   };
@@ -60,30 +100,6 @@ const ResultDisplay = ({ jobResult, jobLog }) => {
   const resultJson = formatResult(jobResult);
   const hasResult = jobResult && Object.keys(jobResult).length > 0;
   const hasLog = jobLog?.trim?.().length > 0;
-
-  const EmptyTab = ({ message }) => (
-    <div className="pf-v5-u-mt-md">
-      <EmptyState variant={EmptyStateVariant.sm}>
-        <EmptyStateHeader 
-          titleText={__('No data available')}
-          icon={<EmptyStateIcon icon={ExclamationCircleIcon} />}
-          headingLevel="h5"
-        />
-        <EmptyStateBody>{message}</EmptyStateBody>
-      </EmptyState>
-    </div>
-  );
-
-  const DataTab = ({ content }) => (
-    <div className="pf-v5-u-mt-md">
-      <div className="pf-v5-u-display-flex pf-v5-u-justify-content-flex-start pf-v5-u-mb-sm">
-        <CopyButton getText={() => content} />
-      </div>
-      <CodeBlock>
-        <CodeBlockCode>{content}</CodeBlockCode>
-      </CodeBlock>
-    </div>
-  );
 
   return (
     <Card className="pf-v5-u-mb-md">
@@ -97,18 +113,34 @@ const ResultDisplay = ({ jobResult, jobLog }) => {
         >
           <Tab
             eventKey={0}
-            title={<><TabTitleIcon><CodeIcon /></TabTitleIcon><TabTitleText>{__('Result')}</TabTitleText></>}
+            title={
+              <>
+                <TabTitleIcon>
+                  <CodeIcon />
+                </TabTitleIcon>
+                <TabTitleText>{__('Result')}</TabTitleText>
+              </>
+            }
           >
             {hasResult ? (
               <DataTab content={resultJson} />
             ) : (
-              <EmptyTab message={__('No result data returned from the task.')} />
+              <EmptyTab
+                message={__('No result data returned from the task.')}
+              />
             )}
           </Tab>
-          
+
           <Tab
             eventKey={1}
-            title={<><TabTitleIcon><FileAltIcon /></TabTitleIcon><TabTitleText>{__('Log Output')}</TabTitleText></>}
+            title={
+              <>
+                <TabTitleIcon>
+                  <FileAltIcon />
+                </TabTitleIcon>
+                <TabTitleText>{__('Log Output')}</TabTitleText>
+              </>
+            }
           >
             {hasLog ? (
               <DataTab content={jobLog} />
@@ -123,8 +155,8 @@ const ResultDisplay = ({ jobResult, jobLog }) => {
 };
 
 ResultDisplay.propTypes = {
-  jobResult: PropTypes.object,
-  jobLog: PropTypes.string
+  jobResult: PropTypes.object.isRequired,
+  jobLog: PropTypes.string.isRequired,
 };
 
 export default ResultDisplay;
