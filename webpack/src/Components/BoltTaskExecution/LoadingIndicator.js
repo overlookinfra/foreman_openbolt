@@ -34,7 +34,7 @@ const LoadingIndicator = ({ jobStatus }) => {
               icon={<EmptyStateIcon icon={Spinner} />}
               headingLevel="h3"
             />
-            <EmptyStateBody>
+            <EmptyStateBody role="status" aria-live="polite" aria-atomic="true">
               {__(
                 'This page will update automatically when the task completes.'
               )}

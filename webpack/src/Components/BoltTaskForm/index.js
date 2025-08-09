@@ -1,3 +1,4 @@
+// TODO: More a11y tags
 import React, { useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { translate as __ } from 'foremanReact/common/I18n';
@@ -194,8 +195,12 @@ const BoltTaskForm = () => {
             value={targets}
             onChange={(_event, value) => setTargets(value)}
             placeholder="host1.domain,host2.domain,host3.domain"
+            aria-label={__('Targets')}
+            aria-required="true"
+            aria-describedby="targets-helper"
+            aria-invalid={isSubmitting && !targets.trim()}
           />
-          <FormHelperText>
+          <FormHelperText id="targets-helper">
             {__(
               'Comma-separated list of targets (e.g., host1.domain,host2.domain,host3.domain)'
             )}

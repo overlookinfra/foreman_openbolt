@@ -31,6 +31,9 @@ const TaskSelect = ({
         onChange={onTaskChange}
         isDisabled={isDisabled || isLoading}
         className="without_select2 pf-v5-u-flex-grow pf-v5-u-mr-sm"
+        aria-label={__('Select Task')}
+        aria-required="true"
+        aria-describedby="task-select-helper"
       >
         <FormSelectOption
           key="select-task"
@@ -47,9 +50,13 @@ const TaskSelect = ({
         onClick={onReloadTasks}
         isDisabled={isDisabled || isLoading}
         icon={isLoading ? <Spinner size="sm" /> : <SyncIcon />}
+        aria-label={__('Reload tasks from Bolt')}
         title={__('Reload tasks from Bolt. This may take some time.')}
       />
     </div>
+    <span id="task-select-helper" className="pf-v5-u-screen-reader">
+      {__('Select a Bolt task to execute on the specified targets')}
+    </span>
   </FormGroup>
 );
 
