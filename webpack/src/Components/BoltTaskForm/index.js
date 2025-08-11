@@ -1,8 +1,7 @@
 // TODO: More a11y tags
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import { translate as __ } from 'foremanReact/common/I18n';
 
 import { API } from 'foremanReact/redux/API';
@@ -36,7 +35,6 @@ import { useShowMessage } from '../common/helpers';
 const BoltTaskForm = () => {
   const history = useHistory();
   const showMessage = useShowMessage();
-  const dispatch = useDispatch();
 
   /* States */
   const [selectedProxy, setSelectedProxy] = useState('');
@@ -212,53 +210,6 @@ const BoltTaskForm = () => {
   const selectHostCount = state =>
   selectHostsResponse(state).subtotal || 0;
   const hostCount = useSelector(selectHostCount);
-  const [wasFocus, setWasFocus] = useState(false);
-  const [errorText, setErrorText] = useState(
-    __('Please select at least one host')
-  );
-  const [isError, setIsError] = useState(false);
-  const [hostPreviewOpen, setHostPreviewOpen] = useState(false);
-
-  useEffect(() => {
-    if (wasFocus) {
-      if (
-        selectedTargets.hosts.length === 0 &&
-        selectedTargets.hostGroups.length === 0 &&
-        hostsSearchQuery.length === 0
-      ) {
-        setIsError(true);
-      } else {
-        setIsError(false);
-      }
-    }
-  }, [
-    hostMethod,
-    hostsSearchQuery.length,
-    selectedTargets,
-    selectedTargets.hostGroups.length,
-    selectedTargets.hosts.length,
-    wasFocus,
-  ]);
-  useEffect(() => {
-    debounce(() => {
-      dispatch(
-        get({
-          key: 'HOSTS_API',
-          url: '/api/hosts',
-          params: {
-            search: buildHostQuery(selectedTargets, hostsSearchQuery),
-            per_page: 20,
-          },
-        })
-      );
-    }, 1500)();
-  }, [
-    dispatch,
-    selectedTargets,
-    selectedTargets.hosts,
-    selectedTargets.hostGroups,
-    hostsSearchQuery,
-  ]);
 
   return (
     <div className="bolt-task-form">
@@ -269,33 +220,36 @@ const BoltTaskForm = () => {
           onProxyChange={handleProxyChange}
           isLoading={isLoadingProxies}
         />
-        {hostPreviewOpen && (
-        <HostPreviewModal
-          isOpen={hostPreviewOpen}
-          setIsOpen={setHostPreviewOpen}
-          searchQuery={buildHostQuery(selectedTargets, hostsSearchQuery)}
-        />
-      )}
 
         <FormGroup fieldId="host_selection" id="host-selection">
-          <InputGroup onBlur={() => setWasFocus(true)}>
+          <InputGroup>
             <InputGroupItem>
               <SelectField
                 isRequired
                 className="target-method-select"
                 toggleIcon={<FilterIcon />}
                 fieldId="host_methods"
-                options={Object.values(HOST_METHODS)}
+                options={Object.values(HOST_METHODS).filter(method => {
+                  if (method === HOST_METHODS.HOST_COLLECTIONS) {
+                    return false;
+                  }
+                  return true;
+                })}
                 setValue={val => {
                   setHostMethod(val);
                   if (val === HOST_METHODS.SEARCH_QUERY) {
-                    setErrorText(__('Please enter a search query'));
+                    showMessage(__('Please enter a search query'));
                   }
                   if (val === HOST_METHODS.HOSTS) {
-                    setErrorText(__('Please select at least one host'));
+                    showMessage(__('Please select at least one host'));
+                  }
+                  if (val === HOST_METHODS.HOST_COLLECTIONS) {
+                    showMessage(
+                      __('Please select at least one host collection')
+                    );
                   }
                   if (val === HOST_METHODS.HOST_GROUPS) {
-                    setErrorText(__('Please select at least one host group'));
+                    showMessage(__('Please select at least one host group'));
                   }
                 }}
                 value={hostMethod}
