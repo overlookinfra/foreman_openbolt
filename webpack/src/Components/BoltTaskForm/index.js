@@ -1,5 +1,6 @@
 // TODO: More a11y tags
 import React, { useState, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { useHistory } from 'react-router-dom';
 import { translate as __ } from 'foremanReact/common/I18n';
 
@@ -10,13 +11,22 @@ import {
   FormGroup,
   FormHelperText,
   TextInput,
+  InputGroup,
+  InputGroupItem,
 } from '@patternfly/react-core';
 
-import { ROUTES } from '../common/constants';
+import { ROUTES, HOST_METHODS } from '../common/constants';
 import SmartProxySelect from './SmartProxySelect';
 import TaskSelect from './TaskSelect';
 import ParametersSection from './ParametersSection';
 import BoltOptionsSection from './BoltOptionsSection';
+import SelectedChips from './SelectedChips';
+import { FilterIcon } from '@patternfly/react-icons';
+import SelectField from './SelectField';
+import HostSearch from './HostSearch';
+import SelectGQL from './SelectGQL';
+import SelectAPI from './SelectAPI';
+import { selectAPIResponse } from 'foremanReact/redux/API/APISelectors';
 import { useSmartProxies } from './hooks/useSmartProxies';
 import { useTasksData } from './hooks/useTasksData';
 import { useBoltOptions } from './hooks/useBoltOptions';
@@ -30,6 +40,19 @@ const BoltTaskForm = () => {
   const [selectedProxy, setSelectedProxy] = useState('');
   const [targets, setTargets] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hostMethod, setHostMethod] = useState(HOST_METHODS.HOSTS);
+  const [hostsSearchQuery, setHostsSearchQuery] = useState('');
+  const [hostsSearchResults, setHostsSearchResults] = useState([]);
+  const [selectedHosts, setSelectedHosts] = useState([]);
+  const [selectedHostGroups, setSelectedHostGroups] = useState([]);
+  const [selectedCollections, setSelectedCollections] = useState([]);
+  const [selectedTargets, setSelectedTargets] = useState({
+    hosts: [],
+    hostCollections: [],
+    hostGroups: [],
+  });
+  const [selectedHostCollections, setSelectedHostCollections] = useState([]);
+
 
   /* Custom hooks for data fetching */
   // The strategy here is to manage all data fetching and state within
@@ -179,6 +202,15 @@ const BoltTaskForm = () => {
     !isLoadingOptions &&
     !isSubmitting;
 
+  const setLabel = result => result.displayName || result.name;
+  const clearSearch = () => {
+    setHostsSearchQuery('');
+  };
+  const selectHostsResponse = state => selectAPIResponse(state, 'HOSTS_API');
+  const selectHostCount = state =>
+  selectHostsResponse(state).subtotal || 0;
+  const hostCount = useSelector(selectHostCount);
+
   return (
     <div className="bolt-task-form">
       <Form onSubmit={handleSubmit}>
@@ -189,23 +221,103 @@ const BoltTaskForm = () => {
           isLoading={isLoadingProxies}
         />
 
-        <FormGroup label={__('Targets')} fieldId="targets-input">
-          <TextInput
-            id="targets-input"
-            value={targets}
-            onChange={(_event, value) => setTargets(value)}
-            placeholder="host1.domain,host2.domain,host3.domain"
-            aria-label={__('Targets')}
-            aria-required="true"
-            aria-describedby="targets-helper"
-            aria-invalid={isSubmitting && !targets.trim()}
-          />
-          <FormHelperText id="targets-helper">
-            {__(
-              'Comma-separated list of targets (e.g., host1.domain,host2.domain,host3.domain)'
+        <FormGroup fieldId="host_selection" id="host-selection">
+          <InputGroup>
+            <InputGroupItem>
+              <SelectField
+                isRequired
+                className="target-method-select"
+                toggleIcon={<FilterIcon />}
+                fieldId="host_methods"
+                options={Object.values(HOST_METHODS).filter(method => {
+                  if (method === HOST_METHODS.HOST_COLLECTIONS) {
+                    return false;
+                  }
+                  return true;
+                })}
+                setValue={val => {
+                  setHostMethod(val);
+                  if (val === HOST_METHODS.SEARCH_QUERY) {
+                    showMessage(__('Please enter a search query'));
+                  }
+                  if (val === HOST_METHODS.HOSTS) {
+                    showMessage(__('Please select at least one host'));
+                  }
+                  if (val === HOST_METHODS.HOST_COLLECTIONS) {
+                    showMessage(
+                      __('Please select at least one host collection')
+                    );
+                  }
+                  if (val === HOST_METHODS.HOST_GROUPS) {
+                    showMessage(__('Please select at least one host group'));
+                  }
+                }}
+                value={hostMethod}
+              />
+            </InputGroupItem>
+            {hostMethod === HOST_METHODS.SEARCH_QUERY && (
+              <HostSearch
+                setValue={setHostsSearchQuery}
+                value={hostsSearchQuery}
+              />
             )}
-          </FormHelperText>
+            {hostMethod === HOST_METHODS.HOSTS && (
+              <SelectGQL
+                selected={selectedHosts}
+                setSelected={setSelectedHosts}
+                apiKey={HOST_METHODS.HOSTS}
+                name="hosts"
+                placeholderText={__('Filter by hosts')}
+                setLabel={setLabel}
+              />
+            )}
+            {hostMethod === HOST_METHODS.HOST_COLLECTIONS && (
+              <SelectAPI
+                selected={selectedHostCollections}
+                setSelected={setSelectedHostCollections}
+                apiKey={HOST_COLLECTIONS}
+                name="host collections"
+                url="/katello/api/host_collections?per_page=100"
+                placeholderText={__('Filter by host collections')}
+                setLabel={setLabel}
+              />
+            )}
+            {hostMethod === HOST_METHODS.HOST_GROUPS && (
+              <SelectGQL
+                selected={selectedHostGroups}
+                setSelected={setSelectedHostGroups}
+                apiKey={HOST_GROUPS}
+                name="host groups"
+                placeholderText={__('Filter by host groups')}
+                setLabel={setLabel}
+              />
+            )}
+          </InputGroup>
         </FormGroup>
+        <SelectedChips
+          selectedHosts={selectedHosts}
+          setSelectedHosts={setSelectedHosts}
+          selectedHostCollections={selectedHostCollections}
+          setSelectedHostCollections={setSelectedHostCollections}
+          selectedHostGroups={selectedHostGroups}
+          setSelectedHostGroups={setSelectedHostGroups}
+          hostsSearchQuery={hostsSearchQuery}
+          clearSearch={clearSearch}
+          setLabel={setLabel}
+        />
+        <Text ouiaId="host-preview-label">
+          {__('Apply to')}{' '}
+          <Button
+            ouiaId="host-preview-open-button"
+            variant="link"
+            isInline
+            onClick={() => setHostPreviewOpen(true)}
+            isDisabled={false}
+          >
+            {hostCount} {__('hosts')}
+          </Button>{' '}
+          {isLoadingProxies && <Spinner size="sm" />}
+        </Text>
 
         <TaskSelect
           taskNames={Object.keys(taskMetadata || {})}
