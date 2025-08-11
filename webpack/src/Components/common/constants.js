@@ -39,10 +39,3 @@ export const ROUTES = {
     JOB_RESULT: '/foreman_bolt/job_result',
   },
 };
-
-export const HOST_METHODS = {
-  HOSTS: __('Hosts'),
-  HOST_COLLECTIONS: __('Host collections'),
-  HOST_GROUPS: __('Host groups'),
-  SEARCH_QUERY: __('Search query'),
-};
