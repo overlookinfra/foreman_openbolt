@@ -21,7 +21,7 @@ import { useSmartProxies } from './hooks/useSmartProxies';
 import { useTasksData } from './hooks/useTasksData';
 import { useBoltOptions } from './hooks/useBoltOptions';
 import { useShowMessage } from '../common/helpers';
-import HostSelector2 from './HostSelector2';
+import HostSelector from './HostSelector';
 
 const BoltTaskForm = () => {
   const history = useHistory();
@@ -196,7 +196,7 @@ const BoltTaskForm = () => {
           isLoading={isLoadingProxies}
         />
 
-        <HostSelector2
+        <HostSelector
           onChange={handleTargetsChange}
         />
 

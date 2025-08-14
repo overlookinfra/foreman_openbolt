@@ -20,7 +20,7 @@ import { SearchSelect } from './SearchSelect';
 import { SelectedChips } from './SelectedChips';
 import { HostSearch } from './HostSearch';
 
-const HostSelector2 = ({
+const HostSelector = ({
   onChange,
 }) => {
   // Was from JobWizardConstants. Move into ours maybe.
@@ -226,4 +226,4 @@ const HostSelector2 = ({
   )
 };
 
-export default HostSelector2;
+export default HostSelector;
