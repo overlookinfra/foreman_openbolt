@@ -21,7 +21,6 @@ import { useSmartProxies } from './hooks/useSmartProxies';
 import { useTasksData } from './hooks/useTasksData';
 import { useBoltOptions } from './hooks/useBoltOptions';
 import { useShowMessage } from '../common/helpers';
-import HostSelector from './HostSelector';
 import HostSelector2 from './HostSelector2';
 
 const BoltTaskForm = () => {
