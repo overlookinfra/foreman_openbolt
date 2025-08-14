@@ -21,6 +21,8 @@ import { useSmartProxies } from './hooks/useSmartProxies';
 import { useTasksData } from './hooks/useTasksData';
 import { useBoltOptions } from './hooks/useBoltOptions';
 import { useShowMessage } from '../common/helpers';
+import HostSelector from './HostSelector';
+import HostSelector2 from './HostSelector2';
 
 const BoltTaskForm = () => {
   const history = useHistory();
@@ -119,6 +121,11 @@ const BoltTaskForm = () => {
     }
   }, [selectedProxy, fetchTasks]);
 
+  const handleTargetsChange = useCallback((value) => {
+    setTargets(value);
+    console.log('Targets:', value);
+  }, [setTargets]);
+
   const handleSubmit = async e => {
     e.preventDefault();
 
@@ -161,6 +168,7 @@ const BoltTaskForm = () => {
           proxy_id: selectedProxy,
           job_id: data.job_id,
           proxy_name: proxyName,
+          target_count: targets.split(',').length,
         }).toString(),
       });
     } catch (error) {
@@ -189,23 +197,9 @@ const BoltTaskForm = () => {
           isLoading={isLoadingProxies}
         />
 
-        <FormGroup label={__('Targets')} fieldId="targets-input">
-          <TextInput
-            id="targets-input"
-            value={targets}
-            onChange={(_event, value) => setTargets(value)}
-            placeholder="host1.domain,host2.domain,host3.domain"
-            aria-label={__('Targets')}
-            aria-required="true"
-            aria-describedby="targets-helper"
-            aria-invalid={isSubmitting && !targets.trim()}
-          />
-          <FormHelperText id="targets-helper">
-            {__(
-              'Comma-separated list of targets (e.g., host1.domain,host2.domain,host3.domain)'
-            )}
-          </FormHelperText>
-        </FormGroup>
+        <HostSelector2
+          onChange={handleTargetsChange}
+        />
 
         <TaskSelect
           taskNames={Object.keys(taskMetadata || {})}

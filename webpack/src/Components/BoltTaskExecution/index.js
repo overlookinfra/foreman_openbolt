@@ -19,6 +19,7 @@ const BoltTaskExecution = () => {
   const proxyId = params.get('proxy_id');
   const jobId = params.get('job_id');
   const proxyName = params.get('proxy_name');
+  const targetCount = params.get('target_count');
 
   const {
     status: jobStatus,
@@ -69,6 +70,7 @@ const BoltTaskExecution = () => {
         jobStatus={jobStatus}
         pollCount={pollCount}
         isPolling={isPolling}
+        targetCount={targetCount || 'Unknown'}
       />
 
       {isPolling && <LoadingIndicator jobStatus={jobStatus} />}

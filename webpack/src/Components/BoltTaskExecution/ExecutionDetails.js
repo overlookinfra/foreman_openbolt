@@ -111,6 +111,7 @@ const ExecutionDetails = ({
   jobStatus,
   pollCount,
   isPolling,
+  targetCount,
 }) => (
   <Card className="pf-v5-u-mb-md">
     <CardHeader>
@@ -125,6 +126,12 @@ const ExecutionDetails = ({
         <DescriptionItem label={__('Job ID')}>
           <code>{jobId}</code>
         </DescriptionItem>
+
+        {targetCount && (
+            <DescriptionItem label={__('Host Count')}>
+              {targetCount} {targetCount === 1 ? __('host') : __('hosts')}
+            </DescriptionItem>
+          )}
 
         <DescriptionItem label={__('Status')}>
           <StatusLabel status={jobStatus} isPolling={isPolling} />
