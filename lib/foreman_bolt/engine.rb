@@ -28,7 +28,9 @@ module ForemanBolt
                 :new_task, :task_exec, :fetch_smart_proxies,
                 :fetch_tasks, :reload_tasks, :fetch_bolt_options,
                 :execute_task, :job_status, :job_result
-              ] }
+              ],
+                :hosts => [:index, :auto_complete_search],
+                :hostgroups => [:index] }
             permission :view_smart_proxies_bolt, :smart_proxies => [:index, :show], :resource_type => 'SmartProxy'
           end
 

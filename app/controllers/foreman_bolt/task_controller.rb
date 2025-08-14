@@ -52,11 +52,14 @@ module ForemanBolt
 
         return render_error('Task name and targets cannot be empty', :bad_request) if task_name.empty? || targets.empty?
 
+        expanded_targets = expand_targets(targets)
+        return render_error('No valid hosts found for the specified targets', :bad_request) if expanded_targets.empty?
+
         logger.info("Executing Bolt task '#{task_name}' on targets '#{targets}' via proxy #{@smart_proxy.name}")
 
         response = @bolt_api.run_task(
           name: task_name,
-          targets: targets,
+          targets: expanded_targets.join(','),
           parameters: task_params,
           options: options
         )
@@ -71,6 +74,7 @@ module ForemanBolt
           job_id: response['id'],
           proxy_id: @smart_proxy.id,
           proxy_name: @smart_proxy.name,
+          target_count: expanded_targets.count,
         }
       rescue StandardError => e
         logger.error("Task execution error: #{e.class}: #{e.message}")
@@ -94,6 +98,97 @@ module ForemanBolt
     end
 
     private
+
+    def expand_targets(targets_input)
+      targets = []
+      errors = []
+
+      # Split by comma, but be careful with quoted strings
+      parts = split_targets(targets_input)
+
+      parts.each do |part|
+        part = part.strip
+        next if part.empty?
+
+        if part.include?('hostgroup=')
+          # Extract host group name and find hosts
+          if match = part.match(/hostgroup="([^"]+)"/)
+            group_name = match[1]
+            targets.concat(hosts_from_hostgroup(group_name))
+          end
+        elsif part.include?('=') || part.include?('~') || part.include?(' and ') || part.include?(' or ')
+          # This looks like a Foreman search query
+          targets.concat(hosts_from_search(part))
+        elsif host_exists?(part)
+          # Direct host name - verify it exists
+          targets << part
+        else
+          logger.warn("Host '#{part}' not found in Foreman")
+          # Optionally still include it - Bolt might know about it
+          targets << part
+        end
+      end
+
+      targets.uniq
+    end
+
+    def split_targets(targets_input)
+      parts = []
+      current = ''
+      in_quotes = false
+
+      targets_input.each_char do |char|
+        if char == '"'
+          in_quotes = !in_quotes
+          current += char
+        elsif char == ',' && !in_quotes
+          parts << current.strip unless current.strip.empty?
+          current = ''
+        else
+          current += char
+        end
+      end
+
+      parts << current.strip unless current.strip.empty?
+      parts
+    end
+
+    # Helper: Get hosts from a host group
+    def hosts_from_hostgroup(group_name)
+      hostgroup = Hostgroup.find_by(name: group_name) || Hostgroup.find_by(title: group_name)
+
+      if hostgroup
+        # Get all hosts in this group and its children
+        hosts = Host::Managed.where(hostgroup: hostgroup.subtree).pluck(:name)
+        logger.info("Expanded host group '#{group_name}' to #{hosts.count} hosts")
+        hosts
+      else
+        logger.warn("Host group '#{group_name}' not found")
+        []
+      end
+    rescue StandardError => e
+      logger.error("Error expanding host group '#{group_name}': #{e.message}")
+      []
+    end
+
+    # Helper: Get hosts from a search query
+    def hosts_from_search(search_query)
+      # Use Foreman's search capability
+      hosts = Host::Managed.search_for(search_query).pluck(:name)
+      logger.info("Search query '#{search_query}' returned #{hosts.count} hosts")
+
+      hosts
+    rescue StandardError => e
+      logger.error("Failed to expand search query '#{search_query}': #{e.message}")
+      []
+    end
+
+    # Helper: Check if a host exists
+    def host_exists?(hostname)
+      Host::Managed.find_by(name: hostname).present?
+    rescue StandardError
+      false
+    end
 
     def load_smart_proxy
       proxy_id = params[:proxy_id]

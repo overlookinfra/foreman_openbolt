@@ -1,0 +1,20 @@
+.host-selector {
+  &__menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    margin-top: 4px;
+    background-color: var(--pf-v5-global--BackgroundColor--100);
+    border: 1px solid var(--pf-v5-global--BorderColor--100);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 3px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  &__search-input {
+    position: relative;
+  }
+}
