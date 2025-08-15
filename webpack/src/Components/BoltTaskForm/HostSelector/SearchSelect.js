@@ -34,21 +34,21 @@ export const SearchSelect = ({
   url,
   setLabel,
 }) => {
-  const useNameSearch = apiKey => {
+  const useNameSearch = queryKey => {
     const org = useForemanOrganization();
     const location = useForemanLocation();
     const [search, setSearch] = useState('');
     const queries = {
-      'HOSTS': hostsQuery,
-      'HOST_GROUPS': hostgroupsQuery,
+      HOSTS: hostsQuery,
+      HOST_GROUPS: hostgroupsQuery,
     };
     // Was from JobWizardConstants. Move into ours maybe.
     const dataName = {
-      'HOSTS': 'hosts',
-      'HOST_GROUPS': 'hostgroups',
+      HOSTS: 'hosts',
+      HOST_GROUPS: 'hostgroups',
     };
 
-    const { loading, data } = useQuery(queries[apiKey], {
+    const { loading, data } = useQuery(queries[queryKey], {
       variables: {
         search: [
           `name~"${search}"`,
@@ -62,9 +62,9 @@ export const SearchSelect = ({
     return [
       setSearch,
       {
-        subtotal: data?.[dataName[apiKey]]?.totalCount,
+        subtotal: data?.[dataName[queryKey]]?.totalCount,
         results:
-          data?.[dataName[apiKey]]?.nodes.map(node => ({
+          data?.[dataName[queryKey]]?.nodes.map(node => ({
             id: decodeId(node.id),
             name: node.name,
             displayName: node.displayName,
@@ -73,7 +73,7 @@ export const SearchSelect = ({
       loading,
     ];
   };
-  
+
   const [onSearch, response, isLoading] = useNameSearch(apiKey, url);
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -126,7 +126,7 @@ export const SearchSelect = ({
   };
   const autoSearch = searchTerm => {
     if (typingTimeout) clearTimeout(typingTimeout);
-    setTypingTimeout(setTimeout(() => onSearch(searchTerm), 1500));
+    setTypingTimeout(setTimeout(() => onSearch(searchTerm), 500));
   };
 
   const toggle = toggleRef => (
@@ -161,8 +161,7 @@ export const SearchSelect = ({
               onClick={() => {
                 setSelected([]);
                 setInputValue('');
-                }
-              }
+              }}
             >
               <TimesIcon />
             </Button>
@@ -183,7 +182,7 @@ export const SearchSelect = ({
     >
       <SelectList
         id="select-typeahead-listbox"
-        style={{ maxHeight: "45vh", overflowY: "auto" }}
+        style={{ maxHeight: '45vh', overflowY: 'auto' }}
       >
         {selectOptions}
       </SelectList>
@@ -199,7 +198,6 @@ SearchSelect.propTypes = {
   placeholderText: PropTypes.string,
   apiKey: PropTypes.string.isRequired,
   url: PropTypes.string,
-  variant: PropTypes.string,
 };
 
 SearchSelect.defaultProps = {

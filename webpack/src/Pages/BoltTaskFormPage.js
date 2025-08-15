@@ -4,7 +4,7 @@ import PageLayout from 'foremanReact/routes/common/PageLayout/PageLayout';
 import BoltTaskForm from '../Components/BoltTaskForm';
 
 const BoltTaskFormPage = () => (
-  <PageLayout header={__('Run Bolt Task')}>
+  <PageLayout header={__('Run OpenBolt Task')}>
     <BoltTaskForm />
   </PageLayout>
 );

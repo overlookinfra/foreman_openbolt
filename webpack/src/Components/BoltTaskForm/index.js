@@ -4,24 +4,18 @@ import { useHistory } from 'react-router-dom';
 import { translate as __ } from 'foremanReact/common/I18n';
 
 import { API } from 'foremanReact/redux/API';
-import {
-  Button,
-  Form,
-  FormGroup,
-  FormHelperText,
-  TextInput,
-} from '@patternfly/react-core';
+import { Button, Form, FormGroup } from '@patternfly/react-core';
 
 import { ROUTES } from '../common/constants';
 import SmartProxySelect from './SmartProxySelect';
 import TaskSelect from './TaskSelect';
 import ParametersSection from './ParametersSection';
 import BoltOptionsSection from './BoltOptionsSection';
+import HostSelector from './HostSelector';
 import { useSmartProxies } from './hooks/useSmartProxies';
 import { useTasksData } from './hooks/useTasksData';
 import { useBoltOptions } from './hooks/useBoltOptions';
 import { useShowMessage } from '../common/helpers';
-import HostSelector from './HostSelector';
 
 const BoltTaskForm = () => {
   const history = useHistory();
@@ -29,7 +23,7 @@ const BoltTaskForm = () => {
 
   /* States */
   const [selectedProxy, setSelectedProxy] = useState('');
-  const [targets, setTargets] = useState('');
+  const [targets, setTargets] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* Custom hooks for data fetching */
@@ -81,9 +75,10 @@ const BoltTaskForm = () => {
       setSelectedTask(value);
       // TODO: Do we want to set boolean to default false here when
       // a default is not provided?
-      const defaults = {};
-      Object.entries(taskMetadata[value].parameters).forEach(
-        ([paramName, paramMeta]) => {
+      if (value && taskMetadata[value]) {
+        const defaults = {};
+        const params = taskMetadata[value].parameters || {};
+        Object.entries(params).forEach(([paramName, paramMeta]) => {
           if (paramMeta.default !== undefined) {
             defaults[paramName] = paramMeta.default;
           } else if (
@@ -93,9 +88,11 @@ const BoltTaskForm = () => {
           ) {
             defaults[paramName] = false;
           }
-        }
-      );
-      setTaskParameters(defaults);
+        });
+        setTaskParameters(defaults);
+      } else {
+        setTaskParameters({});
+      }
     },
     [setSelectedTask, setTaskParameters, taskMetadata]
   );
@@ -120,68 +117,86 @@ const BoltTaskForm = () => {
     }
   }, [selectedProxy, fetchTasks]);
 
-  const handleTargetsChange = useCallback((value) => {
-    setTargets(value);
-    console.log('Targets:', value);
-  }, [setTargets]);
+  const handleTargetsChange = useCallback(
+    targetArray => {
+      setTargets(targetArray);
+      console.debug('Targets:', targetArray);
+    },
+    [setTargets]
+  );
 
-  const handleSubmit = async e => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    async e => {
+      e.preventDefault();
 
-    if (!selectedProxy || !selectedTask || !targets.trim()) {
-      showMessage(__('Please select a proxy, task, and enter targets.'));
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const body = {
-        proxy_id: selectedProxy,
-        task_name: selectedTask,
-        targets: targets.trim(),
-        params: taskParameters,
-        options: boltOptions,
-      };
-
-      const { data, status } = await API.post(ROUTES.API.EXECUTE_TASK, body);
-
-      // TODO: On non-200, the post above automatically throws an exception, so
-      // figure out how to handle it instead to extract the message in the
-      // response body.
-      if (status !== 200) {
-        const error = data
-          ? data.error || JSON.stringify(data)
-          : 'Unknown error';
-        throw new Error(`HTTP ${status} - ${error}`);
+      if (!selectedProxy || !selectedTask || targets.length === 0) {
+        showMessage(__('Please select a proxy, task, and enter targets.'));
+        return;
       }
 
-      const selectedProxyData = smartProxies.find(
-        p => p.id.toString() === selectedProxy.toString()
-      );
-      const proxyName = selectedProxyData?.name || 'Unknown';
+      setIsSubmitting(true);
 
-      history.push({
-        pathname: ROUTES.PAGES.TASK_EXECUTION,
-        search: new URLSearchParams({
+      try {
+        const body = {
           proxy_id: selectedProxy,
-          job_id: data.job_id,
-          proxy_name: proxyName,
-          target_count: targets.split(',').length,
-        }).toString(),
-      });
-    } catch (error) {
-      showMessage(__('Failed to execute task: ') + error.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+          task_name: selectedTask,
+          targets: targets.join(','),
+          params: taskParameters,
+          options: boltOptions,
+        };
+
+        const { data, status } = await API.post(ROUTES.API.EXECUTE_TASK, body);
+
+        // TODO: On non-200, the post above automatically throws an exception, so
+        // figure out how to handle it instead to extract the message in the
+        // response body.
+        if (status !== 200) {
+          const error = data
+            ? data.error || JSON.stringify(data)
+            : 'Unknown error';
+          throw new Error(`HTTP ${status} - ${error}`);
+        }
+
+        const selectedProxyData = smartProxies.find(
+          p => p.id.toString() === selectedProxy.toString()
+        );
+
+        history.push({
+          pathname: ROUTES.PAGES.TASK_EXECUTION,
+          search: new URLSearchParams({
+            proxy_id: selectedProxy,
+            job_id: data.job_id,
+            proxy_name: selectedProxyData?.name || 'Unknown',
+            target_count: targets.length.toString(),
+          }).toString(),
+        });
+      } catch (error) {
+        const errorMessage =
+          error.response?.data?.error ||
+          error.message ||
+          __('Unknown error occurred');
+        showMessage(__('Failed to execute task: ') + errorMessage);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [
+      selectedProxy,
+      selectedTask,
+      targets,
+      taskParameters,
+      boltOptions,
+      smartProxies,
+      history,
+      showMessage,
+    ]
+  );
 
   /* Rendering */
   const isFormValid =
     selectedProxy &&
     selectedTask &&
-    targets.trim() &&
+    targets.length > 0 &&
     !isLoadingTasks &&
     !isLoadingOptions &&
     !isSubmitting;
@@ -198,6 +213,7 @@ const BoltTaskForm = () => {
 
         <HostSelector
           onChange={handleTargetsChange}
+          targetCount={targets.length}
         />
 
         <TaskSelect
@@ -228,11 +244,10 @@ const BoltTaskForm = () => {
           <Button
             type="submit"
             variant="primary"
-            isAriaDisabled={!isFormValid}
             isDisabled={!isFormValid}
             isLoading={isSubmitting}
           >
-            {__('Run Task')}
+            {__('Execute Task')}
           </Button>
         </FormGroup>
       </Form>

@@ -128,10 +128,10 @@ const ExecutionDetails = ({
         </DescriptionItem>
 
         {targetCount && (
-            <DescriptionItem label={__('Host Count')}>
-              {targetCount} {targetCount === 1 ? __('host') : __('hosts')}
-            </DescriptionItem>
-          )}
+          <DescriptionItem label={__('Host Count')}>
+            {targetCount} {targetCount === 1 ? __('host') : __('hosts')}
+          </DescriptionItem>
+        )}
 
         <DescriptionItem label={__('Status')}>
           <StatusLabel status={jobStatus} isPolling={isPolling} />
@@ -153,6 +153,8 @@ ExecutionDetails.propTypes = {
   jobStatus: PropTypes.string.isRequired,
   pollCount: PropTypes.number.isRequired,
   isPolling: PropTypes.bool.isRequired,
+  targetCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+    .isRequired,
 };
 
 export default ExecutionDetails;

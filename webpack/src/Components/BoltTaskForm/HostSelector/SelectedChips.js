@@ -56,9 +56,7 @@ export const SelectedChips = ({
     clearSearch();
   };
   const showClear =
-    selectedHosts.length ||
-    selectedHostGroups.length ||
-    hostsSearchQuery;
+    selectedHosts.length || selectedHostGroups.length || hostsSearchQuery;
   return (
     <div className="selected-chips">
       <SelectedChip

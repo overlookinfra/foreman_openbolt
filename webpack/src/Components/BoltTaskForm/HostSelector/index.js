@@ -2,8 +2,9 @@
  * specifically the JobWizard HostsAndInputs step component. Major props
  * to the contributors of that project for their work.
  */
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { translate as __ } from 'foremanReact/common/I18n';
+import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
 import {
   FormGroup,
@@ -20,72 +21,73 @@ import { SearchSelect } from './SearchSelect';
 import { SelectedChips } from './SelectedChips';
 import { HostSearch } from './HostSearch';
 
-const HostSelector = ({
-  onChange,
-}) => {
-  // Was from JobWizardConstants. Move into ours maybe.
-  const hostMethods = {
-    hosts: __('Hosts'),
-    hostGroups: __('Host groups'),
-    searchQuery: __('Search query'),
-  };
+// Was from JobWizardConstants. Move into ours maybe.
+const HOST_METHODS = {
+  hosts: __('Hosts'),
+  hostGroups: __('Host groups'),
+  searchQuery: __('Search query'),
+};
+const ERROR_MESSAGES = {
+  hosts: __('Please select at least one host'),
+  hostGroups: __('Please select at least one host group'),
+  searchQuery: __('Please enter a search query'),
+};
 
-  const selectOptions = Object.values(hostMethods).map((method, index) => (
-      <SelectOption key={index + 1} value={method}>{method}</SelectOption>
-    ));
-  
-  const [hostMethod, setHostMethod] = useState(hostMethods.hosts);
+const HostSelector = ({ onChange, targetCount = 0 }) => {
+  const [hostMethod, setHostMethod] = useState(HOST_METHODS.hosts);
   const [isOpen, setIsOpen] = useState(false);
   const [errorText, setErrorText] = useState('');
-  const [isError, setIsError] = useState(false);
   const [hostsSearchQuery, setHostsSearchQuery] = useState('');
   const [selectedTargets, setSelectedTargets] = useState({
     hosts: [],
     hostGroups: [],
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [fetchError, setFetchError] = useState('');
 
   const setLabel = result => result.displayName || result.name;
-  const selectedHosts = selectedTargets.hosts;
+
   const setSelectedHosts = newHostsFn =>
     setSelectedTargets(prev => ({
       ...prev,
       hosts: newHostsFn(prev.hosts),
     }));
-  
-    const selectedHostGroups = selectedTargets.hostGroups;
-    const setSelectedHostGroups = newHostGroupsFn =>
-      setSelectedTargets(prev => ({
-        ...prev,
-        hostGroups: newHostGroupsFn(prev.hostGroups),
+
+  const setSelectedHostGroups = newHostGroupsFn =>
+    setSelectedTargets(prev => ({
+      ...prev,
+      hostGroups: newHostGroupsFn(prev.hostGroups),
     }));
+
   const clearSearch = () => {
     setHostsSearchQuery('');
   };
 
-  // When nothing is selected, show error text
-  useEffect(() => {
-      setIsError(
-        selectedTargets.hosts.length === 0 &&
-        selectedTargets.hostGroups.length === 0 &&
-        hostsSearchQuery.trim().length === 0
-      );
-  }, [hostsSearchQuery, selectedTargets, hostMethod]);
+  const hasSelection =
+    selectedTargets.hosts.length > 0 ||
+    selectedTargets.hostGroups.length > 0 ||
+    hostsSearchQuery.trim().length > 0;
 
-  // When any of these get set, fetch the list of targets and
-  // update the parent component.
+  // Build and fetch targets when selections change
   useEffect(() => {
-    const buildTargetsFromSearch = async () => {
+    let cancelled = false;
+
+    const fetchTargets = async () => {
       const searchParts = [];
 
-      // Add direct host names - fix the syntax
+      // Add direct host names
       if (selectedTargets.hosts.length > 0) {
-        const hostNames = selectedTargets.hosts.map(h => `name = "${h.name}"`).join(' or ');
+        const hostNames = selectedTargets.hosts
+          .map(h => `name = "${h.name.replace(/"/g, '\\"')}"`)
+          .join(' or ');
         searchParts.push(`(${hostNames})`);
       }
 
-      // Add host groups - fix the syntax  
+      // Add host groups
       if (selectedTargets.hostGroups.length > 0) {
-        const groupQueries = selectedTargets.hostGroups.map(g => `hostgroup_fullname = "${g.name}"`).join(' or ');
+        const groupQueries = selectedTargets.hostGroups
+          .map(g => `hostgroup_fullname = "${g.name.replace(/"/g, '\\"')}"`)
+          .join(' or ');
         searchParts.push(`(${groupQueries})`);
       }
 
@@ -95,56 +97,61 @@ const HostSelector = ({
       }
 
       if (searchParts.length === 0) {
-        onChange('');
+        onChange([]);
         return;
       }
 
+      setIsLoading(true);
+      setFetchError('');
+
       try {
-        // Combine all search parts with OR
         const finalSearch = searchParts.join(' or ');
-        console.log('Final search query:', finalSearch); // Debug log
+        console.debug('Host search query:', finalSearch);
+
         const searchParams = new URLSearchParams({
           search: finalSearch,
           per_page: 1000,
           thin: '1',
-        })
-        const response = await API.get(`/api/hosts?${searchParams.toString()}`)
-        console.log('API request URL:', response.config?.url); // Debug the actual URL
-        console.log('Response data:', response.data); // Debug the response
-        const hosts = response.data?.results?.map(host => host.name) || [];
-        const targetString = hosts.join(',');
-        console.log('Target string:', targetString); // Debug the final result
-        onChange(targetString);
+        });
+        const response = await API.get(`/api/hosts?${searchParams.toString()}`);
+
+        if (!cancelled) {
+          const hostNames =
+            response.data?.results?.map(host => host.name) || [];
+          console.debug('Host names:', hostNames);
+          onChange(hostNames);
+        }
       } catch (error) {
-        console.error('Error building target list:', error);
-        onChange('');
+        if (!cancelled) {
+          console.error('Error fetching hosts:', error);
+          setFetchError(error.message || __('Failed to fetch hosts'));
+          onChange([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
-    buildTargetsFromSearch();
+    // Debounce the fetch
+    const timeoutId = setTimeout(fetchTargets, 500);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [selectedTargets, hostsSearchQuery, onChange]);
 
   const onSelect = (_event, selection) => {
     setHostMethod(selection);
     setIsOpen(false);
-    switch (selection) {
-      case hostMethods.hosts:
-        setErrorText(__('Please select at least one host'));
-        break;
-      case hostMethods.hostGroups:
-        setErrorText(__('Please select at least one host group'));
-        break;
-      case hostMethods.searchQuery:
-        setErrorText(__('Please enter a search query'));
-        break;
-      default:
-        break;
-    }
-  }
+    setErrorText(ERROR_MESSAGES[selection] || '');
+  };
 
   const onToggleClick = () => setIsOpen(!isOpen);
 
-  const toggle = (toggleRef) => (
+  const toggle = toggleRef => (
     <MenuToggle
       ref={toggleRef}
       onClick={onToggleClick}
@@ -154,76 +161,104 @@ const HostSelector = ({
       {hostMethod}
     </MenuToggle>
   );
-  
+
   return (
     <div className="host-selector">
-      <FormGroup
-        fieldId="host-selector"
-        label={__('Hosts')}
-      >
+      <FormGroup fieldId="host-selector" label={__('Hosts')}>
+        {targetCount > 0 && (
+          <HelperText>
+            <HelperText variant="success">
+              {sprintf(__('%s hosts selected'), targetCount)}
+            </HelperText>
+          </HelperText>
+        )}
+
+        {isLoading && (
+          <HelperText>
+            <HelperText>{__('Loading hosts...')}</HelperText>
+          </HelperText>
+        )}
+
         <InputGroup>
           <InputGroupItem>
-            <FormGroup
-              fieldId='host_methods'
-              isRequired
-            >
+            <FormGroup fieldId="host_methods" isRequired>
               <Select
-                ouiaId='host_methods'
+                ouiaId="host_methods"
                 selected={hostMethod}
                 onSelect={onSelect}
                 toggle={toggle}
                 isOpen={isOpen}
                 className="without_select2"
-                aria-labelledby={'host_methods'}
+                aria-label={__('Host selection method')}
               >
-                {selectOptions}
+                {Object.values(HOST_METHODS).map((method, index) => (
+                  <SelectOption key={index} value={method}>
+                    {method}
+                  </SelectOption>
+                ))}
               </Select>
             </FormGroup>
           </InputGroupItem>
-          {hostMethod == hostMethods.hosts && (
+
+          {hostMethod === HOST_METHODS.hosts && (
             <SearchSelect
               selected={selectedTargets.hosts}
               setSelected={setSelectedHosts}
-              apiKey={'HOSTS'}
+              apiKey="HOSTS"
               name="hosts"
               placeholderText={__('Filter by hosts')}
               setLabel={setLabel}
             />
           )}
-          {hostMethod == hostMethods.hostGroups && (
+
+          {hostMethod === HOST_METHODS.hostGroups && (
             <SearchSelect
               selected={selectedTargets.hostGroups}
               setSelected={setSelectedHostGroups}
-              apiKey={'HOST_GROUPS'}
+              apiKey="HOST_GROUPS"
               name="host groups"
               placeholderText={__('Filter by host groups')}
               setLabel={setLabel}
             />
           )}
-          {hostMethod === hostMethods.searchQuery && (
+
+          {hostMethod === HOST_METHODS.searchQuery && (
             <HostSearch
               setValue={setHostsSearchQuery}
               value={hostsSearchQuery}
             />
           )}
         </InputGroup>
-        {isError && (
+
+        {!hasSelection && (
           <FormHelperText>
-            <HelperText>{errorText}</HelperText>
+            <HelperText variant="error">{errorText}</HelperText>
+          </FormHelperText>
+        )}
+
+        {fetchError && (
+          <FormHelperText>
+            <HelperText variant="error">{fetchError}</HelperText>
           </FormHelperText>
         )}
       </FormGroup>
+
       <SelectedChips
-        selectedHosts={selectedHosts}
+        selectedHosts={selectedTargets.hosts}
         setSelectedHosts={setSelectedHosts}
-        selectedHostGroups={selectedHostGroups}
+        selectedHostGroups={selectedTargets.hostGroups}
         setSelectedHostGroups={setSelectedHostGroups}
         hostsSearchQuery={hostsSearchQuery}
         clearSearch={clearSearch}
         setLabel={setLabel}
       />
     </div>
-  )
+  );
+};
+
+HostSelector.propTypes = {
+  onChange: PropTypes.func.isRequired,
+  targetCount: PropTypes.number.isRequired,
 };
 
 export default HostSelector;

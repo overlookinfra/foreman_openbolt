@@ -37,10 +37,10 @@ module ForemanBolt
 
           sub_menu :top_menu, :bolt,
             icon: 'fa fa-bolt',
-            caption: N_('Bolt'),
+            caption: N_('OpenBolt'),
             after: :hosts_menu do
             menu :top_menu, :new_task,
-              caption: N_('Run Task'),
+              caption: N_('Execute Task'),
               engine: ForemanBolt::Engine
           end
         end
