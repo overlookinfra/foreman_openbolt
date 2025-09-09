@@ -37,5 +37,6 @@ export const ROUTES = {
     EXECUTE_TASK: '/foreman_bolt/execute_task',
     JOB_STATUS: '/foreman_bolt/job_status',
     JOB_RESULT: '/foreman_bolt/job_result',
+    TASK_JOBS: '/foreman_bolt/fetch_task_jobs',
   },
 };

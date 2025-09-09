@@ -27,7 +27,8 @@ module ForemanBolt
               { :'foreman_bolt/task' => [
                 :new_task, :task_exec, :fetch_smart_proxies,
                 :fetch_tasks, :reload_tasks, :fetch_bolt_options,
-                :execute_task, :job_status, :job_result
+                :execute_task, :job_status, :job_result,
+                :fetch_task_jobs, :show
               ] }
             permission :view_smart_proxies_bolt, :smart_proxies => [:index, :show], :resource_type => 'SmartProxy'
           end
@@ -41,6 +42,9 @@ module ForemanBolt
             after: :hosts_menu do
             menu :top_menu, :new_task,
               caption: N_('Execute Task'),
+              engine: ForemanBolt::Engine
+            menu :top_menu, :task_jobs,
+              caption: N_('Task Jobs'),
               engine: ForemanBolt::Engine
           end
         end

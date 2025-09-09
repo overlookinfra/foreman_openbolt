@@ -66,8 +66,10 @@ const useJobPolling = (proxyId, jobId) => {
               );
 
               if (!cancelled && resultCode === 200 && resultData) {
-                const { log, ...jobResult } = resultData;
-                setResult({ result: jobResult, log: log || '' });
+                setResult({
+                  result: resultData.value,
+                  log: resultData.log || '',
+                });
               }
             } catch (resultError) {
               // Don't fail the whole thing if result fetch fails

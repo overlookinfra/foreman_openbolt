@@ -45,5 +45,9 @@ module ProxyAPI
     def job_result(job_id:)
       JSON.parse(get("/bolt/job/#{job_id}/result").body)
     end
+
+    def delete_job_artifacts(job_id:)
+      JSON.parse(delete("/bolt/job/#{job_id}/artifacts").body)
+    end
   end
 end

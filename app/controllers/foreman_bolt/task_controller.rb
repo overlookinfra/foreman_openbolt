@@ -13,6 +13,7 @@ module ForemanBolt
     before_action :load_bolt_api, only: [
       :fetch_tasks, :reload_tasks, :fetch_bolt_options, :execute_task, :job_status, :job_result
     ]
+    before_action :load_task_job, only: [:job_status, :job_result]
 
     # React-rendered pages
     def new_task
@@ -20,6 +21,10 @@ module ForemanBolt
     end
 
     def task_exec
+      render 'foreman_bolt/react_page'
+    end
+
+    def task_jobs
       render 'foreman_bolt/react_page'
     end
 
@@ -64,14 +69,30 @@ module ForemanBolt
         logger.info("Task execution response: #{response.inspect}")
 
         return render_error("Task execution failed: #{response['error']}", :bad_request) if response['error']
-
         return render_error('Task execution failed: No job ID returned', :bad_request) unless response['id']
+
+        task_job = TaskJob.create_from_execution!(
+          proxy: @smart_proxy,
+          task_name: task_name,
+          targets: targets.split(',').map(&:strip),
+          parameters: task_params,
+          options: options,
+          job_id: response['id']
+        )
+
+        # Start background polling to update status
+        ForemanTasks.async_task(Actions::ForemanBolt::PollTaskStatus,
+          response['id'],
+          @smart_proxy.id)
 
         render json: {
           job_id: response['id'],
           proxy_id: @smart_proxy.id,
           proxy_name: @smart_proxy.name,
         }
+      rescue ActiveRecord::RecordInvalid => e
+        logger.error("Failed to create TaskRun: #{e.message}")
+        render_error("Database error: #{e.message}", :internal_server_error)
       rescue StandardError => e
         logger.error("Task execution error: #{e.class}: #{e.message}")
         logger.error("Backtrace: #{e.backtrace.first(5).join("\n")}")
@@ -80,17 +101,67 @@ module ForemanBolt
     end
 
     def job_status
-      job_id = params[:job_id]
-      return render_error('Job ID is required', :bad_request) if job_id.blank?
+      return render_error('Task job not found', :not_found) unless @task_job
 
-      render_bolt_api_call(:job_status, job_id: job_id)
+      # Try to update from proxy, but don't fail if proxy is down
+      begin
+        proxy_status = @bolt_api.job_status(job_id: @task_job.job_id)
+        if proxy_status && proxy_status['status'] && proxy_status['status'] != @task_job.status
+          @task_job.update!(status: proxy_status['status'])
+        end
+      rescue ProxyAPI::ProxyException => e
+        logger.warn("Could not fetch status from proxy: #{e.message}")
+      end
+
+      render json: {
+        status: @task_job.status,
+        submitted_at: @task_job.submitted_at,
+        completed_at: @task_job.completed_at,
+        duration: @task_job.duration,
+      }
     end
 
     def job_result
-      job_id = params[:job_id]
-      return render_error('Job ID is required', :bad_request) if job_id.blank?
+      return render_error('Task job not found', :not_found) unless @task_job
 
-      render_bolt_api_call(:job_result, job_id: job_id)
+      # If we don't have the result cached and task is complete, fetch from proxy
+      if @task_job.result.nil? && @task_job.completed?
+        begin
+          proxy_result = @bolt_api.job_result(job_id: @task_job.job_id)
+          @task_job.update_from_proxy_result!(proxy_result) if proxy_result
+        rescue ProxyAPI::ProxyException => e
+          logger.warn("Could not fetch result from proxy: #{e.message}")
+        end
+      end
+
+      # Return the actual task results
+      render json: {
+        status: @task_job.status,
+        value: @task_job.result,
+        log: @task_job.log,
+      }
+    end
+
+    # List of all task jobs
+    def fetch_task_jobs
+      @task_jobs = TaskJob.includes(:smart_proxy)
+                          .recent
+                          .paginate(page: params[:page], per_page: params[:per_page] || 20)
+
+      render json: {
+        results: @task_jobs.map { |job| serialize_task_job(job) },
+        total: @task_jobs.total_entries,
+        page: @task_jobs.current_page,
+        per_page: @task_jobs.limit_value,
+      }
+    end
+
+    # Show a specific task job
+    def show
+      task_job = TaskJob.find(params[:id])
+      render json: serialize_task_job(task_job, detailed: true)
+    rescue ActiveRecord::RecordNotFound
+      render_error('Task job not found', :not_found)
     end
 
     private
@@ -129,6 +200,16 @@ module ForemanBolt
       true
     end
 
+    def load_task_job
+      job_id = params[:job_id]
+      logger.debug("load_task_job - Job ID: #{job_id}")
+
+      if job_id.present?
+        @task_job = TaskJob.find_by(job_id: job_id)
+        logger.debug("load_task_job - Task Job: #{@task_job.inspect}")
+      end
+    end
+
     def render_bolt_api_call(method_name, **args)
       result = @bolt_api.send(method_name, **args)
       logger.debug("Bolt API call #{method_name} successful for proxy #{@smart_proxy.name}")
@@ -143,6 +224,34 @@ module ForemanBolt
 
     def render_error(message, status)
       render json: { error: message }, status: status
+    end
+
+    def serialize_task_job(task_job, detailed: false)
+      data = {
+        job_id: task_job.job_id,
+        task_name: task_job.task_name,
+        status: task_job.status,
+        target_count: task_job.target_count,
+        smart_proxy: {
+          id: task_job.smart_proxy_id,
+          name: task_job.smart_proxy.name,
+        },
+        submitted_at: task_job.submitted_at,
+        completed_at: task_job.completed_at,
+        duration: task_job.duration,
+      }
+
+      if detailed
+        data.merge!(
+          targets: task_job.targets,
+          task_parameters: task_job.task_parameters,
+          bolt_options: task_job.bolt_options,
+          result: task_job.result,
+          log: task_job.log
+        )
+      end
+
+      data
     end
   end
 end

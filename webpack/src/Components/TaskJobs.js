@@ -1,0 +1,195 @@
+import React, { useState, useEffect } from 'react';
+import { translate as __ } from 'foremanReact/common/I18n';
+import { API } from 'foremanReact/redux/API';
+import {
+  Label,
+  Pagination,
+  EmptyState,
+  EmptyStateIcon,
+  EmptyStateHeader,
+  EmptyStateBody,
+  Spinner,
+  Bullseye,
+} from '@patternfly/react-core';
+import {
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+} from '@patternfly/react-table';
+import {
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  InProgressIcon,
+  OutlinedClockIcon,
+  CubesIcon,
+} from '@patternfly/react-icons';
+import { ROUTES, STATUS } from './common/constants';
+import { useShowMessage } from './common/helpers';
+
+const getStatusLabel = status => {
+  const configs = {
+    [STATUS.SUCCESS]: { color: 'green', icon: <CheckCircleIcon /> },
+    [STATUS.FAILURE]: { color: 'red', icon: <ExclamationCircleIcon /> },
+    [STATUS.EXCEPTION]: { color: 'red', icon: <ExclamationCircleIcon /> },
+    [STATUS.INVALID]: { color: 'red', icon: <ExclamationCircleIcon /> },
+    [STATUS.RUNNING]: { color: 'blue', icon: <InProgressIcon /> },
+    [STATUS.PENDING]: { color: 'blue', icon: <OutlinedClockIcon /> },
+  };
+
+  const config = configs[status] || { color: 'grey', icon: <CubesIcon /> };
+  return (
+    <Label color={config.color} icon={config.icon}>
+      {status}
+    </Label>
+  );
+};
+
+const formatDuration = duration => {
+  if (!duration) return '-';
+  const seconds = Math.round(duration);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}m ${remainingSeconds}s`;
+};
+
+const formatDate = dateString => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  return date.toLocaleString();
+};
+
+const TaskJobs = () => {
+  const [taskJobs, setTaskJobs] = useState([]);
+  const [isLoadingTaskJobs, setIsLoadingTaskJobs] = useState(true);
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(20);
+  const [total, setTotal] = useState(0);
+  const showMessage = useShowMessage();
+
+  useEffect(() => {
+    let cancelled = false;
+    
+    const fetchTaskJobs = async () => {
+      if (cancelled) return;
+      setIsLoadingTaskJobs(true);
+
+      try {
+        const { data, status } = await API.get(
+          `${ROUTES.API.TASK_JOBS}?page=${page}&per_page=${perPage}`
+        );
+
+        if (!cancelled && status === 200 && data) {
+          setTaskJobs(data.results || []);
+          setTotal(data.total || 0);
+        }
+      } catch (error) {
+        if (!cancelled) showMessage(__('Failed to load task history: ') + error.message);
+      } finally {
+        if (!cancelled) setIsLoadingTaskJobs(false);
+      }
+    };
+
+    fetchTaskJobs();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [page, perPage, showMessage]);
+
+  const spinner = () => {
+    return (
+      <Bullseye>
+        <Spinner size="xl" />
+      </Bullseye>
+    );
+  }
+
+  const noJobs = () => {
+    return (
+      <EmptyState>
+          <EmptyStateHeader
+            titleText={__('No task jobs found')}
+            icon={<EmptyStateIcon icon={CubesIcon} />}
+            headingLevel="h2"
+          />
+          <EmptyStateBody>
+            {__('Run a Bolt task to see it appear here.')}
+          </EmptyStateBody>
+        </EmptyState>
+    )
+  };
+
+  const jobTable = () => {
+    return (
+      <>
+        <Table 
+          aria-label="Task jobs table"
+          borders={true}
+          isStriped={true}
+          isStickyHeader={true}
+          variant="compact"
+        >
+          <Thead>
+            <Tr>
+              <Th modifier="wrap">{__('Task Name')}</Th>
+              <Th modifier="wrap">{__('Status')}</Th>
+              <Th modifier="wrap">{__('Targets')}</Th>
+              <Th modifier="wrap">{__('Smart Proxy')}</Th>
+              <Th modifier="wrap">{__('Submitted')}</Th>
+              <Th modifier="wrap">{__('Completed')}</Th>
+              <Th modifier="wrap">{__('Duration')}</Th>
+              <Th modifier="wrap">{__('Actions')}</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {taskJobs.map(job => (
+              <Tr key={job.job_id}>
+                <Td hasLeftBorder={true} hasRightBorder={true}>{job.task_name || 'unknown'}</Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>{getStatusLabel(job.status)}</Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>
+                  {job.target_count || 'unknown'} {job.target_count === 1 ? 'host' : 'hosts'}
+                </Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>{job.smart_proxy.name || 'unknown'}</Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>{formatDate(job.submitted_at)}</Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>{job.completed_at ? formatDate(job.completed_at) : ''}</Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>{formatDuration(job.duration)}</Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>
+                  <a
+                    href={`${ROUTES.PAGES.TASK_EXECUTION}?proxy_id=${job.smart_proxy.id}&job_id=${job.job_id}&proxy_name=${encodeURIComponent(job.smart_proxy.name)}&target_count=${job.target_count}`}
+                  >
+                    {__('View Details')}
+                  </a>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+
+        <Pagination
+          itemCount={total}
+          perPage={perPage}
+          page={page}
+          onSetPage={(_event, newPage) => setPage(newPage)}
+          onPerPageSelect={(_event, newPerPage) => {
+            setPerPage(newPerPage);
+            setPage(1);
+          }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <div className="task-jobs">
+      {isLoadingTaskJobs && spinner()}
+      {!isLoadingTaskJobs && taskJobs.length === 0 && noJobs()}
+      {!isLoadingTaskJobs && taskJobs.length > 0 && jobTable()}
+    </div>
+  );
+};
+
+export default TaskJobs;
