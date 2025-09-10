@@ -62,9 +62,9 @@ const formatDate = dateString => {
   return date.toLocaleString();
 };
 
-const TaskJobs = () => {
-  const [taskJobs, setTaskJobs] = useState([]);
-  const [isLoadingTaskJobs, setIsLoadingTaskJobs] = useState(true);
+const TaskHistory = () => {
+  const [taskHistory, setTaskHistory] = useState([]);
+  const [isLoadingTaskHistory, setIsLoadingTaskHistory] = useState(true);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(20);
   const [total, setTotal] = useState(0);
@@ -72,28 +72,28 @@ const TaskJobs = () => {
 
   useEffect(() => {
     let cancelled = false;
-    
-    const fetchTaskJobs = async () => {
+
+    const fetchTaskHistory = async () => {
       if (cancelled) return;
-      setIsLoadingTaskJobs(true);
+      setIsLoadingTaskHistory(true);
 
       try {
         const { data, status } = await API.get(
-          `${ROUTES.API.TASK_JOBS}?page=${page}&per_page=${perPage}`
+          `${ROUTES.API.TASK_HISTORY}?page=${page}&per_page=${perPage}`
         );
 
         if (!cancelled && status === 200 && data) {
-          setTaskJobs(data.results || []);
+          setTaskHistory(data.results || []);
           setTotal(data.total || 0);
         }
       } catch (error) {
         if (!cancelled) showMessage(__('Failed to load task history: ') + error.message);
       } finally {
-        if (!cancelled) setIsLoadingTaskJobs(false);
+        if (!cancelled) setIsLoadingTaskHistory(false);
       }
     };
 
-    fetchTaskJobs();
+    fetchTaskHistory();
 
     return () => {
       cancelled = true;
@@ -112,7 +112,7 @@ const TaskJobs = () => {
     return (
       <EmptyState>
           <EmptyStateHeader
-            titleText={__('No task jobs found')}
+            titleText={__('No task history found')}
             icon={<EmptyStateIcon icon={CubesIcon} />}
             headingLevel="h2"
           />
@@ -127,7 +127,7 @@ const TaskJobs = () => {
     return (
       <>
         <Table 
-          aria-label="Task jobs table"
+          aria-label="Task history table"
           borders={true}
           isStriped={true}
           isStickyHeader={true}
@@ -146,7 +146,7 @@ const TaskJobs = () => {
             </Tr>
           </Thead>
           <Tbody>
-            {taskJobs.map(job => (
+            {taskHistory.map(job => (
               <Tr key={job.job_id}>
                 <Td hasLeftBorder={true} hasRightBorder={true}>{job.task_name || 'unknown'}</Td>
                 <Td hasLeftBorder={true} hasRightBorder={true}>{getStatusLabel(job.status)}</Td>
@@ -184,12 +184,12 @@ const TaskJobs = () => {
   }
 
   return (
-    <div className="task-jobs">
-      {isLoadingTaskJobs && spinner()}
-      {!isLoadingTaskJobs && taskJobs.length === 0 && noJobs()}
-      {!isLoadingTaskJobs && taskJobs.length > 0 && jobTable()}
+    <div className="task-history">
+      {isLoadingTaskHistory && spinner()}
+      {!isLoadingTaskHistory && taskHistory.length === 0 && noJobs()}
+      {!isLoadingTaskHistory && taskHistory.length > 0 && jobTable()}
     </div>
   );
 };
 
-export default TaskJobs;
+export default TaskHistory;

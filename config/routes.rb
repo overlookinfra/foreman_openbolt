@@ -4,7 +4,7 @@ ForemanBolt::Engine.routes.draw do
   # React-rendered pages
   get 'new_task', to: 'task#new_task', as: :new_task
   get 'task_exec', to: 'task#task_exec', as: :task_exec
-  get 'task_jobs', to: 'task#task_jobs', as: :task_jobs
+  get 'task_history', to: 'task#task_history', as: :task_history
 
   # API endpoints
   get 'fetch_tasks', to: 'task#fetch_tasks'
@@ -15,8 +15,8 @@ ForemanBolt::Engine.routes.draw do
   get 'job_result', to: 'task#job_result'
 
   # Task job management endpoints
-  get 'fetch_task_jobs', to: 'task#fetch_task_jobs'
-  get 'fetch_task_jobs/:id', to: 'task#show', as: :task_job
+  get 'fetch_task_history', to: 'task#fetch_task_history'
+  get 'fetch_task_history/:id', to: 'task#show', as: :task_job
 end
 
 Foreman::Application.routes.draw do

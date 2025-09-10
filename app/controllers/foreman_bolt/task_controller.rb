@@ -24,7 +24,7 @@ module ForemanBolt
       render 'foreman_bolt/react_page'
     end
 
-    def task_jobs
+    def task_history
       render 'foreman_bolt/react_page'
     end
 
@@ -142,17 +142,17 @@ module ForemanBolt
       }
     end
 
-    # List of all task jobs
-    def fetch_task_jobs
-      @task_jobs = TaskJob.includes(:smart_proxy)
+    # List of all task history
+    def fetch_task_history
+      @task_history = TaskJob.includes(:smart_proxy)
                           .recent
                           .paginate(page: params[:page], per_page: params[:per_page] || 20)
 
       render json: {
-        results: @task_jobs.map { |job| serialize_task_job(job) },
-        total: @task_jobs.total_entries,
-        page: @task_jobs.current_page,
-        per_page: @task_jobs.limit_value,
+        results: @task_history.map { |job| serialize_task_job(job) },
+        total: @task_history.total_entries,
+        page: @task_history.current_page,
+        per_page: @task_history.limit_value,
       }
     end
 

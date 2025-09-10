@@ -1,12 +1,12 @@
 import React from 'react';
 import { translate as __ } from 'foremanReact/common/I18n';
 import PageLayout from 'foremanReact/routes/common/PageLayout/PageLayout';
-import TaskJobs from '../Components/TaskJobs';
+import TaskHistory from '../Components/TaskHistory';
 
-const TaskJobsPage = () => (
+const TaskHistoryPage = () => (
   <PageLayout header={__('Task History')}>
-    <TaskJobs />
+    <TaskHistory />
   </PageLayout>
 );
 
-export default TaskJobsPage;
+export default TaskHistoryPage;

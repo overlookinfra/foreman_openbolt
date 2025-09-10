@@ -1,7 +1,7 @@
 import React from 'react';
 import BoltTaskFormPage from '../Pages/BoltTaskFormPage';
 import BoltTaskExecutionPage from '../Pages/BoltTaskExecutionPage';
-import TaskJobsPage from '../Pages/TaskJobsPage';
+import TaskHistoryPage from '../Pages/TaskHistoryPage';
 
 const routes = [
   {
@@ -19,9 +19,9 @@ const routes = [
     requiredPermissions: ['execute_bolt'],
   },
   {
-    path: '/foreman_bolt/task_jobs',
+    path: '/foreman_bolt/task_history',
     exact: true,
-    render: () => <TaskJobsPage />,
+    render: () => <TaskHistoryPage />,
     requiresAuth: true,
     requiredPermissions: ['execute_bolt'],
   },
