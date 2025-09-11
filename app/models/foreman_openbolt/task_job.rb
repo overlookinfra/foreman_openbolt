@@ -100,10 +100,10 @@ module ForemanOpenbolt
     def cleanup_proxy_artifacts
       # Schedule cleanup of proxy artifacts if we have successfully saved the results
       if result.present? && log.present?
-        ForemanTasks.async_task(::Actions::ForemanOpenbolt::CleanupProxyArtifacts,
-          smart_proxy_id,
-          job_id)
-        Rails.logger.info("Scheduled cleanup for job #{job_id} on proxy #{smart_proxy_id}")
+        #ForemanTasks.async_task(::Actions::ForemanOpenbolt::CleanupProxyArtifacts,
+        #  smart_proxy_id,
+        #  job_id)
+        #Rails.logger.info("Scheduled cleanup for job #{job_id} on proxy #{smart_proxy_id}")
       end
     end
   end

@@ -81,9 +81,9 @@ module ForemanOpenbolt
         )
 
         # Start background polling to update status
-        ForemanTasks.async_task(Actions::ForemanOpenbolt::PollTaskStatus,
-          response['id'],
-          @smart_proxy.id)
+        #ForemanTasks.async_task(Actions::ForemanOpenbolt::PollTaskStatus,
+        #  response['id'],
+        #  @smart_proxy.id)
 
         render json: {
           job_id: response['id'],
