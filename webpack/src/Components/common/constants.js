@@ -1,4 +1,4 @@
-// Match the actual string coming from smart_proxy_bolt
+// Match the actual string coming from smart_proxy_openbolt
 export const STATUS = {
   SUCCESS: 'success',
   FAILURE: 'failure',
@@ -27,16 +27,16 @@ export const POLLING_CONFIG = {
 
 export const ROUTES = {
   PAGES: {
-    NEW_TASK: '/foreman_bolt/new_task',
-    TASK_EXECUTION: '/foreman_bolt/task_exec',
+    NEW_TASK: '/foreman_openbolt/new_task',
+    TASK_EXECUTION: '/foreman_openbolt/task_exec',
   },
   API: {
-    RELOAD_TASKS: '/foreman_bolt/reload_tasks',
-    FETCH_TASKS: '/foreman_bolt/fetch_tasks',
-    FETCH_BOLT_OPTIONS: '/foreman_bolt/fetch_bolt_options',
-    EXECUTE_TASK: '/foreman_bolt/execute_task',
-    JOB_STATUS: '/foreman_bolt/job_status',
-    JOB_RESULT: '/foreman_bolt/job_result',
-    TASK_HISTORY: '/foreman_bolt/fetch_task_history',
+    RELOAD_TASKS: '/foreman_openbolt/reload_tasks',
+    FETCH_TASKS: '/foreman_openbolt/fetch_tasks',
+    FETCH_OPENBOLT_OPTIONS: '/foreman_openbolt/fetch_openbolt_options',
+    EXECUTE_TASK: '/foreman_openbolt/execute_task',
+    JOB_STATUS: '/foreman_openbolt/job_status',
+    JOB_RESULT: '/foreman_openbolt/job_result',
+    TASK_HISTORY: '/foreman_openbolt/fetch_task_history',
   },
 };

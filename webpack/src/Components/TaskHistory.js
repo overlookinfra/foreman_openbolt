@@ -117,7 +117,7 @@ const TaskHistory = () => {
             headingLevel="h2"
           />
           <EmptyStateBody>
-            {__('Run a Bolt task to see it appear here.')}
+            {__('Run an OpenBolt task to see it appear here.')}
           </EmptyStateBody>
         </EmptyState>
     )

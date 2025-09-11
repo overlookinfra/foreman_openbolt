@@ -1,7 +1,7 @@
 {
-  "name": "foreman_bolt",
-  "version": "1.0.0",
-  "description": "DESCRIPTION",
+  "name": "foreman_openbolt",
+  "version": "0.0.1",
+  "description": "OpenBolt integration into Foreman",
   "main": "index.js",
   "scripts": {
     "lint": "tfm-lint --plugin -d /webpack",
@@ -13,10 +13,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/theforeman/foreman_bolt.git"
+    "url": "git+https://github.com/theforeman/foreman_openbolt.git"
   },
   "bugs": {
-    "url": "http://projects.theforeman.org/projects/foreman_bolt/issues"
+    "url": "http://projects.theforeman.org/projects/foreman_openbolt/issues"
   },
   "peerDependencies": {
     "@theforeman/vendor": ">= 6.0.0"

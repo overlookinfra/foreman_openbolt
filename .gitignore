@@ -17,3 +17,5 @@ package-lock.json
 Gemfile.lock
 coverage
 rubygem-*.rpm
+# Local testing files
+*.sh

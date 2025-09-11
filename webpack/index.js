@@ -1,16 +1,16 @@
 import componentRegistry from 'foremanReact/components/componentRegistry';
 
-import BoltTaskForm from './src/Components/BoltTaskForm';
-import BoltTaskExecution from './src/Components/BoltTaskExecution';
+import OpenBoltTaskForm from './src/Components/OpenBoltTaskForm';
+import OpenBoltTaskExecution from './src/Components/OpenBoltTaskExecution';
 
 const components = [
   {
-    name: 'BoltTaskForm',
-    type: BoltTaskForm,
+    name: 'OpenBoltTaskForm',
+    type: OpenBoltTaskForm,
   },
   {
-    name: 'BoltTaskExecution',
-    type: BoltTaskExecution,
+    name: 'OpenBoltTaskExecution',
+    type: OpenBoltTaskExecution,
   },
 ];
 

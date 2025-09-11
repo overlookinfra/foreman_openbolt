@@ -1,29 +1,29 @@
 import React from 'react';
-import BoltTaskFormPage from '../Pages/BoltTaskFormPage';
-import BoltTaskExecutionPage from '../Pages/BoltTaskExecutionPage';
+import OpenBoltTaskFormPage from '../Pages/OpenBoltTaskFormPage';
+import OpenBoltTaskExecutionPage from '../Pages/OpenBoltTaskExecutionPage';
 import TaskHistoryPage from '../Pages/TaskHistoryPage';
 
 const routes = [
   {
-    path: '/foreman_bolt/new_task',
+    path: '/foreman_openbolt/new_task',
     exact: true,
-    render: () => <BoltTaskFormPage />,
+    render: () => <OpenBoltTaskFormPage />,
     requiresAuth: true,
-    requiredPermissions: ['execute_bolt'],
+    requiredPermissions: ['execute_openbolt'],
   },
   {
-    path: '/foreman_bolt/task_exec',
+    path: '/foreman_openbolt/task_exec',
     exact: true,
-    render: () => <BoltTaskExecutionPage />,
+    render: () => <OpenBoltTaskExecutionPage />,
     requiresAuth: true,
-    requiredPermissions: ['execute_bolt'],
+    requiredPermissions: ['execute_openbolt'],
   },
   {
-    path: '/foreman_bolt/task_history',
+    path: '/foreman_openbolt/task_history',
     exact: true,
     render: () => <TaskHistoryPage />,
     requiresAuth: true,
-    requiredPermissions: ['execute_bolt'],
+    requiredPermissions: ['execute_openbolt'],
   },
 ];
 

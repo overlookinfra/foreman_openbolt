@@ -1,4 +1,4 @@
 import { registerRoutes } from 'foremanReact/routes/RoutingService';
 import Routes from './src/Router/routes';
 
-registerRoutes('ForemanBolt', Routes);
+registerRoutes('ForemanOpenbolt', Routes);
