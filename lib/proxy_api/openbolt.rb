@@ -29,13 +29,13 @@ module ProxyAPI
       @openbolt_options ||= JSON.parse(get('/openbolt/tasks/options').body)
     end
 
-    def run_task(name:, targets:, parameters: {}, options: {})
+    def launch_task(name:, targets:, parameters: {}, options: {})
       JSON.parse(post({
         name: name,
         targets: targets,
         parameters: parameters,
         options: options,
-      }.to_json, '/openbolt/run/task').body)
+      }.to_json, '/openbolt/launch/task').body)
     end
 
     def job_status(job_id:)

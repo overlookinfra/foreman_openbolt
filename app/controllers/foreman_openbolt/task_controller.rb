@@ -8,23 +8,23 @@ module ForemanOpenbolt
     include ::Foreman::Controller::AutoCompleteSearch
 
     before_action :load_smart_proxy, only: [
-      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :execute_task, :job_status, :job_result
+      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task, :job_status, :job_result
     ]
     before_action :load_openbolt_api, only: [
-      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :execute_task, :job_status, :job_result
+      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task, :job_status, :job_result
     ]
     before_action :load_task_job, only: [:job_status, :job_result]
 
     # React-rendered pages
-    def new_task
+    def page_launch_task
       render 'foreman_openbolt/react_page'
     end
 
-    def task_exec
+    def page_task_exec
       render 'foreman_openbolt/react_page'
     end
 
-    def task_history
+    def page_task_history
       render 'foreman_openbolt/react_page'
     end
 
@@ -40,12 +40,12 @@ module ForemanOpenbolt
       render_openbolt_api_call(:openbolt_options)
     end
 
-    def execute_task
+    def launch_task
       required_args = [:task_name, :targets]
       missing_args = required_args.select { |arg| params[arg].blank? }
 
       if missing_args.any?
-        return render_error("Missing required arguments to the execute_task function: #{missing_args.join(', ')}",
+        return render_error("Missing required arguments to the launch_task function: #{missing_args.join(', ')}",
           :bad_request)
       end
 
@@ -57,9 +57,9 @@ module ForemanOpenbolt
 
         return render_error('Task name and targets cannot be empty', :bad_request) if task_name.empty? || targets.empty?
 
-        logger.info("Executing OpenBolt task '#{task_name}' on targets '#{targets}' via proxy #{@smart_proxy.name}")
+        logger.info("Launching OpenBolt task '#{task_name}' on targets '#{targets}' via proxy #{@smart_proxy.name}")
 
-        response = @openbolt_api.run_task(
+        response = @openbolt_api.launch_task(
           name: task_name,
           targets: targets,
           parameters: task_params,
@@ -91,12 +91,12 @@ module ForemanOpenbolt
           proxy_name: @smart_proxy.name,
         }
       rescue ActiveRecord::RecordInvalid => e
-        logger.error("Failed to create TaskRun: #{e.message}")
+        logger.error("Failed to create TaskJob: #{e.message}")
         render_error("Database error: #{e.message}", :internal_server_error)
       rescue StandardError => e
-        logger.error("Task execution error: #{e.class}: #{e.message}")
+        logger.error("Task launch error: #{e.class}: #{e.message}")
         logger.error("Backtrace: #{e.backtrace.first(5).join("\n")}")
-        render_error("Error executing task: #{e.message}", :internal_server_error)
+        render_error("Error launching task: #{e.message}", :internal_server_error)
       end
     end
 

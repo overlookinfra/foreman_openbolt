@@ -41,7 +41,7 @@ const OpenBoltTaskExecution = () => {
       showMessage(
         __('Invalid task execution URL - missing required parameters')
       );
-      history.push(ROUTES.PAGES.NEW_TASK);
+      history.push(ROUTES.PAGES.LAUNCH_TASK);
     }
   }, [proxyId, jobId, showMessage, history]);
 
@@ -58,7 +58,7 @@ const OpenBoltTaskExecution = () => {
     <div className="openbolt-task-execution">
       <Button
         variant="secondary"
-        onClick={() => history.push(ROUTES.PAGES.NEW_TASK)}
+        onClick={() => history.push(ROUTES.PAGES.LAUNCH_TASK)}
         className="pf-v5-u-mb-md"
       >
         {__('Run Another Task')}

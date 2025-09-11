@@ -116,10 +116,9 @@ module ForemanOpenbolt
           security_block :foreman_openbolt do
             permission :execute_openbolt,
               { :'foreman_openbolt/task' => [
-                :new_task, :task_exec, :fetch_smart_proxies,
-                :fetch_tasks, :reload_tasks, :fetch_openbolt_options,
-                :execute_task, :job_status, :job_result,
-                :fetch_task_history, :show
+                :page_launch_task, :page_task_exec, :page_task_history,
+                :fetch_smart_proxies, :fetch_tasks, :reload_tasks, :fetch_openbolt_options,
+                :launch_task, :job_status, :job_result, :fetch_task_history, :show
               ] }
             permission :view_smart_proxies_openbolt, :smart_proxies => [:index, :show], :resource_type => 'SmartProxy'
           end
@@ -131,10 +130,10 @@ module ForemanOpenbolt
             icon: 'fa fa-bolt',
             caption: N_('OpenBolt'),
             after: :hosts_menu do
-            menu :top_menu, :new_task,
-              caption: N_('New Task'),
+            menu :top_menu, :page_launch_task,
+              caption: N_('Launch Task'),
               engine: ForemanOpenbolt::Engine
-            menu :top_menu, :task_history,
+            menu :top_menu, :page_task_history,
               caption: N_('Task History'),
               engine: ForemanOpenbolt::Engine
           end

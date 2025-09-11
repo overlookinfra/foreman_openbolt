@@ -27,14 +27,14 @@ export const POLLING_CONFIG = {
 
 export const ROUTES = {
   PAGES: {
-    NEW_TASK: '/foreman_openbolt/new_task',
-    TASK_EXECUTION: '/foreman_openbolt/task_exec',
+    LAUNCH_TASK: '/foreman_openbolt/page_launch_task',
+    TASK_EXECUTION: '/foreman_openbolt/page_task_exec',
   },
   API: {
     RELOAD_TASKS: '/foreman_openbolt/reload_tasks',
     FETCH_TASKS: '/foreman_openbolt/fetch_tasks',
     FETCH_OPENBOLT_OPTIONS: '/foreman_openbolt/fetch_openbolt_options',
-    EXECUTE_TASK: '/foreman_openbolt/execute_task',
+    LAUNCH_TASK: '/foreman_openbolt/launch_task',
     JOB_STATUS: '/foreman_openbolt/job_status',
     JOB_RESULT: '/foreman_openbolt/job_result',
     TASK_HISTORY: '/foreman_openbolt/fetch_task_history',

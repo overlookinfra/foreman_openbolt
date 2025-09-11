@@ -17,7 +17,7 @@ import { useTasksData } from './hooks/useTasksData';
 import { useOpenBoltOptions } from './hooks/useOpenBoltOptions';
 import { useShowMessage } from '../common/helpers';
 
-const OpenBoltTaskForm = () => {
+const LaunchTask = () => {
   const history = useHistory();
   const showMessage = useShowMessage();
 
@@ -145,7 +145,7 @@ const OpenBoltTaskForm = () => {
           options: openBoltOptions,
         };
 
-        const { data, status } = await API.post(ROUTES.API.EXECUTE_TASK, body);
+        const { data, status } = await API.post(ROUTES.API.LAUNCH_TASK, body);
 
         // TODO: On non-200, the post above automatically throws an exception, so
         // figure out how to handle it instead to extract the message in the
@@ -175,7 +175,7 @@ const OpenBoltTaskForm = () => {
           error.response?.data?.error ||
           error.message ||
           __('Unknown error occurred');
-        showMessage(__('Failed to execute task: ') + errorMessage);
+        showMessage(__('Failed to launch task: ') + errorMessage);
       } finally {
         setIsSubmitting(false);
       }
@@ -247,7 +247,7 @@ const OpenBoltTaskForm = () => {
             isDisabled={!isFormValid}
             isLoading={isSubmitting}
           >
-            {__('Execute Task')}
+            {__('🚀 Launch Task')}
           </Button>
         </FormGroup>
       </Form>
@@ -255,4 +255,4 @@ const OpenBoltTaskForm = () => {
   );
 };
 
-export default OpenBoltTaskForm;
+export default LaunchTask;

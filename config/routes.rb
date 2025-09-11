@@ -2,15 +2,15 @@
 
 ForemanOpenbolt::Engine.routes.draw do
   # React-rendered pages
-  get 'new_task', to: 'task#new_task', as: :new_task
-  get 'task_exec', to: 'task#task_exec', as: :task_exec
-  get 'task_history', to: 'task#task_history', as: :task_history
+  get 'page_launch_task', to: 'task#page_launch_task', as: :page_launch_task
+  get 'page_task_exec', to: 'task#page_task_exec', as: :page_task_exec
+  get 'page_task_history', to: 'task#page_task_history', as: :page_task_history
 
   # API endpoints
   get 'fetch_tasks', to: 'task#fetch_tasks'
   get 'reload_tasks', to: 'task#reload_tasks'
   get 'fetch_openbolt_options', to: 'task#fetch_openbolt_options'
-  post 'execute_task', to: 'task#execute_task'
+  post 'launch_task', to: 'task#launch_task'
   get 'job_status', to: 'task#job_status'
   get 'job_result', to: 'task#job_result'
 
