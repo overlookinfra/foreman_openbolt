@@ -1,12 +1,12 @@
 import React from 'react';
 import { translate as __ } from 'foremanReact/common/I18n';
 import PageLayout from 'foremanReact/routes/common/PageLayout/PageLayout';
-import OpenBoltTaskExecution from '../Components/OpenBoltTaskExecution';
+import TaskExecution from '../Components/TaskExecution';
 
-const OpenBoltTaskExecutionPage = () => (
+const TaskExecutionPage = () => (
   <PageLayout header={__('Task Execution')}>
-    <OpenBoltTaskExecution />
+    <TaskExecution />
   </PageLayout>
 );
 
-export default OpenBoltTaskExecutionPage;
+export default TaskExecutionPage;

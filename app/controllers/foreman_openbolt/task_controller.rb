@@ -20,7 +20,7 @@ module ForemanOpenbolt
       render 'foreman_openbolt/react_page'
     end
 
-    def page_task_exec
+    def page_task_execution
       render 'foreman_openbolt/react_page'
     end
 

@@ -1,7 +1,7 @@
 import componentRegistry from 'foremanReact/components/componentRegistry';
 
 import LaunchTask from './src/Components/LaunchTask';
-import OpenBoltTaskExecution from './src/Components/OpenBoltTaskExecution';
+import TaskExecution from './src/Components/TaskExecution';
 
 const components = [
   {
@@ -9,8 +9,8 @@ const components = [
     type: LaunchTask,
   },
   {
-    name: 'OpenBoltTaskExecution',
-    type: OpenBoltTaskExecution,
+    name: 'TaskExecution',
+    type: TaskExecution,
   },
 ];
 

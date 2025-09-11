@@ -28,7 +28,7 @@ export const POLLING_CONFIG = {
 export const ROUTES = {
   PAGES: {
     LAUNCH_TASK: '/foreman_openbolt/page_launch_task',
-    TASK_EXECUTION: '/foreman_openbolt/page_task_exec',
+    TASK_EXECUTION: '/foreman_openbolt/page_task_execution',
   },
   API: {
     RELOAD_TASKS: '/foreman_openbolt/reload_tasks',

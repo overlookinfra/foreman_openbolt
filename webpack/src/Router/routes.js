@@ -1,6 +1,6 @@
 import React from 'react';
 import LaunchTaskPage from '../Pages/LaunchTaskPage';
-import OpenBoltTaskExecutionPage from '../Pages/OpenBoltTaskExecutionPage';
+import TaskExecutionPage from '../Pages/TaskExecutionPage';
 import TaskHistoryPage from '../Pages/TaskHistoryPage';
 
 const routes = [
@@ -12,9 +12,9 @@ const routes = [
     requiredPermissions: ['execute_openbolt'],
   },
   {
-    path: '/foreman_openbolt/page_task_exec',
+    path: '/foreman_openbolt/page_task_execution',
     exact: true,
-    render: () => <OpenBoltTaskExecutionPage />,
+    render: () => <TaskExecutionPage />,
     requiresAuth: true,
     requiredPermissions: ['execute_openbolt'],
   },

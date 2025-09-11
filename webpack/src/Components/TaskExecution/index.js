@@ -10,7 +10,7 @@ import useJobPolling from './hooks/useJobPolling';
 import { COMPLETED_STATUSES, ROUTES } from '../common/constants';
 import { useShowMessage } from '../common/helpers';
 
-const OpenBoltTaskExecution = () => {
+const TaskExecution = () => {
   const location = useLocation();
   const history = useHistory();
   const showMessage = useShowMessage();
@@ -94,4 +94,4 @@ const OpenBoltTaskExecution = () => {
   );
 };
 
-export default OpenBoltTaskExecution;
+export default TaskExecution;

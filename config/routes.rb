@@ -3,7 +3,7 @@
 ForemanOpenbolt::Engine.routes.draw do
   # React-rendered pages
   get 'page_launch_task', to: 'task#page_launch_task', as: :page_launch_task
-  get 'page_task_exec', to: 'task#page_task_exec', as: :page_task_exec
+  get 'page_task_execution', to: 'task#page_task_execution', as: :page_task_execution
   get 'page_task_history', to: 'task#page_task_history', as: :page_task_history
 
   # API endpoints
