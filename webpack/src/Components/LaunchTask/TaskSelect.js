@@ -22,6 +22,8 @@ const TaskSelect = ({
     <div className="pf-v5-u-display-flex">
       <FormSelect
         id="task-select"
+        // Force remount on isDisabled so the tooltip based on the title changes
+        key={`task-select-${isDisabled}`}
         title={
           isDisabled
             ? __('You must first select a Smart Proxy')
