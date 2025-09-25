@@ -45,7 +45,6 @@ module ForemanOpenbolt
       )
     end
 
-    # Instance methods
     def completed?
       status.in?(COMPLETED_STATUSES)
     end
@@ -59,12 +58,13 @@ module ForemanOpenbolt
       completed_at - submitted_at
     end
 
+    # Result/log will already be scrubbed by the proxy
     def update_from_proxy_result!(proxy_result)
       return unless proxy_result.present?
 
       transaction do
         self.status = proxy_result['status'] if proxy_result['status'].present?
-        # Store just the actual task results (the 'value' field from proxy)
+        self.command = proxy_result['command'] if proxy_result['command'].present?
         self.result = proxy_result['value'] if proxy_result.key?('value')
         self.log = proxy_result['log'] if proxy_result.key?('log')
         save!

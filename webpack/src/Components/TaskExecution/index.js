@@ -51,8 +51,9 @@ const TaskExecution = () => {
   }
 
   const isComplete = COMPLETED_STATUSES.includes(jobStatus);
+  const jobCommand = jobData?.command;
   const jobResult = jobData?.result;
-  const jobLog = jobData?.log;
+  const jobLog = `OpenBolt command: ${jobCommand}\n${jobData?.log}`;
 
   return (
     <div className="openbolt-task-execution">

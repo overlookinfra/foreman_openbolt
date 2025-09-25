@@ -5,8 +5,11 @@ import {
   FormHelperText,
   FormSelect,
   FormSelectOption,
+  HelperText,
   TextInput,
 } from '@patternfly/react-core';
+import '../common/constants.js';
+import { ENCRYPTED_DEFAULT_PLACEHOLDER } from '../common/constants.js';
 
 // TODO: The "required" attribute is being ignored and you can still submit
 // the form to run a task without filling in required parameters. Need to figure
@@ -36,18 +39,28 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
    * {
    *   "noop": {
    *     "type": "boolean",
-   *     "default": false,
+   *     "transport": ["ssh", "winrm"],
+   *     "sensitive": false
    *   },
    *   "user": {
-   *     "type": "string"
+   *     "type": "string",
+   *     "transport": ["ssh", "winrm"],
+   *     "sensitive": false
    *   },
    *   "transport": {
    *     "type": ["ssh", "winrm"],
+   *     "transport": ["ssh", "winrm"],
+   *     "sensitive": false,
    *     "default": "ssh"
+   *   },
+   *   "password": {
+   *     "type": "string",
+   *     "transport": ["ssh", "winrm"],
+   *     "sensitive": true
    *   }
    * }
    */
-  const { type, default: defaultValue = null, description = null } = metadata;
+  const { type, transport, sensitive, default: defaultValue = null, description = null } = metadata;
   const isRequired =
     showRequired &&
     !type
@@ -56,12 +69,14 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
       .startsWith('optional[');
   const fieldId = `param_${name}`;
 
+  const hasEncryptedDefault = defaultValue === ENCRYPTED_DEFAULT_PLACEHOLDER;
+
   const renderInput = () => {
     if (Array.isArray(type)) {
       return (
         <FormGroup
           label={name}
-          isRequired={isRequired}
+          isRequired={isRequired && !hasEncryptedDefault}
           fieldId={fieldId}
           className="pf-v5-u-mb-lg"
         >
@@ -69,9 +84,9 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
           <FormSelect
             id={fieldId}
             title={description || name}
-            value={value || defaultValue || ''}
+            value={value || (hasEncryptedDefault ? '' : defaultValue) || ''}
             onChange={(_event, val) => onChange(name, val)}
-            isRequired={isRequired}
+            isRequired={isRequired && !hasEncryptedDefault}
             className="without_select2"
           >
             {type.map(option => (
@@ -107,20 +122,41 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
         </div>
       );
     }
+
+    const getValue = (() => {
+      if (value != undefined && value != '') {
+        return value;
+      }
+
+      if (hasEncryptedDefault) {
+        return '';
+      }
+
+      return defaultValue || '';
+    })();
+
     return (
       <FormGroup
         label={name}
         labelInfo={type}
-        isRequired={isRequired}
+        isRequired={isRequired && !hasEncryptedDefault}
         fieldId={fieldId}
         className="pf-v5-u-mb-lg"
       >
         {description && <FormHelperText>{description}</FormHelperText>}
+        {hasEncryptedDefault && (
+          <FormHelperText>
+            <HelperText variant="info">
+              {__('Do not change to use the saved encrypted default value')}
+            </HelperText>
+          </FormHelperText>
+        )}
         <TextInput
           id={fieldId}
-          value={value || defaultValue || ''}
+          type={sensitive ? 'password' : 'text'}
+          value={getValue}
           onChange={(_event, newValue) => onChange(name, newValue)}
-          isRequired={isRequired}
+          isRequired={isRequired && !hasEncryptedDefault}
         />
       </FormGroup>
     );
@@ -132,7 +168,7 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
 ParameterField.propTypes = {
   name: PropTypes.string.isRequired,
   metadata: PropTypes.object.isRequired,
-  value: PropTypes.any.isRequired,
+  value: PropTypes.any,
   showRequired: PropTypes.bool.isRequired,
   onChange: PropTypes.func.isRequired,
 };

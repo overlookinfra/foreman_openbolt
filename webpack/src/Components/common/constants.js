@@ -25,6 +25,8 @@ export const POLLING_CONFIG = {
   INTERVAL: 5000, // 5 seconds
 };
 
+export const ENCRYPTED_DEFAULT_PLACEHOLDER = '[Use saved encrypted default]';
+
 export const ROUTES = {
   PAGES: {
     LAUNCH_TASK: '/foreman_openbolt/page_launch_task',

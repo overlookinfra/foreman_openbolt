@@ -7,6 +7,11 @@ module ForemanOpenbolt
   class TaskController < ::ApplicationController
     include ::Foreman::Controller::AutoCompleteSearch
 
+    # For passing to/from the UI
+    ENCRYPTED_PLACEHOLDER = '[Use saved encrypted default]'
+    # For saving to the database
+    REDACTED_PLACEHOLDER = '*****'
+
     before_action :load_smart_proxy, only: [
       :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task, :job_status, :job_result
     ]
@@ -37,7 +42,33 @@ module ForemanOpenbolt
     end
 
     def fetch_openbolt_options
-      render_openbolt_api_call(:openbolt_options)
+      begin
+        options = @openbolt_api.openbolt_options
+
+        # Get defaults from Foreman settings
+        defaults = {}
+        openbolt_settings.each do |setting|
+          key = setting.name.sub(/^openbolt_/, '')
+          if setting.value.present?
+            defaults[key] = setting.encrypted? ? ENCRYPTED_PLACEHOLDER : setting.value
+          end
+        end
+
+        # Merge the defaults into the options metadata
+        result = {}
+        options.each do |name, meta|
+          result[name] = meta.dup
+          result[name]['default'] = defaults[name] if defaults.key?(name)
+        end
+
+        render json: result
+      rescue ProxyAPI::ProxyException => e
+        logger.error("OpenBolt API error for fetch_openbolt_options: #{e.message}")
+        render_error("Smart Proxy error: #{e.message}", :bad_gateway)
+      rescue StandardError => e
+        logger.error("Unexpected error in fetch_openbolt_options: #{e.class}: #{e.message}")
+        render_error("Internal server error: #{e.message}", :internal_server_error)
+      end
     end
 
     def launch_task
@@ -54,6 +85,7 @@ module ForemanOpenbolt
         targets = params[:targets].to_s.strip
         task_params = params[:params] || {}
         options = params[:options] || {}
+        options = merge_encrypted_defaults(options)
 
         return render_error('Task name and targets cannot be empty', :bad_request) if task_name.empty? || targets.empty?
 
@@ -71,12 +103,12 @@ module ForemanOpenbolt
         return render_error("Task execution failed: #{response['error']}", :bad_request) if response['error']
         return render_error('Task execution failed: No job ID returned', :bad_request) unless response['id']
 
-        task_job = TaskJob.create_from_execution!(
+        TaskJob.create_from_execution!(
           proxy: @smart_proxy,
           task_name: task_name,
           targets: targets.split(',').map(&:strip),
           parameters: task_params,
-          options: options,
+          options: scrub_options_for_storage(options),
           job_id: response['id']
         )
 
@@ -137,6 +169,7 @@ module ForemanOpenbolt
       # Return the actual task results
       render json: {
         status: @task_job.status,
+        command: @task_job.command,
         value: @task_job.result,
         log: @task_job.log,
       }
@@ -210,6 +243,33 @@ module ForemanOpenbolt
       end
     end
 
+    def openbolt_settings
+      @openbolt_settings ||= Setting.where("name LIKE 'openbolt_%'")
+    end
+
+    def encrypted_settings
+      openbolt_settings.select { |setting| setting.encrypted? }
+    end
+
+    def merge_encrypted_defaults(options)
+      encrypted = options.select { |_, v| v == ENCRYPTED_PLACEHOLDER }
+      encrypted.each do |key, _|
+        setting = Setting.find_by(name: "openbolt_#{key}")
+        raise "Could not find setting called openbolt_#{key}" if setting.nil?
+        options[key] = setting.value
+      end
+      options
+    end
+
+    def scrub_options_for_storage(options)
+      scrubbed = options.dup
+      encrypted_settings.each do |setting|
+        option_name = setting.name.sub(/^openbolt_/, '')
+        scrubbed[option_name] = REDACTED_PLACEHOLDER if scrubbed.keys.include?(option_name)
+      end
+      scrubbed
+    end
+
     def render_openbolt_api_call(method_name, **args)
       result = @openbolt_api.send(method_name, **args)
       logger.debug("OpenBolt API call #{method_name} successful for proxy #{@smart_proxy.name}")
@@ -245,7 +305,7 @@ module ForemanOpenbolt
         data.merge!(
           targets: task_job.targets,
           task_parameters: task_job.task_parameters,
-          openbolt_options: task_job.openbolt_options,
+          openbolt_options: task_job.scrubbed_openbolt_options,
           result: task_job.result,
           log: task_job.log
         )

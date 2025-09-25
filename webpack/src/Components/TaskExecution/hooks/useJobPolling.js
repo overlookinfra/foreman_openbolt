@@ -67,6 +67,7 @@ const useJobPolling = (proxyId, jobId) => {
 
               if (!cancelled && resultCode === 200 && resultData) {
                 setResult({
+                  command: resultData.command || '',
                   result: resultData.value,
                   log: resultData.log || '',
                 });
