@@ -41,18 +41,21 @@ const OpenBoltOptionsSection = ({
     metadata.type === 'boolean' || metadata.type === 'Optional[Boolean]';
 
   // Sort options to group booleans at the top to make the UI cleaner
-  const sortedOptions = !openBoltOptionsMetadata
-    ? []
-    : Object.entries(openBoltOptionsMetadata).sort(
-        ([_nameA, metadataA], [_nameB, metadataB]) => {
-          const aIsBoolean = isBooleanType(metadataA);
-          const bIsBoolean = isBooleanType(metadataB);
+  const sortedOptions = (openBoltOptionsMetadata) => {
+    if (!openBoltOptionsMetadata) return [];
+    const { transport, ...rest } = openBoltOptionsMetadata;
+    const entries = Object.entries(rest);
 
-          if (aIsBoolean && !bIsBoolean) return -1;
-          if (!aIsBoolean && bIsBoolean) return 1;
-          return 0;
-        }
-      );
+    entries.sort(([_nameA, metadataA], [_nameB, metadataB]) => {
+        const aIsBoolean = isBooleanType(metadataA);
+        const bIsBoolean = isBooleanType(metadataB);
+
+        if (aIsBoolean !== bIsBoolean) return aIsBoolean ? -1 : 1;
+        return 0;
+      }
+    );
+    return [['transport', transport], ...entries];
+  };
 
   const render = () => {
     if (isLoading) return <Loading />;
@@ -65,7 +68,7 @@ const OpenBoltOptionsSection = ({
 
     return (
       <Options
-        sortedOptions={sortedOptions}
+        sortedOptions={sortedOptions(openBoltOptionsMetadata)}
         values={openBoltOptions}
         onChange={onOptionChange}
       />
