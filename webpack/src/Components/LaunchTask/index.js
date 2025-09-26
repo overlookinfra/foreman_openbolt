@@ -137,12 +137,23 @@ const LaunchTask = () => {
       setIsSubmitting(true);
 
       try {
+        const transport = openBoltOptions.transport;
+        const visibleOptions = {};
+        Object.entries(openBoltOptionsMetadata).forEach(([optionName, metadata]) => {
+          const isVisible = optionName == 'transport' ||
+            !metadata.transport ||
+            metadata.transport.includes(transport);
+          if (isVisible && openBoltOptions[optionName] !== undefined) {
+            visibleOptions[optionName] = openBoltOptions[optionName];
+          }
+        });
+
         const body = {
           proxy_id: selectedProxy,
           task_name: selectedTask,
           targets: targets.join(','),
           params: taskParameters,
-          options: openBoltOptions,
+          options: visibleOptions,
         };
 
         const { data, status } = await API.post(ROUTES.API.LAUNCH_TASK, body);

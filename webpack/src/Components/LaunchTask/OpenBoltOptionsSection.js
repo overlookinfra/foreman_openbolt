@@ -12,8 +12,16 @@ const Loading = () => (
   </div>
 );
 
-const Options = ({ sortedOptions, values, onChange }) =>
-  sortedOptions.map(([optionName, metadata]) => (
+const Options = ({ sortedOptions, values, onChange }) => {
+  const transport = values?.transport;
+  const visibleOptions = sortedOptions.filter(([optionName, metadata]) => {
+    if (optionName === 'transport') return true;
+    if (!metadata.transport) return true;
+    return metadata.transport.includes(transport);
+  });
+
+
+  return visibleOptions.map(([optionName, metadata]) => (
     <ParameterField
       key={optionName}
       name={optionName}
@@ -23,6 +31,7 @@ const Options = ({ sortedOptions, values, onChange }) =>
       showRequired={false}
     />
   ));
+};
 
 Options.propTypes = {
   sortedOptions: PropTypes.arrayOf(PropTypes.array).isRequired,
@@ -63,12 +72,13 @@ const OpenBoltOptionsSection = ({
       return (
         <EmptyContent title={__('Select a Smart Proxy to see OpenBolt options')} />
       );
-    if (sortedOptions.length === 0)
+    const options = sortedOptions(openBoltOptionsMetadata);
+    if (options.length === 0)
       return <EmptyContent title={__('No OpenBolt options available')} />;
 
     return (
       <Options
-        sortedOptions={sortedOptions(openBoltOptionsMetadata)}
+        sortedOptions={options}
         values={openBoltOptions}
         onChange={onOptionChange}
       />
