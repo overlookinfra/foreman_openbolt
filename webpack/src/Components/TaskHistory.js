@@ -22,6 +22,7 @@ import {
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
+  ExternalLinkAltIcon,
   InProgressIcon,
   OutlinedClockIcon,
   CubesIcon,
@@ -33,8 +34,8 @@ const getStatusLabel = status => {
   const configs = {
     [STATUS.SUCCESS]: { color: 'green', icon: <CheckCircleIcon /> },
     [STATUS.FAILURE]: { color: 'red', icon: <ExclamationCircleIcon /> },
-    [STATUS.EXCEPTION]: { color: 'red', icon: <ExclamationCircleIcon /> },
-    [STATUS.INVALID]: { color: 'red', icon: <ExclamationCircleIcon /> },
+    [STATUS.EXCEPTION]: { color: 'orange', icon: <ExclamationCircleIcon /> },
+    [STATUS.INVALID]: { color: 'yellow', icon: <ExclamationCircleIcon /> },
     [STATUS.RUNNING]: { color: 'blue', icon: <InProgressIcon /> },
     [STATUS.PENDING]: { color: 'blue', icon: <OutlinedClockIcon /> },
   };
@@ -138,11 +139,10 @@ const TaskHistory = () => {
               <Th modifier="wrap">{__('Task Name')}</Th>
               <Th modifier="wrap">{__('Status')}</Th>
               <Th modifier="wrap">{__('Targets')}</Th>
-              <Th modifier="wrap">{__('Smart Proxy')}</Th>
-              <Th modifier="wrap">{__('Submitted')}</Th>
+              <Th modifier="wrap">{__('Started')}</Th>
               <Th modifier="wrap">{__('Completed')}</Th>
               <Th modifier="wrap">{__('Duration')}</Th>
-              <Th modifier="wrap">{__('Actions')}</Th>
+              <Th modifier="wrap">{__('Details')}</Th>
             </Tr>
           </Thead>
           <Tbody>
@@ -150,18 +150,17 @@ const TaskHistory = () => {
               <Tr key={job.job_id}>
                 <Td hasLeftBorder={true} hasRightBorder={true}>{job.task_name || 'unknown'}</Td>
                 <Td hasLeftBorder={true} hasRightBorder={true}>{getStatusLabel(job.status)}</Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>
-                  {job.target_count || 'unknown'} {job.target_count === 1 ? 'host' : 'hosts'}
-                </Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>{job.smart_proxy.name || 'unknown'}</Td>
+                <Td hasLeftBorder={true} hasRightBorder={true}>{job.target_count || 'unknown'}</Td>
                 <Td hasLeftBorder={true} hasRightBorder={true}>{formatDate(job.submitted_at)}</Td>
                 <Td hasLeftBorder={true} hasRightBorder={true}>{job.completed_at ? formatDate(job.completed_at) : ''}</Td>
                 <Td hasLeftBorder={true} hasRightBorder={true}>{formatDuration(job.duration)}</Td>
                 <Td hasLeftBorder={true} hasRightBorder={true}>
                   <a
                     href={`${ROUTES.PAGES.TASK_EXECUTION}?proxy_id=${job.smart_proxy.id}&job_id=${job.job_id}&proxy_name=${encodeURIComponent(job.smart_proxy.name)}&target_count=${job.target_count}`}
+                    aria-label={__('View Details')}
+                    title={__('View Details')}
                   >
-                    {__('View Details')}
+                    <ExternalLinkAltIcon />
                   </a>
                 </Td>
               </Tr>
