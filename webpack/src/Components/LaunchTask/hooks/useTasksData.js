@@ -2,8 +2,10 @@ import { useState, useCallback } from 'react';
 import { translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
 import { ROUTES } from '../../common/constants';
+import { useShowMessage } from '../../common/helpers';
 
-export const useTasksData = showMessage => {
+export const useTasksData = () => {
+  const showMessage = useShowMessage();
   const [taskMetadata, setTaskMetadata] = useState({});
   const [selectedTask, setSelectedTask] = useState('');
   const [taskParameters, setTaskParameters] = useState({});
