@@ -133,7 +133,7 @@ module ForemanOpenbolt
             permission :execute_openbolt,
               { :'foreman_openbolt/task' => [
                 :page_launch_task, :page_task_execution, :page_task_history,
-                :fetch_smart_proxies, :fetch_tasks, :reload_tasks, :fetch_openbolt_options,
+                :fetch_tasks, :reload_tasks, :fetch_openbolt_options,
                 :launch_task, :job_status, :job_result, :fetch_task_history, :show
               ] }
             permission :view_smart_proxies_openbolt, :smart_proxies => [:index, :show], :resource_type => 'SmartProxy'
