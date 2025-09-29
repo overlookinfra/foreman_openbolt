@@ -4,7 +4,20 @@ import { useHistory } from 'react-router-dom';
 import { translate as __ } from 'foremanReact/common/I18n';
 
 import { API } from 'foremanReact/redux/API';
-import { Button, Form, FormGroup } from '@patternfly/react-core';
+import {
+  Button,
+  Card,
+  CardBody,
+  Divider,
+  Flex,
+  FlexItem,
+  Form,
+  Grid,
+  GridItem,
+  Label,
+  Stack,
+  StackItem,
+} from '@patternfly/react-core';
 
 import { ROUTES } from '../common/constants';
 import SmartProxySelect from './SmartProxySelect';
@@ -221,52 +234,98 @@ const LaunchTask = () => {
   return (
     <div className="openbolt-task-form">
       <Form onSubmit={handleSubmit}>
-        <SmartProxySelect
-          smartProxies={smartProxies}
-          selectedProxy={selectedProxy}
-          onProxyChange={handleProxyChange}
-          isLoading={isLoadingProxies}
-        />
-
-        <HostSelector
-          onChange={handleTargetsChange}
-          targetCount={targets.length}
-        />
-
-        <TaskSelect
-          taskNames={Object.keys(taskMetadata || {})}
-          selectedTask={selectedTask}
-          onTaskChange={handleTaskChange}
-          onReloadTasks={handleReloadTasks}
-          isLoading={isLoadingTasks}
-          isDisabled={!selectedProxy}
-        />
-
-        <ParametersSection
-          selectedTask={selectedTask}
-          taskMetadata={taskMetadata}
-          taskParameters={taskParameters}
-          onParameterChange={handleParameterChange}
-        />
-
-        <OpenBoltOptionsSection
-          selectedProxy={selectedProxy}
-          openBoltOptionsMetadata={openBoltOptionsMetadata}
-          openBoltOptions={openBoltOptions}
-          onOptionChange={handleOptionChange}
-          isLoading={isLoadingOptions}
-        />
-
-        <FormGroup>
-          <Button
-            type="submit"
-            variant="primary"
-            isDisabled={!isFormValid}
-            isLoading={isSubmitting}
-          >
-            {`🚀 ${__('Launch Task')}`}
-          </Button>
-        </FormGroup>
+        <Grid hasGutter>
+          <GridItem span={12}>
+            <Flex
+              hasGutter
+              alignItems={{ default: 'alignItemsCenter' }}
+              justifyContent={{ default: 'justifyContentSpaceBetween' }}
+            >
+              <FlexItem>
+                <Flex
+                  spaceItems={{ default: 'spaceItemsSm' }}
+                  alignItems={{ default: 'alignItemsCenter' }}
+                  wrap={{ default: 'wrap' }}
+                >
+                  {targets?.length > 0 && (
+                    <Label color="gold">
+                      {__('Targets')}: {targets.length}
+                    </Label>
+                  )}
+                  {selectedTask && (
+                    <Label color="gold">
+                      {__('Task')}: {selectedTask}
+                    </Label>
+                  )}
+                </Flex>
+              </FlexItem>
+              <FlexItem>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  isDisabled={!isFormValid}
+                  isLoading={isSubmitting}
+                >
+                  {`🚀 ${__('Launch Task')}`}
+                </Button>
+              </FlexItem>
+            </Flex>
+            <Divider />
+          </GridItem>
+          <GridItem span={12} md={7} lg={8}>
+            <Card isFlat>
+              <CardBody>
+                <Stack hasGutter>
+                  <StackItem>
+                    <SmartProxySelect
+                      smartProxies={smartProxies}
+                      selectedProxy={selectedProxy}
+                      onProxyChange={handleProxyChange}
+                      isLoading={isLoadingProxies}
+                    />
+                  </StackItem>
+                  <StackItem>
+                    <HostSelector
+                      onChange={handleTargetsChange}
+                      targetCount={targets.length}
+                    />
+                  </StackItem>
+                  <StackItem>
+                    <TaskSelect
+                      taskNames={Object.keys(taskMetadata || {})}
+                      selectedTask={selectedTask}
+                      onTaskChange={handleTaskChange}
+                      onReloadTasks={handleReloadTasks}
+                      isLoading={isLoadingTasks}
+                      isDisabled={!selectedProxy}
+                    />
+                  </StackItem>
+                  <StackItem>
+                    <ParametersSection
+                      selectedTask={selectedTask}
+                      taskMetadata={taskMetadata}
+                      taskParameters={taskParameters}
+                      onParameterChange={handleParameterChange}
+                    />
+                  </StackItem>
+                </Stack>
+              </CardBody>
+            </Card>
+          </GridItem>
+          <GridItem span={12} md={5} lg={4}>
+            <Card isFlat>
+              <CardBody>
+                <OpenBoltOptionsSection
+                  selectedProxy={selectedProxy}
+                  openBoltOptionsMetadata={openBoltOptionsMetadata}
+                  openBoltOptions={openBoltOptions}
+                  onOptionChange={handleOptionChange}
+                  isLoading={isLoadingOptions}
+                />
+              </CardBody>
+            </Card>
+          </GridItem>
+        </Grid>
       </Form>
     </div>
   );

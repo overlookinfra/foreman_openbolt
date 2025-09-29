@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { translate as __ } from 'foremanReact/common/I18n';
-import { FormGroup, Card, CardBody } from '@patternfly/react-core';
+import { FormGroup } from '@patternfly/react-core';
 import ParameterField from './ParameterField';
 import EmptyContent from './EmptyContent';
 
@@ -37,9 +37,7 @@ const ParametersSection = ({
 
   return (
     <FormGroup label={__('Parameters')} fieldId="task-parameters">
-      <Card>
-        <CardBody>{render()}</CardBody>
-      </Card>
+      {render()}
     </FormGroup>
   );
 };

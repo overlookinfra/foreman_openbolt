@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { translate as __ } from 'foremanReact/common/I18n';
-import { Card, CardBody, FormGroup, Spinner } from '@patternfly/react-core';
+import { FormGroup, Spinner } from '@patternfly/react-core';
 import ParameterField from './ParameterField';
 import EmptyContent from './EmptyContent';
 
@@ -87,9 +87,7 @@ const OpenBoltOptionsSection = ({
 
   return (
     <FormGroup label={__('OpenBolt Options')} fieldId="openbolt-options">
-      <Card>
-        <CardBody>{render()}</CardBody>
-      </Card>
+      {render()}
     </FormGroup>
   );
 };
