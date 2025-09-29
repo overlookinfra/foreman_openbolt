@@ -16,12 +16,10 @@ import { RUNNING_STATUSES } from '../common/constants';
 
 const LoadingIndicator = ({ jobStatus }) => {
   const getMessage = () => {
-    switch (jobStatus) {
-      case RUNNING_STATUSES.includes(jobStatus):
-        return sprintf(__('Task is %s...'), jobStatus);
-      default:
-        return __('Processing task results...');
+    if (RUNNING_STATUSES.includes(jobStatus)) {
+      return sprintf(__('Task is %s...'), jobStatus.toLowerCase());
     }
+    return __('Processing task results...');
   };
 
   return (
