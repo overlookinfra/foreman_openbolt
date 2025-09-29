@@ -140,10 +140,11 @@ const LaunchTask = () => {
         const visibleOptions = {};
         Object.entries(openBoltOptionsMetadata).forEach(
           ([optionName, metadata]) => {
+            const transports = Array.isArray(metadata.transport) ? metadata.transport : null;
             const isVisible =
               optionName === 'transport' ||
-              !metadata.transport ||
-              metadata.transport.includes(transport);
+              !transports ||
+              transports.includes(transport);
             if (isVisible && openBoltOptions[optionName] !== undefined) {
               visibleOptions[optionName] = openBoltOptions[optionName];
             }
@@ -261,7 +262,7 @@ const LaunchTask = () => {
             isDisabled={!isFormValid}
             isLoading={isSubmitting}
           >
-            {__('🚀 Launch Task')}
+            {'🚀 ' + __('Launch Task')}
           </Button>
         </FormGroup>
       </Form>
