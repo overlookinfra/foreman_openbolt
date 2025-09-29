@@ -8,8 +8,8 @@ import {
   HelperText,
   TextInput,
 } from '@patternfly/react-core';
-import '../common/constants.js';
-import { ENCRYPTED_DEFAULT_PLACEHOLDER } from '../common/constants.js';
+import { translate as __ } from 'foremanReact/common/I18n';
+import { ENCRYPTED_DEFAULT_PLACEHOLDER } from '../common/constants';
 
 // TODO: The "required" attribute is being ignored and you can still submit
 // the form to run a task without filling in required parameters. Need to figure
@@ -60,7 +60,12 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
    *   }
    * }
    */
-  const { type, transport, sensitive, default: defaultValue = null, description = null } = metadata;
+  const {
+    type,
+    sensitive,
+    default: defaultValue = null,
+    description = null,
+  } = metadata;
   const isRequired =
     showRequired &&
     !type
@@ -124,7 +129,7 @@ const ParameterField = ({ name, metadata, value, showRequired, onChange }) => {
     }
 
     const getValue = (() => {
-      if (value != undefined && value != '') {
+      if (value !== undefined && value !== '') {
         return value;
       }
 

@@ -120,7 +120,6 @@ const LaunchTask = () => {
   const handleTargetsChange = useCallback(
     targetArray => {
       setTargets(targetArray);
-      console.debug('Targets:', targetArray);
     },
     [setTargets]
   );
@@ -137,16 +136,19 @@ const LaunchTask = () => {
       setIsSubmitting(true);
 
       try {
-        const transport = openBoltOptions.transport;
+        const { transport } = openBoltOptions;
         const visibleOptions = {};
-        Object.entries(openBoltOptionsMetadata).forEach(([optionName, metadata]) => {
-          const isVisible = optionName == 'transport' ||
-            !metadata.transport ||
-            metadata.transport.includes(transport);
-          if (isVisible && openBoltOptions[optionName] !== undefined) {
-            visibleOptions[optionName] = openBoltOptions[optionName];
+        Object.entries(openBoltOptionsMetadata).forEach(
+          ([optionName, metadata]) => {
+            const isVisible =
+              optionName === 'transport' ||
+              !metadata.transport ||
+              metadata.transport.includes(transport);
+            if (isVisible && openBoltOptions[optionName] !== undefined) {
+              visibleOptions[optionName] = openBoltOptions[optionName];
+            }
           }
-        });
+        );
 
         const body = {
           proxy_id: selectedProxy,
@@ -197,6 +199,7 @@ const LaunchTask = () => {
       targets,
       taskParameters,
       openBoltOptions,
+      openBoltOptionsMetadata,
       smartProxies,
       history,
       showMessage,

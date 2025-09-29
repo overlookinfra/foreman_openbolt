@@ -20,7 +20,6 @@ const Options = ({ sortedOptions, values, onChange }) => {
     return metadata.transport.includes(transport);
   });
 
-
   return visibleOptions.map(([optionName, metadata]) => (
     <ParameterField
       key={optionName}
@@ -50,19 +49,18 @@ const OpenBoltOptionsSection = ({
     metadata.type === 'boolean' || metadata.type === 'Optional[Boolean]';
 
   // Sort options to group booleans at the top to make the UI cleaner
-  const sortedOptions = (openBoltOptionsMetadata) => {
-    if (!openBoltOptionsMetadata) return [];
-    const { transport, ...rest } = openBoltOptionsMetadata;
+  const sortedOptions = metadata => {
+    if (!metadata) return [];
+    const { transport, ...rest } = metadata;
     const entries = Object.entries(rest);
 
     entries.sort(([_nameA, metadataA], [_nameB, metadataB]) => {
-        const aIsBoolean = isBooleanType(metadataA);
-        const bIsBoolean = isBooleanType(metadataB);
+      const aIsBoolean = isBooleanType(metadataA);
+      const bIsBoolean = isBooleanType(metadataB);
 
-        if (aIsBoolean !== bIsBoolean) return aIsBoolean ? -1 : 1;
-        return 0;
-      }
-    );
+      if (aIsBoolean !== bIsBoolean) return aIsBoolean ? -1 : 1;
+      return 0;
+    });
     return [['transport', transport], ...entries];
   };
 
@@ -70,7 +68,9 @@ const OpenBoltOptionsSection = ({
     if (isLoading) return <Loading />;
     if (!selectedProxy)
       return (
-        <EmptyContent title={__('Select a Smart Proxy to see OpenBolt options')} />
+        <EmptyContent
+          title={__('Select a Smart Proxy to see OpenBolt options')}
+        />
       );
     const options = sortedOptions(openBoltOptionsMetadata);
     if (options.length === 0)

@@ -11,14 +11,7 @@ import {
   Spinner,
   Bullseye,
 } from '@patternfly/react-core';
-import {
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-} from '@patternfly/react-table';
+import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 import {
   CheckCircleIcon,
   ExclamationCircleIcon,
@@ -88,7 +81,8 @@ const TaskHistory = () => {
           setTotal(data.total || 0);
         }
       } catch (error) {
-        if (!cancelled) showMessage(__('Failed to load task history: ') + error.message);
+        if (!cancelled)
+          showMessage(__('Failed to load task history: ') + error.message);
       } finally {
         if (!cancelled) setIsLoadingTaskHistory(false);
       }
@@ -101,86 +95,96 @@ const TaskHistory = () => {
     };
   }, [page, perPage, showMessage]);
 
-  const spinner = () => {
-    return (
-      <Bullseye>
-        <Spinner size="xl" />
-      </Bullseye>
-    );
-  }
+  const spinner = () => (
+    <Bullseye>
+      <Spinner size="xl" />
+    </Bullseye>
+  );
 
-  const noJobs = () => {
-    return (
-      <EmptyState>
-          <EmptyStateHeader
-            titleText={__('No task history found')}
-            icon={<EmptyStateIcon icon={CubesIcon} />}
-            headingLevel="h2"
-          />
-          <EmptyStateBody>
-            {__('Run an OpenBolt task to see it appear here.')}
-          </EmptyStateBody>
-        </EmptyState>
-    )
-  };
+  const noJobs = () => (
+    <EmptyState>
+      <EmptyStateHeader
+        titleText={__('No task history found')}
+        icon={<EmptyStateIcon icon={CubesIcon} />}
+        headingLevel="h2"
+      />
+      <EmptyStateBody>
+        {__('Run an OpenBolt task to see it appear here.')}
+      </EmptyStateBody>
+    </EmptyState>
+  );
 
-  const jobTable = () => {
-    return (
-      <>
-        <Table 
-          aria-label="Task history table"
-          borders={true}
-          isStriped={true}
-          isStickyHeader={true}
-          variant="compact"
-        >
-          <Thead>
-            <Tr>
-              <Th modifier="wrap">{__('Task Name')}</Th>
-              <Th modifier="wrap">{__('Status')}</Th>
-              <Th modifier="wrap">{__('Targets')}</Th>
-              <Th modifier="wrap">{__('Started')}</Th>
-              <Th modifier="wrap">{__('Completed')}</Th>
-              <Th modifier="wrap">{__('Duration')}</Th>
-              <Th modifier="wrap">{__('Details')}</Th>
+  const jobTable = () => (
+    <>
+      <Table
+        aria-label="Task history table"
+        borders
+        isStriped
+        isStickyHeader
+        variant="compact"
+      >
+        <Thead>
+          <Tr>
+            <Th modifier="wrap">{__('Task Name')}</Th>
+            <Th modifier="wrap">{__('Status')}</Th>
+            <Th modifier="wrap">{__('Targets')}</Th>
+            <Th modifier="wrap">{__('Started')}</Th>
+            <Th modifier="wrap">{__('Completed')}</Th>
+            <Th modifier="wrap">{__('Duration')}</Th>
+            <Th modifier="wrap">{__('Details')}</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {taskHistory.map(job => (
+            <Tr key={job.job_id}>
+              <Td hasLeftBorder hasRightBorder>
+                {job.task_name || 'unknown'}
+              </Td>
+              <Td hasLeftBorder hasRightBorder>
+                {getStatusLabel(job.status)}
+              </Td>
+              <Td hasLeftBorder hasRightBorder>
+                {job.target_count || 'unknown'}
+              </Td>
+              <Td hasLeftBorder hasRightBorder>
+                {formatDate(job.submitted_at)}
+              </Td>
+              <Td hasLeftBorder hasRightBorder>
+                {job.completed_at ? formatDate(job.completed_at) : ''}
+              </Td>
+              <Td hasLeftBorder hasRightBorder>
+                {formatDuration(job.duration)}
+              </Td>
+              <Td hasLeftBorder hasRightBorder>
+                <a
+                  href={`${ROUTES.PAGES.TASK_EXECUTION}?proxy_id=${
+                    job.smart_proxy.id
+                  }&job_id=${job.job_id}&proxy_name=${encodeURIComponent(
+                    job.smart_proxy.name
+                  )}&target_count=${job.target_count}`}
+                  aria-label={__('View Details')}
+                  title={__('View Details')}
+                >
+                  <ExternalLinkAltIcon />
+                </a>
+              </Td>
             </Tr>
-          </Thead>
-          <Tbody>
-            {taskHistory.map(job => (
-              <Tr key={job.job_id}>
-                <Td hasLeftBorder={true} hasRightBorder={true}>{job.task_name || 'unknown'}</Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>{getStatusLabel(job.status)}</Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>{job.target_count || 'unknown'}</Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>{formatDate(job.submitted_at)}</Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>{job.completed_at ? formatDate(job.completed_at) : ''}</Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>{formatDuration(job.duration)}</Td>
-                <Td hasLeftBorder={true} hasRightBorder={true}>
-                  <a
-                    href={`${ROUTES.PAGES.TASK_EXECUTION}?proxy_id=${job.smart_proxy.id}&job_id=${job.job_id}&proxy_name=${encodeURIComponent(job.smart_proxy.name)}&target_count=${job.target_count}`}
-                    aria-label={__('View Details')}
-                    title={__('View Details')}
-                  >
-                    <ExternalLinkAltIcon />
-                  </a>
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
+          ))}
+        </Tbody>
+      </Table>
 
-        <Pagination
-          itemCount={total}
-          perPage={perPage}
-          page={page}
-          onSetPage={(_event, newPage) => setPage(newPage)}
-          onPerPageSelect={(_event, newPerPage) => {
-            setPerPage(newPerPage);
-            setPage(1);
-          }}
-        />
-      </>
-    );
-  }
+      <Pagination
+        itemCount={total}
+        perPage={perPage}
+        page={page}
+        onSetPage={(_event, newPage) => setPage(newPage)}
+        onPerPageSelect={(_event, newPerPage) => {
+          setPerPage(newPerPage);
+          setPage(1);
+        }}
+      />
+    </>
+  );
 
   return (
     <div className="task-history">

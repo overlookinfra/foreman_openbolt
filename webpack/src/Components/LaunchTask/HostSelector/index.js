@@ -106,7 +106,6 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
 
       try {
         const finalSearch = searchParts.join(' or ');
-        console.debug('Host search query:', finalSearch);
 
         const searchParams = new URLSearchParams({
           search: finalSearch,
@@ -118,12 +117,10 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
         if (!cancelled) {
           const hostNames =
             response.data?.results?.map(host => host.name) || [];
-          console.debug('Host names:', hostNames);
           onChange(hostNames);
         }
       } catch (error) {
         if (!cancelled) {
-          console.error('Error fetching hosts:', error);
           setFetchError(error.message || __('Failed to fetch hosts'));
           onChange([]);
         }
