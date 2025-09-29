@@ -175,13 +175,14 @@ module ForemanOpenbolt
     def fetch_task_history
       @task_history = TaskJob.includes(:smart_proxy)
                              .recent
-                             .paginate(page: params[:page], per_page: params[:per_page] || 20)
+                             .paginate(page: params[:page],
+                                       per_page: (params[:per_page] || 20).to_i)
 
       render json: {
         results: @task_history.map { |job| serialize_task_job(job) },
         total: @task_history.total_entries,
         page: @task_history.current_page,
-        per_page: @task_history.limit_value,
+        per_page: @task_history.per_page,
       }
     end
 
