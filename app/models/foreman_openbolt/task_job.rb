@@ -60,7 +60,7 @@ module ForemanOpenbolt
 
     # Result/log will already be scrubbed by the proxy
     def update_from_proxy_result!(proxy_result)
-      return unless proxy_result.present?
+      return if proxy_result.blank?
 
       transaction do
         self.status = proxy_result['status'] if proxy_result['status'].present?
@@ -98,13 +98,12 @@ module ForemanOpenbolt
     end
 
     def cleanup_proxy_artifacts
+      return unless result.present? && log.present?
       # Schedule cleanup of proxy artifacts if we have successfully saved the results
-      if result.present? && log.present?
-        #ForemanTasks.async_task(::Actions::ForemanOpenbolt::CleanupProxyArtifacts,
-        #  smart_proxy_id,
-        #  job_id)
-        #Rails.logger.info("Scheduled cleanup for job #{job_id} on proxy #{smart_proxy_id}")
-      end
+      # ForemanTasks.async_task(::Actions::ForemanOpenbolt::CleanupProxyArtifacts,
+      #   smart_proxy_id,
+      #   job_id)
+      # Rails.logger.info("Scheduled cleanup for job #{job_id} on proxy #{smart_proxy_id}")
     end
   end
 end

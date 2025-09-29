@@ -42,33 +42,29 @@ module ForemanOpenbolt
     end
 
     def fetch_openbolt_options
-      begin
-        options = @openbolt_api.openbolt_options
+      options = @openbolt_api.openbolt_options
 
-        # Get defaults from Foreman settings
-        defaults = {}
-        openbolt_settings.each do |setting|
-          key = setting.name.sub(/^openbolt_/, '')
-          if setting.value.present?
-            defaults[key] = setting.encrypted? ? ENCRYPTED_PLACEHOLDER : setting.value
-          end
-        end
-
-        # Merge the defaults into the options metadata
-        result = {}
-        options.each do |name, meta|
-          result[name] = meta.dup
-          result[name]['default'] = defaults[name] if defaults.key?(name)
-        end
-
-        render json: result
-      rescue ProxyAPI::ProxyException => e
-        logger.error("OpenBolt API error for fetch_openbolt_options: #{e.message}")
-        render_error("Smart Proxy error: #{e.message}", :bad_gateway)
-      rescue StandardError => e
-        logger.error("Unexpected error in fetch_openbolt_options: #{e.class}: #{e.message}")
-        render_error("Internal server error: #{e.message}", :internal_server_error)
+      # Get defaults from Foreman settings
+      defaults = {}
+      openbolt_settings.each do |setting|
+        key = setting.name.sub(/^openbolt_/, '')
+        defaults[key] = setting.encrypted? ? ENCRYPTED_PLACEHOLDER : setting.value if setting.value.present?
       end
+
+      # Merge the defaults into the options metadata
+      result = {}
+      options.each do |name, meta|
+        result[name] = meta.dup
+        result[name]['default'] = defaults[name] if defaults.key?(name)
+      end
+
+      render json: result
+    rescue ProxyAPI::ProxyException => e
+      logger.error("OpenBolt API error for fetch_openbolt_options: #{e.message}")
+      render_error("Smart Proxy error: #{e.message}", :bad_gateway)
+    rescue StandardError => e
+      logger.error("Unexpected error in fetch_openbolt_options: #{e.class}: #{e.message}")
+      render_error("Internal server error: #{e.message}", :internal_server_error)
     end
 
     def launch_task
@@ -113,9 +109,9 @@ module ForemanOpenbolt
         )
 
         # Start background polling to update status
-        #ForemanTasks.async_task(Actions::ForemanOpenbolt::PollTaskStatus,
-        #  response['id'],
-        #  @smart_proxy.id)
+        # ForemanTasks.async_task(Actions::ForemanOpenbolt::PollTaskStatus,
+        #   response['id'],
+        #   @smart_proxy.id)
 
         render json: {
           job_id: response['id'],
@@ -178,8 +174,8 @@ module ForemanOpenbolt
     # List of all task history
     def fetch_task_history
       @task_history = TaskJob.includes(:smart_proxy)
-                          .recent
-                          .paginate(page: params[:page], per_page: params[:per_page] || 20)
+                             .recent
+                             .paginate(page: params[:page], per_page: params[:per_page] || 20)
 
       render json: {
         results: @task_history.map { |job| serialize_task_job(job) },
@@ -236,11 +232,10 @@ module ForemanOpenbolt
     def load_task_job
       job_id = params[:job_id]
       logger.debug("load_task_job - Job ID: #{job_id}")
+      return if job_id.blank?
 
-      if job_id.present?
-        @task_job = TaskJob.find_by(job_id: job_id)
-        logger.debug("load_task_job - Task Job: #{@task_job.inspect}")
-      end
+      @task_job = TaskJob.find_by(job_id: job_id)
+      logger.debug("load_task_job - Task Job: #{@task_job.inspect}")
     end
 
     def openbolt_settings
@@ -248,7 +243,7 @@ module ForemanOpenbolt
     end
 
     def encrypted_settings
-      openbolt_settings.select { |setting| setting.encrypted? }
+      openbolt_settings.select(&:encrypted?)
     end
 
     def merge_encrypted_defaults(options)
@@ -265,7 +260,7 @@ module ForemanOpenbolt
       scrubbed = options.dup
       encrypted_settings.each do |setting|
         option_name = setting.name.sub(/^openbolt_/, '')
-        scrubbed[option_name] = REDACTED_PLACEHOLDER if scrubbed.keys.include?(option_name)
+        scrubbed[option_name] = REDACTED_PLACEHOLDER if scrubbed.key?(option_name)
       end
       scrubbed
     end

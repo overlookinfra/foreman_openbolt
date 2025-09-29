@@ -30,14 +30,21 @@ module ForemanOpenbolt
               # Maybe the proxy can just hold a map of settings to transports and pull the
               # settings from here. However, we'll need to figure out the best way of doing
               # Proxy -> Foreman communication with the variety of auth methods people use.
-              TRANSPORTS = { 'ssh': N_('SSH'), 'winrm': N_('WinRM') }
+
+              # rubocop:disable Lint/ConstantDefinitionInBlock
+              TRANSPORTS = {
+                'ssh': N_('SSH'),
+                'winrm': N_('WinRM'),
+              }.freeze
               LOG_LEVELS = {
                 'error': N_('Error'),
                 'warning': N_('Warning'),
                 'info': N_('Info'),
                 'debug': N_('Debug'),
-                'trace': N_('Trace')
-              }
+                'trace': N_('Trace'),
+              }.freeze
+              # rubocop:enable Lint/ConstantDefinitionInBlock
+
               setting 'openbolt_transport',
                 type: :string,
                 default: 'ssh',
@@ -54,12 +61,17 @@ module ForemanOpenbolt
                 type: :boolean,
                 default: false,
                 full_name: N_('Verbose'),
-                description: N_('Run the OpenBolt command with the --verbose flag. This prints additional information during OpenBolt execution and will print any out::verbose plan statements.')
+                description: N_(
+                  'Run the OpenBolt command with the --verbose flag. This prints additional information ' +
+                  'during OpenBolt execution and will print any out::verbose plan statements.'
+                )
               setting 'openbolt_noop',
                 type: :boolean,
                 default: false,
                 full_name: N_('No Operation'),
-                description: N_('Run the OpenBolt command with the --noop flag, which will make no changes to the target host')
+                description: N_(
+                  'Run the OpenBolt command with the --noop flag, which will make no changes to the target host'
+                )
               setting 'openbolt_tmpdir',
                 type: :string,
                 default: '',
@@ -85,7 +97,10 @@ module ForemanOpenbolt
                 type: :string,
                 default: '',
                 full_name: N_('SSH Private Key'),
-                description: N_('Path on the smart proxy host to the private key used for SSH authentication. This key must be readable by the foreman-proxy user.')
+                description: N_(
+                  'Path on the smart proxy host to the private key used for SSH authentication. This key must be ' +
+                  'readable by the foreman-proxy user.'
+                )
               setting 'openbolt_run-as',
                 type: :string,
                 default: '',
