@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import { translate as __ } from 'foremanReact/common/I18n';
-import { Button, Alert } from '@patternfly/react-core';
+import { Alert, Button, Stack, StackItem } from '@patternfly/react-core';
 
 import ExecutionDetails from './ExecutionDetails';
 import LoadingIndicator from './LoadingIndicator';
@@ -56,42 +56,56 @@ const TaskExecution = () => {
   const jobLog = `OpenBolt command: ${jobCommand}\n${jobData?.log}`;
 
   return (
-    <div className="openbolt-task-execution">
-      <Button
-        variant="secondary"
-        onClick={() => history.push(ROUTES.PAGES.LAUNCH_TASK)}
-        className="pf-v5-u-mb-md"
-      >
-        {__('Run Another Task')}
-      </Button>
+    <Stack hasGutter>
+      <StackItem>
+        <Button
+          variant="secondary"
+          onClick={() => history.push(ROUTES.PAGES.LAUNCH_TASK)}
+          className="pf-v5-u-mb-md"
+        >
+          {__('Run Another Task')}
+        </Button>
+      </StackItem>
 
-      <ExecutionDetails
-        proxyName={proxyName}
-        jobId={jobId}
-        jobStatus={jobStatus}
-        pollCount={pollCount}
-        isPolling={isPolling}
-        targetCount={targetCount ?? 'Unknown'}
-      />
+      <StackItem>
+        <ExecutionDetails
+          proxyName={proxyName}
+          jobId={jobId}
+          jobStatus={jobStatus}
+          pollCount={pollCount}
+          isPolling={isPolling}
+          targetCount={targetCount ?? 'Unknown'}
+        />
+      </StackItem>
 
-      {isPolling && <LoadingIndicator jobStatus={jobStatus} />}
+      {isPolling && (
+        <StackItem>
+          <LoadingIndicator jobStatus={jobStatus} />
+        </StackItem>
+      )}
 
       {!isPolling && jobResult && (
-        <ResultDisplay jobResult={jobResult} jobLog={jobLog} />
+        <StackItem>
+          <ResultDisplay jobResult={jobResult} jobLog={jobLog} />
+        </StackItem>
       )}
 
       {!isPolling && !jobResult && isComplete && (
-        <Alert variant="warning" title={__('No Results')} isInline>
-          {__('No results for this task run could be retrieved.')}
-        </Alert>
+        <StackItem>
+          <Alert variant="warning" title={__('No Results')} isInline>
+            {__('No results for this task run could be retrieved.')}
+          </Alert>
+        </StackItem>
       )}
 
       {pollError && (
-        <Alert variant="danger" title={__('Error')} isInline>
-          {pollError}
-        </Alert>
+        <StackItem>
+          <Alert variant="danger" title={__('Error')} isInline>
+            {pollError}
+          </Alert>
+        </StackItem>
       )}
-    </div>
+    </Stack>
   );
 };
 

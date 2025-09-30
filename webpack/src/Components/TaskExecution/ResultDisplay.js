@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import { translate as __ } from 'foremanReact/common/I18n';
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
@@ -13,7 +14,10 @@ import {
   EmptyStateIcon,
   EmptyStateHeader,
   EmptyStateBody,
-  Button,
+  Flex,
+  FlexItem,
+  Stack,
+  StackItem,
   Tabs,
   Tab,
   TabTitleText,
@@ -72,12 +76,20 @@ EmptyTab.propTypes = {
 
 const DataTab = ({ content }) => (
   <div className="pf-v5-u-mt-md">
-    <div className="pf-v5-u-display-flex pf-v5-u-justify-content-flex-start pf-v5-u-mb-sm">
-      <CopyButton getText={() => content} />
-    </div>
-    <CodeBlock>
-      <CodeBlockCode>{content}</CodeBlockCode>
-    </CodeBlock>
+    <Stack hasGutter>
+      <StackItem>
+        <Flex justifyContent={{ default: 'justifyContentFlexStart' }}>
+          <FlexItem>
+            <CopyButton getText={() => content} />
+          </FlexItem>
+        </Flex>
+      </StackItem>
+      <StackItem>
+        <CodeBlock>
+          <CodeBlockCode>{content}</CodeBlockCode>
+        </CodeBlock>
+      </StackItem>
+    </Stack>
   </div>
 );
 
@@ -102,7 +114,7 @@ const ResultDisplay = ({ jobResult, jobLog }) => {
   const hasLog = jobLog?.trim?.().length > 0;
 
   return (
-    <Card className="pf-v5-u-mb-md">
+    <Card>
       <CardHeader>
         <CardTitle>{__('Task Output')}</CardTitle>
       </CardHeader>

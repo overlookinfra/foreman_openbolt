@@ -23,7 +23,7 @@ const LoadingIndicator = ({ jobStatus }) => {
   };
 
   return (
-    <Card className="pf-v5-u-mb-md">
+    <Card>
       <CardBody>
         <Bullseye>
           <EmptyState variant={EmptyStateVariant.lg}>

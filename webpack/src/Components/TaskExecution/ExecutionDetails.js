@@ -12,6 +12,9 @@ import {
   DescriptionListDescription,
   Label,
   Flex,
+  FlexItem,
+  Text,
+  TextVariants,
   Spinner,
 } from '@patternfly/react-core';
 import {
@@ -85,15 +88,21 @@ const StatusLabel = ({ status, isPolling }) => {
       spaceItems={{ default: 'spaceItemsSm' }}
       alignItems={{ default: 'alignItemsCenter' }}
     >
-      <Label color={statusConfig.color} icon={<StatusIcon />}>
-        {statusConfig.label}
-      </Label>
+      <FlexItem>
+        <Label color={statusConfig.color} icon={<StatusIcon />}>
+          {statusConfig.label}
+        </Label>
+      </FlexItem>
       {isPolling && (
         <>
-          <Spinner size="sm" aria-label="Polling" />
-          <span className="pf-v5-u-color-200 pf-v5-u-font-size-sm">
-            {sprintf(__('Updating every %s seconds...'), intervalSeconds)}
-          </span>
+          <FlexItem>
+            <Spinner size="sm" aria-label="Polling" />
+          </FlexItem>
+          <FlexItem>
+            <Text component={TextVariants.small} className="pf-v5-u-color-200">
+              {sprintf(__('Updating every %s seconds...'), intervalSeconds)}
+            </Text>
+          </FlexItem>
         </>
       )}
     </Flex>
@@ -113,7 +122,7 @@ const ExecutionDetails = ({
   isPolling,
   targetCount,
 }) => (
-  <Card className="pf-v5-u-mb-md">
+  <Card>
     <CardHeader>
       <CardTitle>{__('Execution Details')}</CardTitle>
     </CardHeader>
