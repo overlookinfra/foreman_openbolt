@@ -71,7 +71,7 @@ const TaskExecution = () => {
         jobStatus={jobStatus}
         pollCount={pollCount}
         isPolling={isPolling}
-        targetCount={targetCount || 'Unknown'}
+        targetCount={targetCount ?? 'Unknown'}
       />
 
       {isPolling && <LoadingIndicator jobStatus={jobStatus} />}

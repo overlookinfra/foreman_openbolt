@@ -144,7 +144,7 @@ const TaskHistory = () => {
                 {getStatusLabel(job.status)}
               </Td>
               <Td hasLeftBorder hasRightBorder>
-                {job.target_count || 'unknown'}
+                {job.target_count ?? 'unknown'}
               </Td>
               <Td hasLeftBorder hasRightBorder>
                 {formatDate(job.submitted_at)}

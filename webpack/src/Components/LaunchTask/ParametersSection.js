@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { translate as __ } from 'foremanReact/common/I18n';
 import { FormGroup } from '@patternfly/react-core';
 import ParameterField from './ParameterField';
+import FieldTable from './FieldTable';
 import EmptyContent from './EmptyContent';
 
 const ParametersSection = ({
@@ -21,18 +22,31 @@ const ParametersSection = ({
       return <EmptyContent title={__('Select a task to see parameters')} />;
     if (!hasParameters)
       return <EmptyContent title={__('This task has no parameters')} />;
-    return Object.entries(
-      taskMetadata[selectedTask].parameters
-    ).map(([paramName, metadata]) => (
-      <ParameterField
-        key={paramName}
-        name={paramName}
-        metadata={metadata}
-        value={taskParameters[paramName]}
-        onChange={onParameterChange}
-        showRequired
-      />
-    ));
+    const entries = Object.entries(taskMetadata[selectedTask].parameters);
+    const rows = entries.map(([paramName, metadata]) => {
+      const isRequired = !metadata.type
+        ?.toString()
+        .toLowerCase()
+        .startsWith('optional');
+      return {
+        key: paramName,
+        name: paramName,
+        required: isRequired,
+        valueCell: (
+          <ParameterField
+            name={paramName}
+            metadata={metadata}
+            value={taskParameters[paramName]}
+            onChange={onParameterChange}
+            isRequired={isRequired}
+          />
+        ),
+        type: metadata.type,
+        description: metadata.description,
+      };
+    });
+
+    return <FieldTable rows={rows} />;
   };
 
   return (

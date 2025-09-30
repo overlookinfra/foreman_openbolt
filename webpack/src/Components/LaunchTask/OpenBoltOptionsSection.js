@@ -3,7 +3,9 @@ import PropTypes from 'prop-types';
 import { translate as __ } from 'foremanReact/common/I18n';
 import { FormGroup, Spinner } from '@patternfly/react-core';
 import ParameterField from './ParameterField';
+import FieldTable from './FieldTable';
 import EmptyContent from './EmptyContent';
+import { ENCRYPTED_DEFAULT_PLACEHOLDER } from '../common/constants';
 
 const Loading = () => (
   <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -20,16 +22,27 @@ const Options = ({ sortedOptions, values, onChange }) => {
     return metadata.transport.includes(transport);
   });
 
-  return visibleOptions.map(([optionName, metadata]) => (
-    <ParameterField
-      key={optionName}
-      name={optionName}
-      metadata={metadata}
-      value={values[optionName]}
-      onChange={onChange}
-      showRequired={false}
-    />
-  ));
+  const rows = visibleOptions.map(([optionName, metadata]) => ({
+    key: optionName,
+    name: optionName,
+    valueCell: (
+      // We don't want to show the type for OpenBolt options as
+      // there are no complex types like there are for task parameters,
+      // so we omit it here. Also, none should be marked as required, since
+      // all options are optional except transport, which always has a value.
+      <ParameterField
+        name={optionName}
+        metadata={metadata}
+        value={values[optionName]}
+        onChange={onChange}
+      />
+    ),
+    description: metadata.description,
+    hasEncryptedDefault:
+      metadata.default && metadata.default === ENCRYPTED_DEFAULT_PLACEHOLDER,
+  }));
+
+  return <FieldTable rows={rows} />;
 };
 
 Options.propTypes = {
