@@ -92,7 +92,7 @@ module ForemanOpenbolt
                 type: :boolean,
                 default: true,
                 full_name: N_('SSH Host Key Check'),
-                description: N_('Do host key checking when connecting to hosts via SSH')
+                description: N_('Whether to perform host key verification when connecting to targets over SSH')
               setting 'openbolt_private-key',
                 type: :string,
                 default: '',
@@ -105,23 +105,26 @@ module ForemanOpenbolt
                 type: :string,
                 default: '',
                 full_name: N_('SSH Run As User'),
-                description: N_('User to run as via privilege escalation when using SSH transport')
+                description: N_(
+                  'The user to run commands as on the target host. This requires that the user specified ' +
+                  'in the "user" option has permission to run commands as this user.'
+                )
               setting 'openbolt_sudo-password',
                 type: :string,
                 default: '',
                 full_name: N_('SSH Sudo Password'),
-                description: N_('Password for the user to run commands as via sudo'),
+                description: N_('Password used for privilege escalation when using SSH'),
                 encrypted: true
               setting 'openbolt_ssl',
                 type: :boolean,
                 default: true,
                 full_name: N_('WinRM SSL'),
-                description: N_('Use SSL when connecting to hosts')
+                description: N_('Use SSL when connecting to hosts via WinRM')
               setting 'openbolt_ssl-verify',
                 type: :boolean,
                 default: true,
                 full_name: N_('WinRM SSL Verify'),
-                description: N_('Verify remote host SSL certificate when connecting to hosts')
+                description: N_('Verify remote host SSL certificate when connecting to hosts via WinRM')
             end
           end
 
