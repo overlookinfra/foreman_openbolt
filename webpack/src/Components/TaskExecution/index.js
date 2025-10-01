@@ -73,6 +73,7 @@ const TaskExecution = () => {
 
       <StackItem>
         <ExecutionDisplay
+          proxyId={proxyId}
           proxyName={proxyName}
           jobId={jobId}
           jobStatus={jobStatus}

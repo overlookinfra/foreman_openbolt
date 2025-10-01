@@ -127,6 +127,7 @@ StatusLabel.propTypes = {
 };
 
 const ExecutionDetails = ({
+  proxyId,
   proxyName,
   jobId,
   jobStatus,
@@ -139,7 +140,11 @@ const ExecutionDetails = ({
     <CardBody>
       <DescriptionList isHorizontal>
         <DescriptionItem label={__('Proxy')}>
-          {proxyName || <em>{__('Unknown')}</em>}
+          {proxyId && proxyName ? (
+            <a href={`/smart_proxies/${proxyId}`}>{proxyName}</a>
+          ) : (
+            <em>{__('Unknown')}</em>
+          )}
         </DescriptionItem>
 
         <DescriptionItem label={__('Job ID')}>
@@ -165,6 +170,7 @@ const ExecutionDetails = ({
 );
 
 ExecutionDetails.propTypes = {
+  proxyId: PropTypes.string.isRequired,
   proxyName: PropTypes.string.isRequired,
   jobId: PropTypes.string.isRequired,
   jobStatus: PropTypes.string.isRequired,

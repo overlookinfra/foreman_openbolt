@@ -9,6 +9,7 @@ import ExecutionDetails from './ExecutionDetails';
 import TaskDetails from './TaskDetails';
 
 const ExecutionDisplay = ({
+  proxyId,
   proxyName,
   jobId,
   jobStatus,
@@ -40,6 +41,7 @@ const ExecutionDisplay = ({
         }
       >
         <ExecutionDetails
+          proxyId={proxyId}
           proxyName={proxyName}
           jobId={jobId}
           jobStatus={jobStatus}
@@ -73,6 +75,7 @@ const ExecutionDisplay = ({
 };
 
 ExecutionDisplay.propTypes = {
+  proxyId: PropTypes.string.isRequired,
   proxyName: PropTypes.string.isRequired,
   jobId: PropTypes.string.isRequired,
   jobStatus: PropTypes.string.isRequired,
