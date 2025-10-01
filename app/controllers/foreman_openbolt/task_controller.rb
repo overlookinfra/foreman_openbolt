@@ -109,9 +109,9 @@ module ForemanOpenbolt
         )
 
         # Start background polling to update status
-        # ForemanTasks.async_task(Actions::ForemanOpenbolt::PollTaskStatus,
-        #   response['id'],
-        #   @smart_proxy.id)
+        ForemanTasks.async_task(Actions::ForemanOpenbolt::PollTaskStatus,
+          response['id'],
+          @smart_proxy.id)
 
         render json: {
           job_id: response['id'],
@@ -131,16 +131,6 @@ module ForemanOpenbolt
     def job_status
       return render_error('Task job not found', :not_found) unless @task_job
 
-      # Try to update from proxy, but don't fail if proxy is down
-      begin
-        proxy_status = @openbolt_api.job_status(job_id: @task_job.job_id)
-        if proxy_status && proxy_status['status'] && proxy_status['status'] != @task_job.status
-          @task_job.update!(status: proxy_status['status'])
-        end
-      rescue ProxyAPI::ProxyException => e
-        logger.warn("Could not fetch status from proxy: #{e.message}")
-      end
-
       render json: {
         status: @task_job.status,
         submitted_at: @task_job.submitted_at,
@@ -152,17 +142,6 @@ module ForemanOpenbolt
     def job_result
       return render_error('Task job not found', :not_found) unless @task_job
 
-      # If we don't have the result cached and task is complete, fetch from proxy
-      if @task_job.result.nil? && @task_job.completed?
-        begin
-          proxy_result = @openbolt_api.job_result(job_id: @task_job.job_id)
-          @task_job.update_from_proxy_result!(proxy_result) if proxy_result
-        rescue ProxyAPI::ProxyException => e
-          logger.warn("Could not fetch result from proxy: #{e.message}")
-        end
-      end
-
-      # Return the actual task results
       render json: {
         status: @task_job.status,
         command: @task_job.command,

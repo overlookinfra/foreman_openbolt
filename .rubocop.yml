@@ -32,3 +32,6 @@ Metrics/PerceivedComplexity:
 
 Metrics/ParameterLists:
   Enabled: false
+
+Naming/MethodParameterName:
+  Enabled: false
