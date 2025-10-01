@@ -26,7 +26,8 @@ const TaskExecution = () => {
     result: jobData,
     error: pollError,
     isPolling,
-    pollCount,
+    submittedAt,
+    completedAt,
   } = useJobPolling(proxyId, jobId);
 
   useEffect(() => {
@@ -72,9 +73,10 @@ const TaskExecution = () => {
           proxyName={proxyName}
           jobId={jobId}
           jobStatus={jobStatus}
-          pollCount={pollCount}
           isPolling={isPolling}
           targetCount={targetCount ?? 'Unknown'}
+          submittedAt={submittedAt}
+          completedAt={completedAt}
         />
       </StackItem>
 

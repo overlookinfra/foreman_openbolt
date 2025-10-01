@@ -66,6 +66,24 @@ const getStatusConfig = status =>
     label: __('Unknown'),
   };
 
+const formatExecutionTime = (submittedAt, completedAt) => {
+  if (!submittedAt) return __('-');
+
+  const start = new Date(submittedAt);
+  const end = completedAt ? new Date(completedAt) : new Date();
+  const totalSeconds = Math.floor((end - start) / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const parts = [];
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
+  parts.push(`${seconds}s`);
+
+  return parts.join('');
+};
+
 const DescriptionItem = ({ label, children }) => (
   <DescriptionListGroup>
     <DescriptionListTerm>{label}</DescriptionListTerm>
@@ -118,9 +136,10 @@ const ExecutionDetails = ({
   proxyName,
   jobId,
   jobStatus,
-  pollCount,
   isPolling,
   targetCount,
+  submittedAt,
+  completedAt,
 }) => (
   <Card>
     <CardHeader>
@@ -146,11 +165,9 @@ const ExecutionDetails = ({
           <StatusLabel status={jobStatus} isPolling={isPolling} />
         </DescriptionItem>
 
-        {pollCount > 0 && (
-          <DescriptionItem label={__('Checks')}>
-            {pollCount} {pollCount === 1 ? __('time') : __('times')}
-          </DescriptionItem>
-        )}
+        <DescriptionItem label={__('Execution Time')}>
+          {formatExecutionTime(submittedAt, completedAt)}
+        </DescriptionItem>
       </DescriptionList>
     </CardBody>
   </Card>
@@ -160,10 +177,16 @@ ExecutionDetails.propTypes = {
   proxyName: PropTypes.string.isRequired,
   jobId: PropTypes.string.isRequired,
   jobStatus: PropTypes.string.isRequired,
-  pollCount: PropTypes.number.isRequired,
   isPolling: PropTypes.bool.isRequired,
   targetCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
     .isRequired,
+  submittedAt: PropTypes.string,
+  completedAt: PropTypes.string,
+};
+
+ExecutionDetails.defaultProps = {
+  submittedAt: null,
+  completedAt: null,
 };
 
 export default ExecutionDetails;

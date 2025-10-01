@@ -20,7 +20,8 @@ const useJobPolling = (proxyId, jobId) => {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [isPolling, setIsPolling] = useState(false);
-  const [pollCount, setPollCount] = useState(0);
+  const [submittedAt, setSubmittedAt] = useState(null);
+  const [completedAt, setCompletedAt] = useState(null);
 
   // There are a bunch of checks of 'cancelled' here so that if the
   // user navigates away while polling, we don't keep trying to update state.
@@ -55,7 +56,8 @@ const useJobPolling = (proxyId, jobId) => {
           }
 
           setStatus(jobStatus);
-          setPollCount(prev => prev + 1);
+          setSubmittedAt(statusData.submitted_at || null);
+          setCompletedAt(statusData.completed_at || null);
 
           // If job is complete, fetch results and break
           if (COMPLETED_STATUSES.includes(jobStatus)) {
@@ -120,7 +122,8 @@ const useJobPolling = (proxyId, jobId) => {
     result,
     error,
     isPolling,
-    pollCount,
+    submittedAt,
+    completedAt,
   };
 };
 
