@@ -35,3 +35,6 @@ Metrics/ParameterLists:
 
 Naming/MethodParameterName:
   Enabled: false
+
+Layout/LineLength:
+  Max: 160
