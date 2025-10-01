@@ -74,7 +74,7 @@ const FieldTable = ({ rows }) => {
                   }}
                 />
                 <Td dataLabel="Name">
-                  <code>{name}</code>
+                  <span className="pf-v5-u-font-family-monospace">{name}</span>
                   {required && (
                     <span
                       style={{
