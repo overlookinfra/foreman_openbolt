@@ -15,7 +15,6 @@ import {
   FlexItem,
   Text,
   TextVariants,
-  Spinner,
 } from '@patternfly/react-core';
 import {
   CheckCircleIcon,
@@ -113,9 +112,6 @@ const StatusLabel = ({ status, isPolling }) => {
       </FlexItem>
       {isPolling && (
         <>
-          <FlexItem>
-            <Spinner size="sm" aria-label="Polling" />
-          </FlexItem>
           <FlexItem>
             <Text component={TextVariants.small} className="pf-v5-u-color-200">
               {sprintf(__('Updating every %s seconds...'), intervalSeconds)}
