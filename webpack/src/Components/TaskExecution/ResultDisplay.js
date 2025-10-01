@@ -24,10 +24,10 @@ import {
   TabTitleIcon,
 } from '@patternfly/react-core';
 import {
-  ExclamationCircleIcon,
-  CodeIcon,
-  FileAltIcon,
+  ClipboardCheckIcon,
   CopyIcon,
+  ExclamationCircleIcon,
+  FileAltIcon,
 } from '@patternfly/react-icons';
 
 const CopyButton = ({ getText }) => {
@@ -128,7 +128,7 @@ const ResultDisplay = ({ jobResult, jobLog }) => {
             title={
               <>
                 <TabTitleIcon>
-                  <CodeIcon />
+                  <ClipboardCheckIcon />
                 </TabTitleIcon>
                 <TabTitleText>{__('Result')}</TabTitleText>
               </>

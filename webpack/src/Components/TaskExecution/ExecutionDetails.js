@@ -4,8 +4,6 @@ import { translate as __, sprintf } from 'foremanReact/common/I18n';
 import {
   Card,
   CardBody,
-  CardHeader,
-  CardTitle,
   DescriptionList,
   DescriptionListGroup,
   DescriptionListTerm,
@@ -138,9 +136,6 @@ const ExecutionDetails = ({
   completedAt,
 }) => (
   <Card>
-    <CardHeader>
-      <CardTitle>{__('Execution Details')}</CardTitle>
-    </CardHeader>
     <CardBody>
       <DescriptionList isHorizontal>
         <DescriptionItem label={__('Proxy')}>

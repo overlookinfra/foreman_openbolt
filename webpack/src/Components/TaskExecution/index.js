@@ -3,7 +3,7 @@ import { useLocation, useHistory } from 'react-router-dom';
 import { translate as __ } from 'foremanReact/common/I18n';
 import { Alert, Button, Stack, StackItem } from '@patternfly/react-core';
 
-import ExecutionDetails from './ExecutionDetails';
+import ExecutionDisplay from './ExecutionDisplay';
 import LoadingIndicator from './LoadingIndicator';
 import ResultDisplay from './ResultDisplay';
 import useJobPolling from './hooks/useJobPolling';
@@ -28,6 +28,9 @@ const TaskExecution = () => {
     isPolling,
     submittedAt,
     completedAt,
+    taskName,
+    taskDescription,
+    taskParameters,
   } = useJobPolling(proxyId, jobId);
 
   useEffect(() => {
@@ -69,7 +72,7 @@ const TaskExecution = () => {
       </StackItem>
 
       <StackItem>
-        <ExecutionDetails
+        <ExecutionDisplay
           proxyName={proxyName}
           jobId={jobId}
           jobStatus={jobStatus}
@@ -77,6 +80,9 @@ const TaskExecution = () => {
           targetCount={targetCount ?? 'Unknown'}
           submittedAt={submittedAt}
           completedAt={completedAt}
+          taskName={taskName}
+          taskDescription={taskDescription}
+          taskParameters={taskParameters}
         />
       </StackItem>
 

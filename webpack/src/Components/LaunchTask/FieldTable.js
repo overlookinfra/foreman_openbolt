@@ -33,7 +33,7 @@ const FieldTable = ({ rows }) => {
   return (
     <Table
       variant="compact"
-      isStriped
+      isExpandable
       gridBreakPoint="grid-md"
       style={{ wordBreak: 'break-word' }}
     >

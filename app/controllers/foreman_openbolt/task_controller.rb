@@ -99,9 +99,11 @@ module ForemanOpenbolt
         return render_error("Task execution failed: #{response['error']}", :bad_request) if response['error']
         return render_error('Task execution failed: No job ID returned', :bad_request) unless response['id']
 
+        metadata = @openbolt_api.tasks[task_name] || {}
         TaskJob.create_from_execution!(
           proxy: @smart_proxy,
           task_name: task_name,
+          task_description: metadata['description'] || '',
           targets: targets.split(',').map(&:strip),
           parameters: task_params,
           options: scrub_options_for_storage(options),
@@ -136,6 +138,9 @@ module ForemanOpenbolt
         submitted_at: @task_job.submitted_at,
         completed_at: @task_job.completed_at,
         duration: @task_job.duration,
+        task_name: @task_job.task_name,
+        task_description: @task_job.task_description,
+        task_parameters: @task_job.task_parameters,
       }
     end
 
