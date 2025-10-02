@@ -150,7 +150,7 @@ const ExecutionDetails = ({
         </DescriptionItem>
 
         <DescriptionItem label={__('Job ID')}>
-          <code>{jobId}</code>
+          <span className="pf-v5-u-font-family-monospace">{jobId}</span>
         </DescriptionItem>
 
         <DescriptionItem label={__('Hosts')}>
