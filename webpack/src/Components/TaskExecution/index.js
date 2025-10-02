@@ -54,10 +54,19 @@ const TaskExecution = () => {
     return null;
   }
 
+  const stripAnsi = str => {
+    if (!str || typeof str !== 'string') return str;
+    return str.replace(
+      /* eslint-disable no-control-regex */
+      /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+      ''
+    );
+  };
+
   const isComplete = COMPLETED_STATUSES.includes(jobStatus);
   const jobCommand = jobData?.command;
   const jobResult = jobData?.result;
-  const jobLog = `OpenBolt command: ${jobCommand}\n${jobData?.log}`;
+  const jobLog = `OpenBolt command: ${jobCommand}\n${stripAnsi(jobData?.log)}`;
 
   return (
     <Stack hasGutter>
