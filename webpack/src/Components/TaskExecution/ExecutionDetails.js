@@ -141,7 +141,7 @@ const ExecutionDetails = ({
   <Card>
     <CardBody>
       <DescriptionList isHorizontal>
-        <DescriptionItem label={__('Proxy')}>
+        <DescriptionItem label={__('Smart Proxy')}>
           {proxyId && proxyName ? (
             <a href={`/smart_proxies/${proxyId}`}>{proxyName}</a>
           ) : (

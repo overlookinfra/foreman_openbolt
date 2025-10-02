@@ -34,6 +34,7 @@ const FieldTable = ({ rows }) => {
     <Table
       variant="compact"
       isExpandable
+      isStickyHeader
       gridBreakPoint="grid-md"
       style={{ wordBreak: 'break-word' }}
     >

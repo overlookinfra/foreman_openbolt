@@ -13,12 +13,13 @@ import {
 } from '@patternfly/react-core';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 import {
+  ArrowRightIcon,
   CheckCircleIcon,
   ExclamationCircleIcon,
-  ExternalLinkAltIcon,
+  InfoCircleIcon,
   InProgressIcon,
   OutlinedClockIcon,
-  CubesIcon,
+  UnknownIcon,
 } from '@patternfly/react-icons';
 import { ROUTES, STATUS } from '../common/constants';
 import { useShowMessage } from '../common/helpers';
@@ -35,7 +36,7 @@ const getStatusLabel = status => {
     [STATUS.PENDING]: { color: 'blue', icon: <OutlinedClockIcon /> },
   };
 
-  const config = configs[status] || { color: 'grey', icon: <CubesIcon /> };
+  const config = configs[status] || { color: 'grey', icon: <UnknownIcon /> };
   return (
     <Label color={config.color} icon={config.icon}>
       {status}
@@ -107,7 +108,7 @@ const TaskHistory = () => {
     <EmptyState>
       <EmptyStateHeader
         titleText={__('No task history found')}
-        icon={<EmptyStateIcon icon={CubesIcon} />}
+        icon={<EmptyStateIcon icon={InfoCircleIcon} />}
         headingLevel="h2"
       />
       <EmptyStateBody>
@@ -139,29 +140,23 @@ const TaskHistory = () => {
         <Tbody>
           {taskHistory.map(job => (
             <Tr key={job.job_id}>
-              <Td hasLeftBorder hasRightBorder>
+              <Td hasRightBorder>
                 <TaskPopover
                   taskName={job.task_name}
                   taskDescription={job.task_description}
                   taskParameters={job.task_parameters}
                 />
               </Td>
-              <Td hasLeftBorder hasRightBorder>
-                {getStatusLabel(job.status)}
-              </Td>
-              <Td hasLeftBorder hasRightBorder>
+              <Td hasRightBorder>{getStatusLabel(job.status)}</Td>
+              <Td hasRightBorder>
                 <HostsPopover targets={job.targets || []} />
               </Td>
-              <Td hasLeftBorder hasRightBorder>
-                {formatDate(job.submitted_at)}
-              </Td>
-              <Td hasLeftBorder hasRightBorder>
+              <Td hasRightBorder>{formatDate(job.submitted_at)}</Td>
+              <Td hasRightBorder>
                 {job.completed_at ? formatDate(job.completed_at) : ''}
               </Td>
-              <Td hasLeftBorder hasRightBorder>
-                {formatDuration(job.duration)}
-              </Td>
-              <Td hasLeftBorder hasRightBorder>
+              <Td hasRightBorder>{formatDuration(job.duration)}</Td>
+              <Td hasRightBorder>
                 <a
                   href={`${ROUTES.PAGES.TASK_EXECUTION}?proxy_id=${
                     job.smart_proxy.id
@@ -171,7 +166,7 @@ const TaskHistory = () => {
                   aria-label={__('View Details')}
                   title={__('View Details')}
                 >
-                  <ExternalLinkAltIcon />
+                  <ArrowRightIcon />
                 </a>
               </Td>
             </Tr>
