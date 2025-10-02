@@ -20,8 +20,10 @@ import {
   OutlinedClockIcon,
   CubesIcon,
 } from '@patternfly/react-icons';
-import { ROUTES, STATUS } from './common/constants';
-import { useShowMessage } from './common/helpers';
+import { ROUTES, STATUS } from '../common/constants';
+import { useShowMessage } from '../common/helpers';
+import HostsPopover from '../common/HostsPopover';
+import TaskPopover from './TaskPopover';
 
 const getStatusLabel = status => {
   const configs = {
@@ -138,13 +140,17 @@ const TaskHistory = () => {
           {taskHistory.map(job => (
             <Tr key={job.job_id}>
               <Td hasLeftBorder hasRightBorder>
-                {job.task_name || 'unknown'}
+                <TaskPopover
+                  taskName={job.task_name}
+                  taskDescription={job.task_description}
+                  taskParameters={job.task_parameters}
+                />
               </Td>
               <Td hasLeftBorder hasRightBorder>
                 {getStatusLabel(job.status)}
               </Td>
               <Td hasLeftBorder hasRightBorder>
-                {job.target_count ?? 'unknown'}
+                <HostsPopover targets={job.targets || []} />
               </Td>
               <Td hasLeftBorder hasRightBorder>
                 {formatDate(job.submitted_at)}

@@ -271,6 +271,9 @@ module ForemanOpenbolt
       data = {
         job_id: task_job.job_id,
         task_name: task_job.task_name,
+        task_description: task_job.task_description,
+        task_parameters: task_job.task_parameters,
+        targets: task_job.targets,
         status: task_job.status,
         smart_proxy: {
           id: task_job.smart_proxy_id,
@@ -283,8 +286,6 @@ module ForemanOpenbolt
 
       if detailed
         data.merge!(
-          targets: task_job.targets,
-          task_parameters: task_job.task_parameters,
           openbolt_options: task_job.scrubbed_openbolt_options,
           result: task_job.result,
           log: task_job.log

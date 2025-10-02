@@ -4,7 +4,7 @@ import { translate as __ } from 'foremanReact/common/I18n';
 import { Popover, Button } from '@patternfly/react-core';
 import { Table, Tbody, Tr, Td } from '@patternfly/react-table';
 
-const HostsDisplay = ({ targets }) => {
+const HostsPopover = ({ targets }) => {
   if (!targets || targets.length === 0) {
     return <>{__('No targets specified')}</>;
   }
@@ -14,7 +14,7 @@ const HostsDisplay = ({ targets }) => {
       style={{
         maxHeight: '300px',
         overflowY: 'auto',
-        border: '1px solid',
+        border: '1px solid var(--pf-v5-global--BorderColor--100)',
       }}
     >
       <Table variant="compact" borders isStriped>
@@ -38,12 +38,12 @@ const HostsDisplay = ({ targets }) => {
   );
 };
 
-HostsDisplay.propTypes = {
+HostsPopover.propTypes = {
   targets: PropTypes.arrayOf(PropTypes.string),
 };
 
-HostsDisplay.defaultProps = {
+HostsPopover.defaultProps = {
   targets: [],
 };
 
-export default HostsDisplay;
+export default HostsPopover;

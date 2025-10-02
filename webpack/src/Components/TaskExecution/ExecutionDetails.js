@@ -23,7 +23,7 @@ import {
 } from '@patternfly/react-icons';
 
 import { STATUS, POLLING_CONFIG } from '../common/constants';
-import HostsDisplay from './HostsDisplay';
+import HostsPopover from '../common/HostsPopover';
 
 const STATUS_CONFIGS = {
   [STATUS.SUCCESS]: {
@@ -154,7 +154,7 @@ const ExecutionDetails = ({
         </DescriptionItem>
 
         <DescriptionItem label={__('Hosts')}>
-          <HostsDisplay targets={targets} />
+          <HostsPopover targets={targets} />
         </DescriptionItem>
 
         <DescriptionItem label={__('Status')}>
