@@ -196,7 +196,6 @@ const LaunchTask = () => {
             proxy_id: selectedProxy,
             job_id: data.job_id,
             proxy_name: selectedProxyData?.name || 'Unknown',
-            target_count: targets.length.toString(),
           }).toString(),
         });
       } catch (error) {

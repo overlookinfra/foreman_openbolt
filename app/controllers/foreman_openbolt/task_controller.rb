@@ -141,6 +141,7 @@ module ForemanOpenbolt
         task_name: @task_job.task_name,
         task_description: @task_job.task_description,
         task_parameters: @task_job.task_parameters,
+        targets: @task_job.targets,
       }
     end
 
@@ -271,7 +272,6 @@ module ForemanOpenbolt
         job_id: task_job.job_id,
         task_name: task_job.task_name,
         status: task_job.status,
-        target_count: task_job.target_count,
         smart_proxy: {
           id: task_job.smart_proxy_id,
           name: task_job.smart_proxy.name,

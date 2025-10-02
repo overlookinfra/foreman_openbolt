@@ -21,7 +21,9 @@ import {
   ClockIcon,
   TimesCircleIcon,
 } from '@patternfly/react-icons';
+
 import { STATUS, POLLING_CONFIG } from '../common/constants';
+import HostsDisplay from './HostsDisplay';
 
 const STATUS_CONFIGS = {
   [STATUS.SUCCESS]: {
@@ -132,7 +134,7 @@ const ExecutionDetails = ({
   jobId,
   jobStatus,
   isPolling,
-  targetCount,
+  targets,
   submittedAt,
   completedAt,
 }) => (
@@ -151,11 +153,9 @@ const ExecutionDetails = ({
           <code>{jobId}</code>
         </DescriptionItem>
 
-        {targetCount && (
-          <DescriptionItem label={__('Host Count')}>
-            {targetCount} {targetCount === 1 ? __('host') : __('hosts')}
-          </DescriptionItem>
-        )}
+        <DescriptionItem label={__('Hosts')}>
+          <HostsDisplay targets={targets} />
+        </DescriptionItem>
 
         <DescriptionItem label={__('Status')}>
           <StatusLabel status={jobStatus} isPolling={isPolling} />
@@ -175,8 +175,7 @@ ExecutionDetails.propTypes = {
   jobId: PropTypes.string.isRequired,
   jobStatus: PropTypes.string.isRequired,
   isPolling: PropTypes.bool.isRequired,
-  targetCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-    .isRequired,
+  targets: PropTypes.arrayOf(PropTypes.string).isRequired,
   submittedAt: PropTypes.string,
   completedAt: PropTypes.string,
 };

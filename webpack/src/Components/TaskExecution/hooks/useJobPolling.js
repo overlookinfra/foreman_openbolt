@@ -13,7 +13,7 @@ import {
  * Custom hook for polling job status
  * @param {string} proxyId - Smart Proxy ID
  * @param {string} jobId - Job ID to poll
- * @returns {Object} - { status, result, error, isPolling }
+ * @returns {Object}
  */
 const useJobPolling = (proxyId, jobId) => {
   const [status, setStatus] = useState(STATUS.PENDING);
@@ -25,6 +25,7 @@ const useJobPolling = (proxyId, jobId) => {
   const [taskName, setTaskName] = useState(null);
   const [taskDescription, setTaskDescription] = useState(null);
   const [taskParameters, setTaskParameters] = useState({});
+  const [targets, setTargets] = useState([]);
 
   // There are a bunch of checks of 'cancelled' here so that if the
   // user navigates away while polling, we don't keep trying to update state.
@@ -64,6 +65,7 @@ const useJobPolling = (proxyId, jobId) => {
           setTaskName(statusData.task_name || null);
           setTaskDescription(statusData.task_description || null);
           setTaskParameters(statusData.task_parameters || {});
+          setTargets(statusData.targets || []);
 
           // If job is complete, fetch results and break
           if (COMPLETED_STATUSES.includes(jobStatus)) {
@@ -133,6 +135,7 @@ const useJobPolling = (proxyId, jobId) => {
     taskName,
     taskDescription,
     taskParameters,
+    targets,
   };
 };
 

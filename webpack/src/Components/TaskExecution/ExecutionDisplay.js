@@ -15,7 +15,7 @@ const ExecutionDisplay = ({
   jobStatus,
   pollCount,
   isPolling,
-  targetCount,
+  targets,
   submittedAt,
   completedAt,
   taskName,
@@ -47,7 +47,7 @@ const ExecutionDisplay = ({
           jobStatus={jobStatus}
           pollCount={pollCount}
           isPolling={isPolling}
-          targetCount={targetCount}
+          targets={targets}
           submittedAt={submittedAt}
           completedAt={completedAt}
         />
@@ -81,8 +81,7 @@ ExecutionDisplay.propTypes = {
   jobStatus: PropTypes.string.isRequired,
   pollCount: PropTypes.number.isRequired,
   isPolling: PropTypes.bool.isRequired,
-  targetCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-    .isRequired,
+  targets: PropTypes.arrayOf(PropTypes.string).isRequired,
   submittedAt: PropTypes.string,
   completedAt: PropTypes.string,
   taskName: PropTypes.string.isRequired,

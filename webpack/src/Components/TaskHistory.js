@@ -161,7 +161,7 @@ const TaskHistory = () => {
                     job.smart_proxy.id
                   }&job_id=${job.job_id}&proxy_name=${encodeURIComponent(
                     job.smart_proxy.name
-                  )}&target_count=${job.target_count}`}
+                  )}`}
                   aria-label={__('View Details')}
                   title={__('View Details')}
                 >
