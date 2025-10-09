@@ -1,0 +1,75 @@
+name: Build Foreman OpenBolt Plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Foreman OpenBolt branch or tag to use'
+        required: false
+        default: 'main'
+      foreman_packaging_ref:
+        description: 'Foreman Packaging branch or tag to use'
+        required: false
+        default: 'rpm/3.15'
+      foreman_version:
+        description: 'Foreman version to build against (e.g. 3.15)'
+        required: false
+        default: '3.15'
+      
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout foreman-packaging
+        uses: actions/checkout@v4
+        with:
+          repository: theforeman/foreman-packaging
+          path: foreman-packaging
+          ref: ${{ inputs.foreman_packaging_ref}}
+
+      - name: Checkout foreman_openbolt
+        uses: actions/checkout@v4
+        with:
+          path: foreman_openbolt
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build foreman-packaging container
+        uses: docker/build-push-action@v5
+        with:
+          context: ./foreman-packaging
+          file: ./foreman-packaging/Containerfile
+          tags: foreman-packaging:latest
+          outputs: type=docker
+          cache-from: type=gha,scope=foreman-packaging
+          cache-to: type=gha,mode=max,scope=foreman-packaging
+
+      - name: Run foreman-packaging container
+        run: |
+          docker run -d --name foreman-packaging --privileged \
+            -v "${{ github.workspace }}/foreman-packaging":/opt/foreman-packaging \
+            -v "${{ github.workspace }}/foreman_openbolt":/foreman_bolt \
+            foreman-packaging /bin/sh -c 'tail -f /dev/null'
+
+      - name: Install dependencies in container
+        run: |
+          docker exec foreman-packaging /bin/sh -c 'dnf install -y epel-release glibc-langpack-en'
+          docker exec foreman-packaging /bin/sh -c 'dnf install -y https://yum.theforeman.org/releases/${{ inputs.foreman_version }}/el9/x86_64/foreman-release.rpm'
+          docker exec foreman-packaging /bin/sh -c 'dnf install -y rubygems-devel foreman-plugin foreman-assets rpmdevtools rpm-build mock'
+          docker exec foreman-packaging /bin/sh -c 'git config --global --add safe.directory /opt/foreman-packaging'
+
+      - name: Build foreman_openbolt RPM
+        run: docker exec -w /foreman_bolt foreman-packaging /bin/sh -c './build-rpm'
+
+      - name: Stop and remove foreman-packaging container
+        run: |
+          docker stop foreman-packaging
+          docker rm foreman-packaging
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-foreman_openbolt
+          path: "./foreman_openbolt/*.rpm"
