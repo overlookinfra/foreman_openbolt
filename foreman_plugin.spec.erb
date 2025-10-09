@@ -43,6 +43,7 @@ Source0: <%= download_path %>%{gem_name}-%{version}.gem
 
 # start specfile generated dependencies
 Requires: foreman >= %{foreman_min_version}
+Requires: rubygem(foreman-tasks) >= 8.3.0
 <% if has_assets || has_webpack -%>
 BuildRequires: foreman-assets >= %{foreman_min_version}
 <% end -%>
