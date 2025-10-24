@@ -4,9 +4,6 @@ rm -rf ~/rpmbuild
 rpmdev-setuptree
 gem build foreman_openbolt.gemspec
 cp foreman_openbolt-0.0.1.gem ~/rpmbuild/SOURCES/
-pushd /opt/foreman-packaging
-gem2rpm -t gem2rpm/foreman_plugin.spec.erb ~/rpmbuild/SOURCES/foreman_openbolt-0.0.1.gem > ~/rpmbuild/SPECS/rubygem-foreman_openbolt.spec
-popd
-
+gem2rpm -t foreman_openbolt.spec.erb ~/rpmbuild/SOURCES/foreman_openbolt-0.0.1.gem > ~/rpmbuild/SPECS/rubygem-foreman_openbolt.spec
 rpmbuild -ba ~/rpmbuild/SPECS/rubygem-foreman_openbolt.spec
 cp ~/rpmbuild/RPMS/noarch/rubygem-foreman_openbolt-0.0.1-1.el9.noarch.rpm .

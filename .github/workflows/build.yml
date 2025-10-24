@@ -57,7 +57,7 @@ jobs:
         run: |
           docker exec foreman-packaging /bin/sh -c 'dnf install -y epel-release glibc-langpack-en'
           docker exec foreman-packaging /bin/sh -c 'dnf install -y https://yum.theforeman.org/releases/${{ inputs.foreman_version }}/el9/x86_64/foreman-release.rpm'
-          docker exec foreman-packaging /bin/sh -c 'dnf install -y rubygems-devel foreman-plugin foreman-assets rpmdevtools rpm-build mock'
+          docker exec foreman-packaging /bin/sh -c 'dnf install -y rubygems-devel foreman-plugin foreman-assets rubygem-foreman-tasks rpmdevtools rpm-build mock'
           docker exec foreman-packaging /bin/sh -c 'git config --global --add safe.directory /opt/foreman-packaging'
 
       - name: Build foreman_openbolt RPM
