@@ -19,3 +19,5 @@ coverage
 # Local testing files
 *.rpm
 *.sh
+/vendor
+/.vendor
