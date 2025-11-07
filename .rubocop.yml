@@ -1,13 +1,23 @@
+inherit_from: .rubocop_todo.yml
+
 inherit_gem:
   theforeman-rubocop:
     - default.yml
     - rules/style_lenient.yml
 
+#cleanup once those are merged:
+# * https://github.com/theforeman/theforeman-rubocop/pull/54
+# * https://github.com/theforeman/theforeman-rubocop/pull/16
 AllCops:
   TargetRubyVersion: 2.7
   Exclude:
     - '**/*.spec'
     - 'node_modules/**/*'
+    - 'vendor/**/*'
+    - '.vendor/**/*'
+
+require:
+  - rubocop-rake
 
 Rails/RakeEnvironment:
   Enabled: false
