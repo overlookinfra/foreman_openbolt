@@ -62,7 +62,7 @@ jobs:
 
   tests:
     needs:
-      - rubocop
+      - rubocop_and_matrix
       - test
       - foremanci
     runs-on: ubuntu-latest
