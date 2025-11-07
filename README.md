@@ -36,3 +36,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+## how to release
+
+* bump version in `lib/foreman_openbolt/version.rb`
+* run `CHANGELOG_GITHUB_TOKEN=github_pat... bundle exec rake changelog`
+* create a PR
+* get a review & merge
+* create and push a tag
+* github actions will publish the tag
