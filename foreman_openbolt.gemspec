@@ -6,7 +6,7 @@ Gem::Specification.new do |s|
   s.name        = 'foreman_openbolt'
   s.version     = ForemanOpenbolt::VERSION
   s.metadata    = { 'is_foreman_plugin' => 'true' }
-  s.license     = 'GPL-3.0'
+  s.license     = 'GPL-3.0-only'
   s.authors     = ['Overlook InfraTech']
   s.email       = ['contact@overlookinfratech.com']
   s.homepage    = 'https://github.com/overlookinfra/foreman_openbolt'
