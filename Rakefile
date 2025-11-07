@@ -87,3 +87,20 @@ namespace :lint do
 end
 
 task default: ['lint:all', 'test']
+
+begin
+  require 'rubygems'
+  require 'github_changelog_generator/task'
+
+  GitHubChangelogGenerator::RakeTask.new :changelog do |config|
+    config.exclude_labels = %w[duplicate question invalid wontfix wont-fix skip-changelog github_actions]
+    config.user = 'overlookinfra'
+    config.project = 'foreman_openbolt'
+    gem_version = Gem::Specification.load("#{config.project}.gemspec").version
+    config.future_release = gem_version
+  end
+rescue LoadError
+  task :changelog do
+    abort("Run `bundle install --with release` to install the `github_changelog_generator` gem.")
+  end
+end
