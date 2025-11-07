@@ -26,4 +26,6 @@ Gem::Specification.new do |s|
   s.add_development_dependency 'rake', '~> 13.0', '>= 13.0.6'
   s.add_development_dependency 'rdoc', '~> 6.5'
   s.add_development_dependency 'theforeman-rubocop', '~> 0.1.2'
+  # cleanup after https://github.com/theforeman/theforeman-rubocop/pull/16 is merged
+  s.add_development_dependency 'rubocop-rake', '~> 0.6.0'
 end

@@ -14,6 +14,9 @@ AllCops:
     - 'vendor/**/*'
     - '.vendor/**/*'
 
+require:
+  - rubocop-rake
+
 Rails/RakeEnvironment:
   Enabled: false
 
