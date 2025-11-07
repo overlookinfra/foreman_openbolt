@@ -20,9 +20,10 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = '>= 2.7', '< 4'
 
-  s.add_dependency 'foreman-tasks', '>= 8.3.0'
+  s.add_dependency 'foreman-tasks', '~> 11.0', '>= 11.0.6'
 
-  s.add_development_dependency 'erb_lint'
-  s.add_development_dependency 'rake'
-  s.add_development_dependency 'rdoc'
+  s.add_development_dependency 'erb_lint', '~> 0.9.0'
+  s.add_development_dependency 'rake', '~> 13.0', '>= 13.0.6'
+  s.add_development_dependency 'rdoc', '~> 6.5'
+  s.add_development_dependency 'theforeman-rubocop', '~> 0.1.2'
 end
