@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.0](https://github.com/overlookinfra/foreman_openbolt/tree/0.1.0) (2025-11-10)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/0.0.1...0.1.0)
+
+**Implemented enhancements:**
+
+- update Release documentation & README.md: Add badges [\#12](https://github.com/overlookinfra/foreman_openbolt/pull/12) ([bastelfreak](https://github.com/bastelfreak))
+
+**Fixed bugs:**
+
+- @theforeman/builder: Allow newer versions [\#11](https://github.com/overlookinfra/foreman_openbolt/pull/11) ([bastelfreak](https://github.com/bastelfreak))
+
+**Merged pull requests:**
+
+- Rakefile: Remove unused rake tasks [\#13](https://github.com/overlookinfra/foreman_openbolt/pull/13) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [0.0.1](https://github.com/overlookinfra/foreman_openbolt/tree/0.0.1) (2025-11-07)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/a2fac5b066bedd03da944986fe94eec14552bad6...0.0.1)
