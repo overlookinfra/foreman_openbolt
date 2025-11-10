@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.1](https://github.com/overlookinfra/foreman_openbolt/tree/0.1.1) (2025-11-10)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/0.1.0...0.1.1)
+
+**Fixed bugs:**
+
+- foreman-tasks: Allow 11.x [\#15](https://github.com/overlookinfra/foreman_openbolt/pull/15) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [0.1.0](https://github.com/overlookinfra/foreman_openbolt/tree/0.1.0) (2025-11-10)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/0.0.1...0.1.0)
