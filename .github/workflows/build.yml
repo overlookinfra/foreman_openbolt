@@ -21,14 +21,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout foreman-packaging
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: theforeman/foreman-packaging
           path: foreman-packaging
           ref: ${{ inputs.foreman_packaging_ref}}
 
       - name: Checkout foreman_openbolt
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           path: foreman_openbolt
           ref: ${{ inputs.ref }}
