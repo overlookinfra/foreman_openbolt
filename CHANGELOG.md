@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.0.0) (2026-03-02)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/0.1.1...1.0.0)
+
+**Implemented enhancements:**
+
+- Add Ruby 4 support [\#30](https://github.com/overlookinfra/foreman_openbolt/pull/30) ([bastelfreak](https://github.com/bastelfreak))
+- foreman-tasks: Allow 12.x [\#28](https://github.com/overlookinfra/foreman_openbolt/pull/28) ([adamruzicka](https://github.com/adamruzicka))
+
+**Merged pull requests:**
+
+- CI: properly detect if all jobs passed [\#29](https://github.com/overlookinfra/foreman_openbolt/pull/29) ([bastelfreak](https://github.com/bastelfreak))
+- Add plugin documentation [\#24](https://github.com/overlookinfra/foreman_openbolt/pull/24) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [0.1.1](https://github.com/overlookinfra/foreman_openbolt/tree/0.1.1) (2025-11-10)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/0.1.0...0.1.1)
