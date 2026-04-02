@@ -1,41 +1,41 @@
 # frozen_string_literal: true
 
-LINTERS = {
-  ruby: { cmd: 'rubocop', fix: '--autocorrect' },
-  erb: { cmd: 'erb_lint', fix: '--autocorrect', glob: '**/*.erb' },
-  js: { image: 'registry.access.redhat.com/ubi9/nodejs-20:latest', cmd: 'npm run lint --', fix: '--fix' },
-}.freeze
-
 namespace :lint do
-  LINTERS.each do |name, cfg|
-    desc "Run #{name} linter"
-    task name do
-      parts = [cfg[:cmd]]
-      parts << cfg[:fix] if ENV['FIX']
-      parts << cfg[:glob] if cfg[:glob]
-      cmd = parts.join(' ')
-
-      if cfg[:image] && !ENV['LOCAL']
-        container_bin = ENV['CONTAINER_BIN'] || 'docker'
-        cmd = "#{container_bin} run --rm -v #{Dir.pwd}:/code #{cfg[:image]} /bin/bash -c " \
-              "'cd /code && npm install --loglevel=error && #{cmd}'"
-      end
-
-      sh cmd
-    end
+  desc 'Run Ruby linter'
+  task :ruby do
+    args = ENV['FIX'] ? '--autocorrect' : ''
+    sh "rubocop #{args}".strip
   end
 
-  desc 'Run all linters'
-  task all: LINTERS.keys
+  desc 'Run ERB linter'
+  task :erb do
+    args = ENV['FIX'] ? '--autocorrect' : ''
+    sh "erb_lint #{args} **/*.erb".strip
+  end
 
-  desc 'Run all linters and apply fixes'
-  task :fix do
-    ENV['FIX'] = 'true'
-    Rake::Task['lint:all'].invoke
+  desc 'Run JavaScript linter'
+  task :js do
+    args = ENV['FIX'] ? '-- --fix' : ''
+    if ENV['CONTAINER'] # Because npm is kind of a security nightmare
+      bin = ENV['CONTAINER_BIN'] || 'docker'
+      puts 'The npm ci command may take a while, be patient!'
+      sh "#{bin} run --rm -v #{Dir.pwd}:/code -w /code node:20 sh -c 'npm ci --loglevel=error && npm run lint #{args}'".strip
+    else
+      sh "npm run lint #{args}".strip
+    end
   end
 end
 
-task default: ['lint:all']
+desc 'Run all linters'
+task lint: ['lint:ruby', 'lint:erb', 'lint:js']
+
+desc 'Run all linters and apply fixes'
+task 'lint:fix' do
+  ENV['FIX'] = 'true'
+  Rake::Task['lint'].invoke
+end
+
+task default: ['lint']
 
 begin
   require 'rubygems'
