@@ -17,17 +17,17 @@ const SelectedChip = ({ selected, setSelected, categoryName, setLabel }) => {
         className="hosts-chip-group"
         categoryName={categoryName}
         isClosable
-        closeBtnAriaLabel="Remove all"
+        closeBtnAriaLabel={__('Remove all')}
         collapsedText={sprintf(__('%s more'), selected.length - NUM_CHIPS)}
         numChips={NUM_CHIPS}
         onClick={() => {
           setSelected(() => []);
         }}
       >
-        {selected.map((result, index) => (
+        {selected.map(result => (
           <Chip
             ouiaId={`${categoryName}-${result.id}`}
-            key={index}
+            key={result.id}
             id={`${categoryName}-${result.id}`}
             onClick={() => deleteItem(result.id)}
             closeBtnAriaLabel={`Remove ${result.name}`}
@@ -71,16 +71,14 @@ export const SelectedChips = ({
         setSelected={setSelectedHostGroups}
         setLabel={setLabel}
       />
-      <SelectedChip
-        selected={
-          hostsSearchQuery
-            ? [{ id: hostsSearchQuery, name: hostsSearchQuery }]
-            : []
-        }
-        categoryName={__('Search query')}
-        setSelected={clearSearch}
-        setLabel={setLabel}
-      />
+      {hostsSearchQuery && (
+        <SelectedChip
+          selected={[{ id: hostsSearchQuery, name: hostsSearchQuery }]}
+          categoryName={__('Search query')}
+          setSelected={() => clearSearch()}
+          setLabel={setLabel}
+        />
+      )}
       {showClear && (
         <Button
           ouiaId="clear-chips"
