@@ -83,8 +83,6 @@ module ForemanOpenbolt
       targets&.join(', ') || ''
     end
 
-    private
-
     def set_submitted_at
       self.submitted_at ||= Time.current
     end

@@ -183,8 +183,6 @@ module ForemanOpenbolt
       render_error("Error loading task history: #{e.message}", :internal_server_error)
     end
 
-    private
-
     def load_smart_proxy
       proxy_id = params[:proxy_id]
       if proxy_id.blank?

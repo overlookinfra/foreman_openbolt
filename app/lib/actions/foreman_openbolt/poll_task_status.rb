@@ -28,8 +28,6 @@ module Actions
         end
       end
 
-      private
-
       def log(msg, level = :debug)
         output[:log] ||= []
         output[:log] << "[#{Time.now.getlocal.strftime('%Y-%m-%d %H:%M:%S')}] [#{level.upcase}] #{msg}"
