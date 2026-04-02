@@ -16,9 +16,7 @@ const TaskExecution = () => {
   const showMessage = useShowMessage();
 
   const params = new URLSearchParams(location.search);
-  const proxyId = params.get('proxy_id');
   const jobId = params.get('job_id');
-  const proxyName = params.get('proxy_name');
 
   const {
     status: jobStatus,
@@ -31,7 +29,8 @@ const TaskExecution = () => {
     taskDescription,
     taskParameters,
     targets,
-  } = useJobPolling(proxyId, jobId);
+    smartProxy,
+  } = useJobPolling(jobId);
 
   useEffect(() => {
     if (pollError) {
@@ -41,16 +40,16 @@ const TaskExecution = () => {
 
   // Redirect if missing required params
   useEffect(() => {
-    if (!proxyId || !jobId) {
+    if (!jobId) {
       showMessage(
-        __('Invalid task execution URL - missing required parameters')
+        __('Invalid task execution URL - missing job ID')
       );
       history.push(ROUTES.PAGES.LAUNCH_TASK);
     }
-  }, [proxyId, jobId, showMessage, history]);
+  }, [jobId, showMessage, history]);
 
   // Don't render if missing required params
-  if (!proxyId || !jobId) {
+  if (!jobId) {
     return null;
   }
 
@@ -66,7 +65,7 @@ const TaskExecution = () => {
   const isComplete = COMPLETED_STATUSES.includes(jobStatus);
   const jobCommand = jobData?.command;
   const jobResult = jobData?.result;
-  const jobLog = `OpenBolt command: ${jobCommand}\n${stripAnsi(jobData?.log)}`;
+  const jobLog = jobData ? `OpenBolt command: ${jobCommand}\n${stripAnsi(jobData.log)}` : '';
 
   return (
     <Stack hasGutter>
@@ -82,8 +81,7 @@ const TaskExecution = () => {
 
       <StackItem>
         <ExecutionDisplay
-          proxyId={proxyId}
-          proxyName={proxyName}
+          smartProxy={smartProxy}
           jobId={jobId}
           jobStatus={jobStatus}
           isPolling={isPolling}
