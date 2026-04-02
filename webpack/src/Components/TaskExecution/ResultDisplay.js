@@ -27,18 +27,21 @@ import {
 const CopyButton = ({ getText }) => {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    /* eslint-disable promise/prefer-await-to-then */
-    navigator.clipboard.writeText(getText()).then(() => {
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(getText());
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('Clipboard copy failed:', err);
+    }
   };
 
   return (
     <Button
       variant="control"
-      aria-label="Copy"
+      aria-label={__('Copy')}
       onClick={handleCopy}
       icon={<CopyIcon />}
     >
@@ -103,22 +106,15 @@ const ResultDisplay = ({ jobResult, jobLog }) => {
     <Card>
       <CardBody>
         <div style={{ position: 'relative' }}>
-          <div
-            style={{
-              position: 'absolute',
-              right: 0,
-              zIndex: 1,
-            }}
-          >
-            {((activeTabKey === 0 && hasResult) ||
-              (activeTabKey === 1 && hasLog)) && (
+          {((activeTabKey === 0 && hasResult) ||
+            (activeTabKey === 1 && hasLog)) && (
+            <div style={{ position: 'absolute', right: 0, zIndex: 1 }}>
               <CopyButton getText={getActiveContent} />
-            )}
-          </div>
+            </div>
+          )}
           <Tabs
             activeKey={activeTabKey}
             onSelect={(_event, tabIndex) => setActiveTabKey(tabIndex)}
-            actions={<CopyButton getText={getActiveContent} />}
           >
             <Tab
               eventKey={0}
