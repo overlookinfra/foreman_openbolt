@@ -141,11 +141,11 @@ module Actions
       end
 
       def humanized_input
-        input.slice(:job_id, :proxy_id).merge(
-          # Using & to handle possible nil values just in case
-          proxy_name: ::SmartProxy.find_by(id: input[:proxy_id])&.name,
-          task_name: ::ForemanOpenbolt::TaskJob.find_by(job_id: input[:job_id])&.task_name
-        )
+        proxy_name = ::SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
+        task_name = ::ForemanOpenbolt::TaskJob.find_by(job_id: input[:job_id])&.task_name
+        parts = ["job #{input[:job_id]} on #{proxy_name}"]
+        parts << "task: #{task_name}" if task_name
+        parts.join(', ')
       end
     end
   end

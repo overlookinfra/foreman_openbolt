@@ -33,10 +33,8 @@ module Actions
       end
 
       def humanized_input
-        {
-          job_id: input[:job_id],
-          proxy: ::SmartProxy.find_by(id: input[:proxy_id])&.name,
-        }
+        proxy_name = ::SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
+        "job #{input[:job_id]} on #{proxy_name}"
       end
     end
   end
