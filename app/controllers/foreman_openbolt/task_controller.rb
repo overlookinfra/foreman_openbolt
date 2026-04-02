@@ -13,10 +13,10 @@ module ForemanOpenbolt
     REDACTED_PLACEHOLDER = '*****'
 
     before_action :load_smart_proxy, only: [
-      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task, :job_status, :job_result
+      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task
     ]
     before_action :load_openbolt_api, only: [
-      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task, :job_status, :job_result
+      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task
     ]
     before_action :load_task_job, only: [:job_status, :job_result]
 
@@ -48,7 +48,7 @@ module ForemanOpenbolt
       defaults = {}
       openbolt_settings.each do |setting|
         key = setting.name.sub(/^openbolt_/, '')
-        defaults[key] = setting.encrypted? ? ENCRYPTED_PLACEHOLDER : setting.value if setting.value.present?
+        defaults[key] = setting.encrypted? ? ENCRYPTED_PLACEHOLDER : setting.value unless setting.value.nil?
       end
 
       # Merge the defaults into the options metadata
@@ -60,10 +60,10 @@ module ForemanOpenbolt
 
       render json: result
     rescue ProxyAPI::ProxyException => e
-      logger.error("OpenBolt API error for fetch_openbolt_options: #{e.message}")
+      log_exception('fetch_openbolt_options', e)
       render_error("Smart Proxy error: #{e.message}", :bad_gateway)
     rescue StandardError => e
-      logger.error("Unexpected error in fetch_openbolt_options: #{e.class}: #{e.message}")
+      log_exception('fetch_openbolt_options', e)
       render_error("Internal server error: #{e.message}", :internal_server_error)
     end
 
@@ -94,9 +94,12 @@ module ForemanOpenbolt
           options: options
         )
 
-        logger.info("Task execution response: #{response.inspect}")
+        logger.debug("Task execution response: #{response.inspect}")
 
-        return render_error("Task execution failed: #{response['error']}", :bad_request) if response['error']
+        if response['error']
+          error_detail = response['error'].is_a?(Hash) ? response['error']['message'] : response['error']
+          return render_error("Task execution failed: #{error_detail}", :bad_request)
+        end
         return render_error('Task execution failed: No job ID returned', :bad_request) unless response['id']
 
         metadata = @openbolt_api.tasks[task_name] || {}
@@ -117,15 +120,17 @@ module ForemanOpenbolt
 
         render json: {
           job_id: response['id'],
-          proxy_id: @smart_proxy.id,
-          proxy_name: @smart_proxy.name,
         }
+      rescue ArgumentError => e
+        # From merge_encrypted_defaults when a user submits the encrypted
+        # placeholder for an option that has no saved Foreman setting.
+        log_exception('launch_task', e)
+        render_error(e.message, :bad_request)
       rescue ActiveRecord::RecordInvalid => e
-        logger.error("Failed to create TaskJob: #{e.message}")
+        log_exception('launch_task', e)
         render_error("Database error: #{e.message}", :internal_server_error)
       rescue StandardError => e
-        logger.error("Task launch error: #{e.class}: #{e.message}")
-        logger.error("Backtrace: #{e.backtrace.first(5).join("\n")}")
+        log_exception('launch_task', e)
         render_error("Error launching task: #{e.message}", :internal_server_error)
       end
     end
@@ -142,6 +147,10 @@ module ForemanOpenbolt
         task_description: @task_job.task_description,
         task_parameters: @task_job.task_parameters,
         targets: @task_job.targets,
+        smart_proxy: {
+          id: @task_job.smart_proxy_id,
+          name: @task_job.smart_proxy&.name || '(unknown)',
+        },
       }
     end
 
@@ -158,10 +167,10 @@ module ForemanOpenbolt
 
     # List of all task history
     def fetch_task_history
+      per_page = [(params[:per_page] || 20).to_i, 100].min
       @task_history = TaskJob.includes(:smart_proxy)
                              .recent
-                             .paginate(page: params[:page],
-                               per_page: (params[:per_page] || 20).to_i)
+                             .paginate(page: params[:page], per_page: per_page)
 
       render json: {
         results: @task_history.map { |job| serialize_task_job(job) },
@@ -169,14 +178,9 @@ module ForemanOpenbolt
         page: @task_history.current_page,
         per_page: @task_history.per_page,
       }
-    end
-
-    # Show a specific task job
-    def show
-      task_job = TaskJob.find(params[:id])
-      render json: serialize_task_job(task_job, detailed: true)
-    rescue ActiveRecord::RecordNotFound
-      render_error('Task job not found', :not_found)
+    rescue StandardError => e
+      log_exception('fetch_task_history', e)
+      render_error("Error loading task history: #{e.message}", :internal_server_error)
     end
 
     private
@@ -207,7 +211,7 @@ module ForemanOpenbolt
       begin
         @openbolt_api = ProxyAPI::Openbolt.new(url: @smart_proxy.url)
       rescue StandardError => e
-        logger.error("Failed to initialize OpenBolt API for proxy #{@smart_proxy.name}: #{e.message}")
+        log_exception("load_openbolt_api for proxy #{@smart_proxy.name}", e)
         render_error("Failed to connect to Smart Proxy", :bad_gateway)
         return false
       end
@@ -218,7 +222,10 @@ module ForemanOpenbolt
     def load_task_job
       job_id = params[:job_id]
       logger.debug("load_task_job - Job ID: #{job_id}")
-      return if job_id.blank?
+      if job_id.blank?
+        render_error('Job ID is required', :bad_request)
+        return false
+      end
 
       @task_job = TaskJob.find_by(job_id: job_id)
       logger.debug("load_task_job - Task Job: #{@task_job.inspect}")
@@ -236,7 +243,7 @@ module ForemanOpenbolt
       encrypted = options.select { |_, v| v == ENCRYPTED_PLACEHOLDER }
       encrypted.each do |key, _|
         setting = Setting.find_by(name: "openbolt_#{key}")
-        raise "Could not find setting called openbolt_#{key}" if setting.nil?
+        raise ArgumentError, "No Foreman setting found for option '#{key}'. Configure it in Administer > Settings or provide a value." if setting.nil?
         options[key] = setting.value
       end
       options
@@ -256,19 +263,24 @@ module ForemanOpenbolt
       logger.debug("OpenBolt API call #{method_name} successful for proxy #{@smart_proxy.name}")
       render json: result
     rescue ProxyAPI::ProxyException => e
-      logger.error("OpenBolt API error for #{method_name}: #{e.message}")
+      log_exception(method_name, e)
       render_error("Smart Proxy error: #{e.message}", :bad_gateway)
     rescue StandardError => e
-      logger.error("Unexpected error in #{method_name}: #{e.class}: #{e.message}")
+      log_exception(method_name, e)
       render_error("Internal server error: #{e.message}", :internal_server_error)
+    end
+
+    def log_exception(message, exception)
+      logger.error("#{message}: #{exception.class}: #{exception.message}")
+      logger.error(exception.backtrace.join("\n")) if exception.backtrace
     end
 
     def render_error(message, status)
       render json: { error: message }, status: status
     end
 
-    def serialize_task_job(task_job, detailed: false)
-      data = {
+    def serialize_task_job(task_job)
+      {
         job_id: task_job.job_id,
         task_name: task_job.task_name,
         task_description: task_job.task_description,
@@ -277,22 +289,12 @@ module ForemanOpenbolt
         status: task_job.status,
         smart_proxy: {
           id: task_job.smart_proxy_id,
-          name: task_job.smart_proxy.name,
+          name: task_job.smart_proxy&.name || '(unknown)',
         },
         submitted_at: task_job.submitted_at,
         completed_at: task_job.completed_at,
         duration: task_job.duration,
       }
-
-      if detailed
-        data.merge!(
-          openbolt_options: task_job.scrubbed_openbolt_options,
-          result: task_job.result,
-          log: task_job.log
-        )
-      end
-
-      data
     end
   end
 end
