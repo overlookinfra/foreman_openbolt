@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import { useQuery } from '@apollo/client';
 import {
@@ -25,69 +25,78 @@ import hostgroupsQuery from './hostgroups.gql';
 
 export const maxResults = 100;
 
+const queries = {
+  HOSTS: hostsQuery,
+  HOST_GROUPS: hostgroupsQuery,
+};
+
+const dataName = {
+  HOSTS: 'hosts',
+  HOST_GROUPS: 'hostgroups',
+};
+
+const useNameSearch = (queryKey) => {
+  const org = useForemanOrganization();
+  const location = useForemanLocation();
+  const [search, setSearch] = useState('');
+
+  const { loading, data, error } = useQuery(queries[queryKey], {
+    variables: {
+      search: [
+        `name~"${search}"`,
+        org ? `organization_id=${org.id}` : null,
+        location ? `location_id=${location.id}` : null,
+      ]
+        .filter(i => i)
+        .join(' and '),
+    },
+  });
+  return [
+    setSearch,
+    {
+      subtotal: data?.[dataName[queryKey]]?.totalCount,
+      results:
+        data?.[dataName[queryKey]]?.nodes.map(node => ({
+          id: decodeId(node.id),
+          name: node.name,
+          displayName: node.displayName,
+        })) || [],
+      error: error?.message || null,
+    },
+    loading,
+  ];
+};
+
 export const SearchSelect = ({
   name,
   selected,
   setSelected,
   placeholderText,
   apiKey,
-  url,
   setLabel,
 }) => {
-  const useNameSearch = queryKey => {
-    const org = useForemanOrganization();
-    const location = useForemanLocation();
-    const [search, setSearch] = useState('');
-    const queries = {
-      HOSTS: hostsQuery,
-      HOST_GROUPS: hostgroupsQuery,
-    };
-    // Was from JobWizardConstants. Move into ours maybe.
-    const dataName = {
-      HOSTS: 'hosts',
-      HOST_GROUPS: 'hostgroups',
-    };
-
-    const { loading, data } = useQuery(queries[queryKey], {
-      variables: {
-        search: [
-          `name~"${search}"`,
-          org ? `organization_id=${org.id}` : null,
-          location ? `location_id=${location.id}` : null,
-        ]
-          .filter(i => i)
-          .join(' and '),
-      },
-    });
-    return [
-      setSearch,
-      {
-        subtotal: data?.[dataName[queryKey]]?.totalCount,
-        results:
-          data?.[dataName[queryKey]]?.nodes.map(node => ({
-            id: decodeId(node.id),
-            name: node.name,
-            displayName: node.displayName,
-          })) || [],
-      },
-      loading,
-    ];
-  };
-
-  const [onSearch, response, isLoading] = useNameSearch(apiKey, url);
+  const [onSearch, response, isLoading] = useNameSearch(apiKey);
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [typingTimeout, setTypingTimeout] = useState(null);
+  const typingTimeoutRef = useRef(null);
+
   useEffect(() => {
-    onSearch(selected.name || '');
-    if (typingTimeout) {
-      return () => clearTimeout(typingTimeout);
-    }
-    return undefined;
+    onSearch('');
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   let selectOptions = [];
-  if (response.subtotal > maxResults) {
+
+  if (response.error) {
+    selectOptions = [
+      <SelectOption isDisabled key="error">
+        {sprintf(__('Error loading results: %s'), response.error)}
+      </SelectOption>,
+    ];
+  } else if (response.subtotal > maxResults) {
     selectOptions = [
       <SelectOption
         isDisabled
@@ -102,10 +111,11 @@ export const SearchSelect = ({
       </SelectOption>,
     ];
   }
+
   selectOptions = [
     ...selectOptions,
     ...Immutable.asMutable(response?.results || [])?.map((result, index) => (
-      <SelectOption key={index + 1} value={result.id}>
+      <SelectOption key={result.id || index} value={result.id}>
         {setLabel(result)}
       </SelectOption>
     )),
@@ -124,9 +134,10 @@ export const SearchSelect = ({
     }
     setInputValue('');
   };
+
   const autoSearch = searchTerm => {
-    if (typingTimeout) clearTimeout(typingTimeout);
-    setTypingTimeout(setTimeout(() => onSearch(searchTerm), 500));
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    typingTimeoutRef.current = setTimeout(() => onSearch(searchTerm), 500);
   };
 
   const toggle = toggleRef => (
@@ -159,7 +170,7 @@ export const SearchSelect = ({
               variant="plain"
               aria-label={__('Clear selections')}
               onClick={() => {
-                setSelected([]);
+                setSelected(() => []);
                 setInputValue('');
               }}
             >
@@ -170,6 +181,7 @@ export const SearchSelect = ({
       </TextInputGroup>
     </MenuToggle>
   );
+
   return (
     <Select
       id={name}
@@ -192,17 +204,15 @@ export const SearchSelect = ({
 
 SearchSelect.propTypes = {
   name: PropTypes.string,
-  selected: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  selected: PropTypes.array,
   setSelected: PropTypes.func.isRequired,
   setLabel: PropTypes.func.isRequired,
   placeholderText: PropTypes.string,
   apiKey: PropTypes.string.isRequired,
-  url: PropTypes.string,
 };
 
 SearchSelect.defaultProps = {
   name: 'typeahead select',
-  selected: {},
+  selected: [],
   placeholderText: '',
-  url: '',
 };
