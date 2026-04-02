@@ -182,7 +182,9 @@ const LaunchTask = () => {
           }).toString(),
         });
       } catch (error) {
-        showMessage(sprintf(__('Failed to launch task: %s'), extractErrorMessage(error)));
+        showMessage(
+          sprintf(__('Failed to launch task: %s'), extractErrorMessage(error))
+        );
       } finally {
         setIsSubmitting(false);
       }
@@ -244,7 +246,8 @@ const LaunchTask = () => {
                   isDisabled={!isFormValid}
                   isLoading={isSubmitting}
                 >
-                  <span aria-hidden="true">🚀</span>{` ${__('Launch Task')}`}
+                  <span aria-hidden="true">🚀</span>
+                  {` ${__('Launch Task')}`}
                 </Button>
               </FlexItem>
             </Flex>

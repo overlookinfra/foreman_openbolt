@@ -26,7 +26,12 @@ const LoadingIndicator = ({ jobStatus }) => {
     <Card>
       <CardBody>
         <Bullseye>
-          <EmptyState variant={EmptyStateVariant.lg} role="status" aria-live="polite" aria-atomic="true">
+          <EmptyState
+            variant={EmptyStateVariant.lg}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             <EmptyStateHeader
               titleText={getMessage()}
               icon={<EmptyStateIcon icon={Spinner} />}

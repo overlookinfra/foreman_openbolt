@@ -10,7 +10,7 @@ import {
   ROUTES,
 } from '../../common/constants';
 
-const useJobPolling = (jobId) => {
+const useJobPolling = jobId => {
   const [status, setStatus] = useState(STATUS.PENDING);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -81,7 +81,12 @@ const useJobPolling = (jobId) => {
             } catch (resultError) {
               // Don't fail the whole thing if result fetch fails
               if (!cancelled) {
-                setError(sprintf(__('Failed to fetch job result: %s'), extractErrorMessage(resultError)));
+                setError(
+                  sprintf(
+                    __('Failed to fetch job result: %s'),
+                    extractErrorMessage(resultError)
+                  )
+                );
                 setResult({ result: null, log: '' });
               }
             }
@@ -96,7 +101,12 @@ const useJobPolling = (jobId) => {
           }
         } catch (err) {
           if (!cancelled) {
-            setError(sprintf(__('Failed to fetch job status: %s'), extractErrorMessage(err)));
+            setError(
+              sprintf(
+                __('Failed to fetch job status: %s'),
+                extractErrorMessage(err)
+              )
+            );
           }
           break;
         }

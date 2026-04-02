@@ -6,7 +6,6 @@
 module Actions
   module ForemanOpenbolt
     class PollTaskStatus < Actions::EntryAction
-
       POLL_INTERVAL = 5.seconds
       RETRY_LIMIT = 60 # 5 minutes at 5-second intervals
 

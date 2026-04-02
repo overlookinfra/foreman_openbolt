@@ -29,7 +29,12 @@ export const useSmartProxies = () => {
           );
         }
       } catch (error) {
-        showMessage(sprintf(__('Failed to load Smart Proxies: %s'), extractErrorMessage(error)));
+        showMessage(
+          sprintf(
+            __('Failed to load Smart Proxies: %s'),
+            extractErrorMessage(error)
+          )
+        );
       } finally {
         setIsLoadingProxies(false);
       }

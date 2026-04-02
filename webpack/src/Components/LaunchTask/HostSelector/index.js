@@ -4,9 +4,8 @@
  */
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { sprintf, translate as __ } from 'foremanReact/common/I18n';
+import { translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
-import { extractErrorMessage } from '../../common/helpers';
 import {
   FormGroup,
   HelperText,
@@ -19,6 +18,7 @@ import {
   FormHelperText,
 } from '@patternfly/react-core';
 import { FilterIcon } from '@patternfly/react-icons';
+import { extractErrorMessage } from '../../common/helpers';
 import { SearchSelect } from './SearchSelect';
 import { SelectedChips } from './SelectedChips';
 import { HostSearch } from './HostSearch';

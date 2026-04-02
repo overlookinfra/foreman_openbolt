@@ -17,7 +17,12 @@ const HostsPopover = ({ targets }) => {
         border: '1px solid var(--pf-v5-global--BorderColor--100)',
       }}
     >
-      <Table variant="compact" borders isStriped aria-label={__('Target hosts')}>
+      <Table
+        variant="compact"
+        borders
+        isStriped
+        aria-label={__('Target hosts')}
+      >
         <Tbody>
           {targets.map((host, index) => (
             <Tr key={index}>
@@ -31,7 +36,11 @@ const HostsPopover = ({ targets }) => {
 
   return (
     <Popover bodyContent={popoverContent} position="right" maxWidth="600px">
-      <Button variant="link" isInline aria-label={sprintf(__('%s target hosts'), targets.length)}>
+      <Button
+        variant="link"
+        isInline
+        aria-label={sprintf(__('%s target hosts'), targets.length)}
+      >
         {targets.length}
       </Button>
     </Popover>

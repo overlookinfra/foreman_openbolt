@@ -2,8 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 import { Popover, Button } from '@patternfly/react-core';
-import { displayValue } from '../common/helpers';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
+import { displayValue } from '../common/helpers';
 
 const TaskPopover = ({ taskName, taskDescription, taskParameters }) => {
   const hasParameters =
@@ -66,7 +66,12 @@ const TaskPopover = ({ taskName, taskDescription, taskParameters }) => {
 
   return (
     <Popover bodyContent={popoverContent} position="right">
-      <Button variant="link" isInline className="pf-v5-u-font-family-monospace" aria-label={sprintf(__('View details for task %s'), taskName)}>
+      <Button
+        variant="link"
+        isInline
+        className="pf-v5-u-font-family-monospace"
+        aria-label={sprintf(__('View details for task %s'), taskName)}
+      >
         {taskName}
       </Button>
     </Popover>

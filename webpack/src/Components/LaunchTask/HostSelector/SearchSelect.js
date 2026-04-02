@@ -35,7 +35,7 @@ const dataName = {
   HOST_GROUPS: 'hostgroups',
 };
 
-const useNameSearch = (queryKey) => {
+const useNameSearch = queryKey => {
   const org = useForemanOrganization();
   const location = useForemanLocation();
   const [search, setSearch] = useState('');
@@ -164,7 +164,9 @@ export const SearchSelect = ({
           placeholder={placeholderText}
         />
         <TextInputGroupUtilities>
-          {isLoading && <Spinner size="md" aria-label={__('Loading results')} />}
+          {isLoading && (
+            <Spinner size="md" aria-label={__('Loading results')} />
+          )}
           {selected.length > 0 && (
             <Button
               variant="plain"

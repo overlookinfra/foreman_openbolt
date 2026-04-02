@@ -22,7 +22,12 @@ import {
   UnknownIcon,
 } from '@patternfly/react-icons';
 import { ROUTES, STATUS } from '../common/constants';
-import { useShowMessage, extractErrorMessage, formatDuration, formatDate } from '../common/helpers';
+import {
+  useShowMessage,
+  extractErrorMessage,
+  formatDuration,
+  formatDate,
+} from '../common/helpers';
 import HostsPopover from '../common/HostsPopover';
 import TaskPopover from './TaskPopover';
 
@@ -70,7 +75,12 @@ const TaskHistory = () => {
         }
       } catch (error) {
         if (!cancelled) {
-          showMessage(sprintf(__('Failed to load task history: %s'), extractErrorMessage(error)));
+          showMessage(
+            sprintf(
+              __('Failed to load task history: %s'),
+              extractErrorMessage(error)
+            )
+          );
         }
       } finally {
         if (!cancelled) setIsLoadingTaskHistory(false);

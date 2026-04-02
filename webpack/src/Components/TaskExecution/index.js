@@ -41,9 +41,7 @@ const TaskExecution = () => {
   // Redirect if missing required params
   useEffect(() => {
     if (!jobId) {
-      showMessage(
-        __('Invalid task execution URL - missing job ID')
-      );
+      showMessage(__('Invalid task execution URL - missing job ID'));
       history.push(ROUTES.PAGES.LAUNCH_TASK);
     }
   }, [jobId, showMessage, history]);
@@ -65,7 +63,9 @@ const TaskExecution = () => {
   const isComplete = COMPLETED_STATUSES.includes(jobStatus);
   const jobCommand = jobData?.command;
   const jobResult = jobData?.result;
-  const jobLog = jobData ? `OpenBolt command: ${jobCommand}\n${stripAnsi(jobData.log)}` : '';
+  const jobLog = jobData
+    ? `OpenBolt command: ${jobCommand}\n${stripAnsi(jobData.log)}`
+    : '';
 
   return (
     <Stack hasGutter>

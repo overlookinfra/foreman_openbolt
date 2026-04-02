@@ -15,8 +15,10 @@ export const useShowMessage = () => {
 };
 
 export const extractErrorMessage = error => {
-  const rawError = error.response?.data?.error || error.message || __('Unknown error');
-  if (typeof rawError === 'object') return rawError.message || JSON.stringify(rawError);
+  const rawError =
+    error.response?.data?.error || error.message || __('Unknown error');
+  if (typeof rawError === 'object')
+    return rawError.message || JSON.stringify(rawError);
   return rawError;
 };
 

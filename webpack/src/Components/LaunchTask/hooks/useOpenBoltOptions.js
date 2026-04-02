@@ -37,7 +37,12 @@ export const useOpenBoltOptions = () => {
 
         return data;
       } catch (error) {
-        showMessage(sprintf(__('Failed to load OpenBolt options: %s'), extractErrorMessage(error)));
+        showMessage(
+          sprintf(
+            __('Failed to load OpenBolt options: %s'),
+            extractErrorMessage(error)
+          )
+        );
         return null;
       } finally {
         setIsLoadingOptions(false);

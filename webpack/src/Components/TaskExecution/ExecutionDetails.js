@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { translate as __, sprintf } from 'foremanReact/common/I18n';
-import { formatDuration, formatDate } from '../common/helpers';
 import {
   Card,
   CardBody,
@@ -22,7 +21,7 @@ import {
   ClockIcon,
   TimesCircleIcon,
 } from '@patternfly/react-icons';
-
+import { formatDuration, formatDate } from '../common/helpers';
 import { STATUS, POLLING_CONFIG } from '../common/constants';
 import HostsPopover from '../common/HostsPopover';
 
@@ -156,7 +155,9 @@ const ExecutionDetails = ({
         <DescriptionItem label={__('Duration')}>
           {submittedAt
             ? formatDuration(
-                ((completedAt ? new Date(completedAt) : new Date()) - new Date(submittedAt)) / 1000
+                ((completedAt ? new Date(completedAt) : new Date()) -
+                  new Date(submittedAt)) /
+                  1000
               )
             : '-'}
         </DescriptionItem>
