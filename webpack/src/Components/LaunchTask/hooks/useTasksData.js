@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
-import { translate as __ } from 'foremanReact/common/I18n';
+import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
 import { ROUTES } from '../../common/constants';
-import { useShowMessage } from '../../common/helpers';
+import { useShowMessage, extractErrorMessage } from '../../common/helpers';
 
 export const useTasksData = () => {
   const showMessage = useShowMessage();
@@ -24,16 +24,9 @@ export const useTasksData = () => {
         const endpoint = forceReload
           ? ROUTES.API.RELOAD_TASKS
           : ROUTES.API.FETCH_TASKS;
-        const { data, status } = await API.get(
+        const { data } = await API.get(
           `${endpoint}?proxy_id=${proxyId}`
         );
-
-        if (status !== 200) {
-          const error = data
-            ? data.error || JSON.stringify(data)
-            : 'Unknown error';
-          throw new Error(`HTTP ${status} - ${error}`);
-        }
 
         setTaskMetadata(data || {});
 
@@ -43,7 +36,7 @@ export const useTasksData = () => {
 
         return data;
       } catch (error) {
-        showMessage(__('Failed to load tasks: ') + error.message);
+        showMessage(sprintf(__('Failed to load tasks: %s'), extractErrorMessage(error)));
         return null;
       } finally {
         setIsLoadingTasks(false);
