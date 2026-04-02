@@ -67,7 +67,7 @@ const TaskSelect = ({
       </FlexItem>
     </Flex>
     <span id="task-select-helper" className="pf-v5-u-screen-reader">
-      {__('Select a OpenBolt task to execute on the specified targets')}
+      {__('Select an OpenBolt task to execute on the specified targets')}
     </span>
   </FormGroup>
 );

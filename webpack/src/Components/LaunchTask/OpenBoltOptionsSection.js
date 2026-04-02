@@ -74,7 +74,8 @@ const OpenBoltOptionsSection = ({
       if (aIsBoolean !== bIsBoolean) return aIsBoolean ? -1 : 1;
       return 0;
     });
-    return [['transport', transport], ...entries];
+    if (transport) return [['transport', transport], ...entries];
+    return entries;
   };
 
   const render = () => {

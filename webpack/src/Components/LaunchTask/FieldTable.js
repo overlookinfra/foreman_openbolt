@@ -41,8 +41,8 @@ const FieldTable = ({ rows }) => {
       <Thead>
         <Tr>
           <Th aria-label="Row expand control" />
-          <Th width={25}>Name</Th>
-          <Th width={75}>Value</Th>
+          <Th width={25}>{__('Name')}</Th>
+          <Th width={75}>{__('Value')}</Th>
         </Tr>
       </Thead>
 
@@ -82,7 +82,7 @@ const FieldTable = ({ rows }) => {
                         color: 'red',
                         marginLeft: '0.25rem',
                       }}
-                      title="Required"
+                      title={__('Required')}
                     >
                       *
                     </span>
