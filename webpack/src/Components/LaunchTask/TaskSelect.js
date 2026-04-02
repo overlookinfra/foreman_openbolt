@@ -24,9 +24,9 @@ const TaskSelect = ({
     <Flex spaceItems={{ default: 'spaceItemsSm' }}>
       <FlexItem flex={{ default: 'flex_1' }}>
         <FormSelect
-          id="task-select"
+          id="task-name-input"
           // Force remount on isDisabled so the tooltip based on the title changes
-          key={`task-select-${isDisabled}`}
+          key={`task-name-input-${isDisabled}`}
           title={
             isDisabled
               ? __('You must first select a Smart Proxy')

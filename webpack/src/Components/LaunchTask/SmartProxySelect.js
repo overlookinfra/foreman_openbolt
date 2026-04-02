@@ -15,7 +15,7 @@ const SmartProxySelect = ({
 }) => (
   <FormGroup label={__('Smart Proxy')} fieldId="smart-proxy-input">
     <FormSelect
-      id="proxy-select"
+      id="smart-proxy-input"
       value={selectedProxy}
       onChange={onProxyChange}
       isDisabled={isLoading}

@@ -44,6 +44,7 @@ const TaskDetails = ({ taskName, taskDescription, taskParameters }) => {
                   isStriped
                   gridBreakPoint="grid-md"
                   style={{ wordBreak: 'break-word' }}
+                  aria-label={__('Task parameters')}
                 >
                   <Thead>
                     <Tr>

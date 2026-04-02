@@ -1,4 +1,3 @@
-// TODO: More a11y tags
 import React, { useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
 import { sprintf, translate as __ } from 'foremanReact/common/I18n';
@@ -245,7 +244,7 @@ const LaunchTask = () => {
                   isDisabled={!isFormValid}
                   isLoading={isSubmitting}
                 >
-                  {`🚀 ${__('Launch Task')}`}
+                  <span aria-hidden="true">🚀</span>{` ${__('Launch Task')}`}
                 </Button>
               </FlexItem>
             </Flex>

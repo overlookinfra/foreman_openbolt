@@ -156,6 +156,7 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
       onClick={onToggleClick}
       isExpanded={isOpen}
       icon={<FilterIcon />}
+      aria-label={__('Select host targeting method')}
     >
       {HOST_METHOD_LABELS[hostMethod]()}
     </MenuToggle>
@@ -165,7 +166,7 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
     <div className="host-selector">
       <FormGroup fieldId="host-selector" label={__('Hosts')}>
         {isLoading && (
-          <HelperText>
+          <HelperText aria-live="polite">
             <HelperTextItem>{__('Loading hosts...')}</HelperTextItem>
           </HelperText>
         )}
@@ -222,13 +223,13 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
         </InputGroup>
 
         {!hasSelection && (
-          <FormHelperText>
+          <FormHelperText aria-live="assertive">
             <HelperTextItem variant="error">{errorText}</HelperTextItem>
           </FormHelperText>
         )}
 
         {fetchError && (
-          <FormHelperText>
+          <FormHelperText aria-live="assertive">
             <HelperTextItem variant="error">{fetchError}</HelperTextItem>
           </FormHelperText>
         )}

@@ -86,7 +86,7 @@ const TaskHistory = () => {
 
   const spinner = () => (
     <Bullseye>
-      <Spinner size="xl" />
+      <Spinner size="xl" aria-label={__('Loading task history')} />
     </Bullseye>
   );
 

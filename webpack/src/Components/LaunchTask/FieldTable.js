@@ -37,6 +37,7 @@ const FieldTable = ({ rows }) => {
       isStickyHeader
       gridBreakPoint="grid-md"
       style={{ wordBreak: 'break-word' }}
+      aria-label={__('Parameters and options')}
     >
       <Thead>
         <Tr>
@@ -74,7 +75,7 @@ const FieldTable = ({ rows }) => {
                     onToggle: () => toggle(rowKey),
                   }}
                 />
-                <Td dataLabel="Name">
+                <Td dataLabel={__('Name')}>
                   <span className="pf-v5-u-font-family-monospace">{name}</span>
                   {required && (
                     <span
@@ -83,12 +84,14 @@ const FieldTable = ({ rows }) => {
                         marginLeft: '0.25rem',
                       }}
                       title={__('Required')}
+                      role="img"
+                      aria-label={__('Required')}
                     >
                       *
                     </span>
                   )}
                 </Td>
-                <Td dataLabel="Value">{valueCell}</Td>
+                <Td dataLabel={__('Value')}>{valueCell}</Td>
               </Tr>
 
               {(type || description) && (

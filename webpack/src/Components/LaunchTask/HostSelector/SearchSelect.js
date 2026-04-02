@@ -160,11 +160,11 @@ export const SearchSelect = ({
           aria-label={`${name} typeahead input`}
           role="combobox"
           isExpanded={isOpen}
-          aria-controls="select-typeahead-listbox"
+          aria-controls={`${name}-listbox`}
           placeholder={placeholderText}
         />
         <TextInputGroupUtilities>
-          {isLoading && <Spinner size="md" />}
+          {isLoading && <Spinner size="md" aria-label={__('Loading results')} />}
           {selected.length > 0 && (
             <Button
               variant="plain"
@@ -189,11 +189,11 @@ export const SearchSelect = ({
       selected={selected.map(({ id }) => id)}
       onSelect={onSelect}
       onOpenChange={setIsOpen}
-      role="menu"
+      role="listbox"
       toggle={toggle}
     >
       <SelectList
-        id="select-typeahead-listbox"
+        id={`${name}-listbox`}
         style={{ maxHeight: '45vh', overflowY: 'auto' }}
       >
         {selectOptions}

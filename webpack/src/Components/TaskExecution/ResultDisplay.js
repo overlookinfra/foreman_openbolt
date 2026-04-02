@@ -41,7 +41,7 @@ const CopyButton = ({ getText }) => {
   return (
     <Button
       variant="control"
-      aria-label={__('Copy')}
+      aria-label={copied ? __('Copied!') : __('Copy')}
       onClick={handleCopy}
       icon={<CopyIcon />}
     >

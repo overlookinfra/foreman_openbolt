@@ -9,7 +9,7 @@ import { ENCRYPTED_DEFAULT_PLACEHOLDER } from '../common/constants';
 
 const Loading = () => (
   <div style={{ textAlign: 'center', padding: '2rem' }}>
-    <Spinner size="lg" />
+    <Spinner size="lg" aria-label={__('Loading OpenBolt options')} />
     <p>{__('Loading OpenBolt options...')}</p>
   </div>
 );
