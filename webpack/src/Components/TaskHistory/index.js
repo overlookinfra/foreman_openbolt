@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { translate as __ } from 'foremanReact/common/I18n';
+import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
 import {
   Label,
@@ -22,7 +22,7 @@ import {
   UnknownIcon,
 } from '@patternfly/react-icons';
 import { ROUTES, STATUS } from '../common/constants';
-import { useShowMessage } from '../common/helpers';
+import { useShowMessage, extractErrorMessage, formatDuration, formatDate } from '../common/helpers';
 import HostsPopover from '../common/HostsPopover';
 import TaskPopover from './TaskPopover';
 
@@ -44,21 +44,6 @@ const getStatusLabel = status => {
   );
 };
 
-const formatDuration = duration => {
-  if (!duration) return '-';
-  const seconds = Math.round(duration);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return `${minutes}m ${remainingSeconds}s`;
-};
-
-const formatDate = dateString => {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  return date.toLocaleString();
-};
-
 const TaskHistory = () => {
   const [taskHistory, setTaskHistory] = useState([]);
   const [isLoadingTaskHistory, setIsLoadingTaskHistory] = useState(true);
@@ -75,17 +60,18 @@ const TaskHistory = () => {
       setIsLoadingTaskHistory(true);
 
       try {
-        const { data, status } = await API.get(
+        const { data } = await API.get(
           `${ROUTES.API.TASK_HISTORY}?page=${page}&per_page=${perPage}`
         );
 
-        if (!cancelled && status === 200 && data) {
+        if (!cancelled && data) {
           setTaskHistory(data.results || []);
           setTotal(data.total || 0);
         }
       } catch (error) {
-        if (!cancelled)
-          showMessage(__('Failed to load task history: ') + error.message);
+        if (!cancelled) {
+          showMessage(sprintf(__('Failed to load task history: %s'), extractErrorMessage(error)));
+        }
       } finally {
         if (!cancelled) setIsLoadingTaskHistory(false);
       }
@@ -120,7 +106,7 @@ const TaskHistory = () => {
   const jobTable = () => (
     <>
       <Table
-        aria-label="Task history table"
+        aria-label={__('Task history table')}
         borders
         isStriped
         isStickyHeader
@@ -131,7 +117,7 @@ const TaskHistory = () => {
             <Th modifier="wrap">{__('Task Name')}</Th>
             <Th modifier="wrap">{__('Status')}</Th>
             <Th modifier="wrap">{__('Targets')}</Th>
-            <Th modifier="wrap">{__('Started')}</Th>
+            <Th modifier="wrap">{__('Submitted')}</Th>
             <Th modifier="wrap">{__('Completed')}</Th>
             <Th modifier="wrap">{__('Duration')}</Th>
             <Th modifier="wrap">{__('Details')}</Th>
@@ -158,11 +144,7 @@ const TaskHistory = () => {
               <Td hasRightBorder>{formatDuration(job.duration)}</Td>
               <Td hasRightBorder>
                 <a
-                  href={`${ROUTES.PAGES.TASK_EXECUTION}?proxy_id=${
-                    job.smart_proxy.id
-                  }&job_id=${job.job_id}&proxy_name=${encodeURIComponent(
-                    job.smart_proxy.name
-                  )}`}
+                  href={`${ROUTES.PAGES.TASK_EXECUTION}?job_id=${job.job_id}`}
                   aria-label={__('View Details')}
                   title={__('View Details')}
                 >

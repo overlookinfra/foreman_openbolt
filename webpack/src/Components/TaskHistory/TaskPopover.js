@@ -2,21 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { translate as __ } from 'foremanReact/common/I18n';
 import { Popover, Button } from '@patternfly/react-core';
+import { displayValue } from '../common/helpers';
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 
 const TaskPopover = ({ taskName, taskDescription, taskParameters }) => {
   const hasParameters =
     taskParameters && Object.keys(taskParameters).length > 0;
-
-  const displayValue = value => {
-    if (value === null || value === undefined) {
-      return '-';
-    }
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    return String(value);
-  };
 
   const popoverContent = (
     <div style={{ maxWidth: '500px' }}>
