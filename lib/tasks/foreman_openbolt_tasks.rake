@@ -25,4 +25,3 @@ namespace :openbolt do
     end
   end
 end
-
