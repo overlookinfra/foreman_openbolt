@@ -6,10 +6,9 @@
 module Actions
   module ForemanOpenbolt
     class PollTaskStatus < Actions::EntryAction
-      include Actions::RecurringAction
 
       POLL_INTERVAL = 5.seconds
-      RETRY_LIMIT = 60 # Number of retries before giving up (5 minutes)
+      RETRY_LIMIT = 60 # 5 minutes at 5-second intervals
 
       # Set up the action when it is first scheduled, storing
       # IDs needed to get information from the proxy.
@@ -24,52 +23,56 @@ module Actions
         if event.nil? || event.to_sym == :poll
           poll_and_reschedule
         else
-          error("Received unknown event '#{event}' for OpenBolt job #{input[:job_id]}. Finishing the action.")
+          log("Received unknown event '#{event}' for OpenBolt job #{input[:job_id]}", :error)
           finish
         end
       end
 
-      def finalize
-        Rails.logger.info("Finalized polling for OpenBolt job #{input[:job_id]}")
-      end
-
       private
 
-      def append_output(key, message)
-        output[key] ||= []
-        output[key] << message
+      def log(msg, level = :debug)
+        output[:log] ||= []
+        output[:log] << "[#{Time.now.getlocal.strftime('%Y-%m-%d %H:%M:%S')}] [#{level.upcase}] #{msg}"
+        Rails.logger.send(level, msg)
       end
 
-      def log(message)
-        append_output(:log, "[#{Time.now.getlocal.strftime('%Y-%m-%d %H:%M:%S')}] #{message}")
-      end
-
-      def error(message)
-        append_output(:error, message)
-      end
-
-      def exception(e)
-        append_output(:exception, e.message)
-        append_output(:exception_backtrace, e.backtrace.join("\n"))
+      def exception(msg, e)
+        log("#{msg}: #{e.class}: #{e.message}", :error)
+        log(e.backtrace.join("\n"), :error) if e.backtrace
       end
 
       def finish
         log("Polling finished for OpenBolt job #{input[:job_id]}")
       end
 
+      def extract_proxy_error(response)
+        error_value = response&.dig('error')
+        return nil if error_value.nil? || (error_value.respond_to?(:empty?) && error_value.empty?)
+
+        error_value.is_a?(Hash) ? error_value['message'] || error_value.to_s : error_value.to_s
+      end
+
       def poll_and_reschedule
         job_id = input[:job_id]
+        task_job = ::ForemanOpenbolt::TaskJob.find_by(job_id: job_id)
 
-        # If task doesn't exist or is already complete, finish
-        if task_job.nil? || task_job.completed?
+        if task_job.nil?
+          log("TaskJob record not found for job #{job_id}", :error)
+          finish
+          return
+        end
+
+        if task_job.completed?
           finish
           return
         end
 
         # If the smart proxy has been deleted somehow or is unknown,
         # we can't poll for status, so finish.
-        if proxy.nil?
-          error("Smart Proxy with ID #{input[:proxy_id]} not found for OpenBolt job #{job_id}. Finishing the action.")
+        proxy = ::SmartProxy.find_by(id: input[:proxy_id])
+        unless proxy
+          log("Smart Proxy with ID #{input[:proxy_id]} not found for OpenBolt job #{job_id}", :error)
+          task_job.update!(status: 'exception')
           finish
           return
         end
@@ -80,24 +83,32 @@ module Actions
           # Fetch current status
           status_result = api.job_status(job_id: job_id)
 
-          # Update status if changed
-          if status_result && status_result['status']
-            input[:retry_count] = 0
-            task_job.update!(status: status_result['status'])
-            log("Status: #{status_result['status']}")
+          proxy_error = extract_proxy_error(status_result)
+          raise "Proxy returned error: #{proxy_error}" if proxy_error
 
-            # If completed, fetch full results
-            if task_job.completed?
-              result = api.job_result(job_id: job_id)
-              if result
-                task_job.update_from_proxy_result!(result)
-                log("OpenBolt job #{job_id} completed with status '#{task_job.status}'")
-              else
-                log("WARNING: No result returned from proxy for completed OpenBolt job #{job_id}")
-              end
-              finish
-              return
+          raise "Proxy returned response without status: #{status_result.inspect}" unless status_result&.dig('status')
+
+          input[:retry_count] = 0
+          new_status = status_result['status']
+          if new_status != task_job.status
+            previous_status = task_job.status
+            task_job.update!(status: new_status)
+            log("OpenBolt job #{job_id} status changed from '#{previous_status}' to '#{new_status}'", :info)
+          else
+            log("Poll for OpenBolt job #{job_id}: status=#{new_status}")
+          end
+
+          # If completed, fetch full results
+          if task_job.completed?
+            result = api.job_result(job_id: job_id)
+            if result.present?
+              task_job.update_from_proxy_result!(result)
+              log("OpenBolt job #{job_id} completed with status '#{task_job.status}'", :info)
+            else
+              log("No result returned from proxy for completed OpenBolt job #{job_id}", :error)
             end
+            finish
+            return
           end
 
           # Still running, schedule next poll in 5 seconds
@@ -105,14 +116,14 @@ module Actions
             world.clock.ping(suspended_action, POLL_INTERVAL.from_now.to_time, :poll)
           end
         rescue StandardError => e
-          error("Error polling task status for job #{job_id}")
-          exception(e)
+          exception("Error polling task status for job #{job_id}", e)
 
           retry_count = (input[:retry_count] || 0) + 1
           input[:retry_count] = retry_count
 
           if retry_count > RETRY_LIMIT
-            error("Could not successfully poll task status for job #{job_id} after #{retry_count} attempts. Giving up.")
+            log("Polling gave up for job #{job_id} after #{retry_count} attempts", :error)
+            task_job.update!(status: 'exception')
             finish
             return
           end
@@ -134,17 +145,9 @@ module Actions
       def humanized_input
         input.slice(:job_id, :proxy_id).merge(
           # Using & to handle possible nil values just in case
-          proxy_name: proxy&.name,
-          task_name: task_job&.task_name
+          proxy_name: ::SmartProxy.find_by(id: input[:proxy_id])&.name,
+          task_name: ::ForemanOpenbolt::TaskJob.find_by(job_id: input[:job_id])&.task_name
         )
-      end
-
-      def task_job
-        @task_job ||= ::ForemanOpenbolt::TaskJob.find_by(job_id: input[:job_id])
-      end
-
-      def proxy
-        @proxy ||= ::SmartProxy.find_by(id: input[:proxy_id])
       end
     end
   end
