@@ -1,7 +1,8 @@
 /* eslint-disable no-await-in-loop */
-import { useState, useEffect } from 'react';
-import { translate as __ } from 'foremanReact/common/I18n';
+import { useState, useEffect, useRef } from 'react';
+import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
+import { extractErrorMessage } from '../../common/helpers';
 import {
   STATUS,
   COMPLETED_STATUSES,
@@ -9,13 +10,7 @@ import {
   ROUTES,
 } from '../../common/constants';
 
-/**
- * Custom hook for polling job status
- * @param {string} proxyId - Smart Proxy ID
- * @param {string} jobId - Job ID to poll
- * @returns {Object}
- */
-const useJobPolling = (proxyId, jobId) => {
+const useJobPolling = (jobId) => {
   const [status, setStatus] = useState(STATUS.PENDING);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -26,13 +21,15 @@ const useJobPolling = (proxyId, jobId) => {
   const [taskDescription, setTaskDescription] = useState(null);
   const [taskParameters, setTaskParameters] = useState({});
   const [targets, setTargets] = useState([]);
+  const [smartProxy, setSmartProxy] = useState(null);
+  const metadataLoaded = useRef(false);
 
   // There are a bunch of checks of 'cancelled' here so that if the
   // user navigates away while polling, we don't keep trying to update state.
   useEffect(() => {
     // Have to return undefined since we are returning a cleanup function
     // otherwise and React wants all code paths to return something.
-    if (!proxyId || !jobId) return undefined;
+    if (!jobId) return undefined;
 
     let cancelled = false;
 
@@ -41,41 +38,40 @@ const useJobPolling = (proxyId, jobId) => {
 
       while (!cancelled) {
         try {
-          const { data: statusData, status: statusCode } = await API.get(
-            `${ROUTES.API.JOB_STATUS}?proxy_id=${proxyId}&job_id=${jobId}`
+          const { data: statusData } = await API.get(
+            `${ROUTES.API.JOB_STATUS}?job_id=${jobId}`
           );
 
           if (cancelled) break;
 
-          if (statusCode !== 200) {
-            const errorMsg = statusData
-              ? statusData.error || JSON.stringify(statusData)
-              : 'Unknown error';
-            throw new Error(`HTTP ${statusCode} - ${errorMsg}`);
-          }
-
           const jobStatus = statusData?.status;
           if (!jobStatus) {
-            throw new Error('No job status returned');
+            throw new Error(__('No job status returned'));
           }
 
           setStatus(jobStatus);
-          setSubmittedAt(statusData.submitted_at || null);
           setCompletedAt(statusData.completed_at || null);
-          setTaskName(statusData.task_name || null);
-          setTaskDescription(statusData.task_description || null);
-          setTaskParameters(statusData.task_parameters || {});
-          setTargets(statusData.targets || []);
+
+          // Task metadata only needs to be set once since it never changes
+          if (!metadataLoaded.current) {
+            setSubmittedAt(statusData.submitted_at || null);
+            setTaskName(statusData.task_name || null);
+            setTaskDescription(statusData.task_description || null);
+            setTaskParameters(statusData.task_parameters || {});
+            setTargets(statusData.targets || []);
+            setSmartProxy(statusData.smart_proxy || null);
+            metadataLoaded.current = true;
+          }
 
           // If job is complete, fetch results and break
           if (COMPLETED_STATUSES.includes(jobStatus)) {
             if (jobStatus === STATUS.INVALID) break;
             try {
-              const { data: resultData, status: resultCode } = await API.get(
-                `${ROUTES.API.JOB_RESULT}?proxy_id=${proxyId}&job_id=${jobId}`
+              const { data: resultData } = await API.get(
+                `${ROUTES.API.JOB_RESULT}?job_id=${jobId}`
               );
 
-              if (!cancelled && resultCode === 200 && resultData) {
+              if (!cancelled && resultData) {
                 setResult({
                   command: resultData.command || '',
                   result: resultData.value,
@@ -85,10 +81,7 @@ const useJobPolling = (proxyId, jobId) => {
             } catch (resultError) {
               // Don't fail the whole thing if result fetch fails
               if (!cancelled) {
-                setError(
-                  __('Failed to fetch job result: ') +
-                    (resultError.message || 'Unknown error')
-                );
+                setError(sprintf(__('Failed to fetch job result: %s'), extractErrorMessage(resultError)));
                 setResult({ result: null, log: '' });
               }
             }
@@ -103,10 +96,7 @@ const useJobPolling = (proxyId, jobId) => {
           }
         } catch (err) {
           if (!cancelled) {
-            setError(
-              __('Failed to fetch job status: ') +
-                (err.message || 'Unknown error')
-            );
+            setError(sprintf(__('Failed to fetch job status: %s'), extractErrorMessage(err)));
           }
           break;
         }
@@ -123,7 +113,7 @@ const useJobPolling = (proxyId, jobId) => {
       cancelled = true;
       setIsPolling(false);
     };
-  }, [proxyId, jobId]);
+  }, [jobId]);
 
   return {
     status,
@@ -136,6 +126,7 @@ const useJobPolling = (proxyId, jobId) => {
     taskDescription,
     taskParameters,
     targets,
+    smartProxy,
   };
 };
 
