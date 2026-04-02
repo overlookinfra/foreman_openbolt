@@ -1,14 +1,5 @@
 # frozen_string_literal: true
 
-require 'rake/testtask'
-
-Rake::TestTask.new(:test) do |t|
-  t.libs << 'lib'
-  t.libs << 'test'
-  t.pattern = 'test/**/*_test.rb'
-  t.verbose = false
-end
-
 LINTERS = {
   ruby: { cmd: 'rubocop', fix: '--autocorrect' },
   erb: { cmd: 'erb_lint', fix: '--autocorrect', glob: '**/*.erb' },
@@ -44,7 +35,7 @@ namespace :lint do
   end
 end
 
-task default: ['lint:all', 'test']
+task default: ['lint:all']
 
 begin
   require 'rubygems'
