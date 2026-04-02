@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { translate as __, sprintf } from 'foremanReact/common/I18n';
+import { formatDuration, formatDate } from '../common/helpers';
 import {
   Card,
   CardBody,
@@ -38,12 +39,12 @@ const STATUS_CONFIGS = {
   },
   [STATUS.EXCEPTION]: {
     icon: ExclamationCircleIcon,
-    color: 'red',
+    color: 'orange',
     label: __('Exception'),
   },
   [STATUS.INVALID]: {
     icon: ExclamationCircleIcon,
-    color: 'red',
+    color: 'yellow',
     label: __('Invalid'),
   },
   [STATUS.RUNNING]: {
@@ -64,24 +65,6 @@ const getStatusConfig = status =>
     color: 'grey',
     label: __('Unknown'),
   };
-
-const formatExecutionTime = (submittedAt, completedAt) => {
-  if (!submittedAt) return __('-');
-
-  const start = new Date(submittedAt);
-  const end = completedAt ? new Date(completedAt) : new Date();
-  const totalSeconds = Math.floor((end - start) / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  const parts = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0 || hours > 0) parts.push(`${minutes}m`);
-  parts.push(`${seconds}s`);
-
-  return parts.join('');
-};
 
 const DescriptionItem = ({ label, children }) => (
   <DescriptionListGroup>
@@ -129,8 +112,7 @@ StatusLabel.propTypes = {
 };
 
 const ExecutionDetails = ({
-  proxyId,
-  proxyName,
+  smartProxy,
   jobId,
   jobStatus,
   isPolling,
@@ -142,8 +124,8 @@ const ExecutionDetails = ({
     <CardBody>
       <DescriptionList isHorizontal>
         <DescriptionItem label={__('Smart Proxy')}>
-          {proxyId && proxyName ? (
-            <a href={`/smart_proxies/${proxyId}`}>{proxyName}</a>
+          {smartProxy?.id && smartProxy?.name ? (
+            <a href={`/smart_proxies/${smartProxy.id}`}>{smartProxy.name}</a>
           ) : (
             <em>{__('Unknown')}</em>
           )}
@@ -161,8 +143,22 @@ const ExecutionDetails = ({
           <StatusLabel status={jobStatus} isPolling={isPolling} />
         </DescriptionItem>
 
-        <DescriptionItem label={__('Execution Time')}>
-          {formatExecutionTime(submittedAt, completedAt)}
+        <DescriptionItem label={__('Submitted')}>
+          {formatDate(submittedAt)}
+        </DescriptionItem>
+
+        {completedAt && (
+          <DescriptionItem label={__('Completed')}>
+            {formatDate(completedAt)}
+          </DescriptionItem>
+        )}
+
+        <DescriptionItem label={__('Duration')}>
+          {submittedAt
+            ? formatDuration(
+                ((completedAt ? new Date(completedAt) : new Date()) - new Date(submittedAt)) / 1000
+              )
+            : '-'}
         </DescriptionItem>
       </DescriptionList>
     </CardBody>
@@ -170,8 +166,10 @@ const ExecutionDetails = ({
 );
 
 ExecutionDetails.propTypes = {
-  proxyId: PropTypes.string.isRequired,
-  proxyName: PropTypes.string.isRequired,
+  smartProxy: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+  }),
   jobId: PropTypes.string.isRequired,
   jobStatus: PropTypes.string.isRequired,
   isPolling: PropTypes.bool.isRequired,
@@ -181,6 +179,7 @@ ExecutionDetails.propTypes = {
 };
 
 ExecutionDetails.defaultProps = {
+  smartProxy: null,
   submittedAt: null,
   completedAt: null,
 };

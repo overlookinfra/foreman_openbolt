@@ -9,11 +9,9 @@ import ExecutionDetails from './ExecutionDetails';
 import TaskDetails from './TaskDetails';
 
 const ExecutionDisplay = ({
-  proxyId,
-  proxyName,
+  smartProxy,
   jobId,
   jobStatus,
-  pollCount,
   isPolling,
   targets,
   submittedAt,
@@ -41,11 +39,9 @@ const ExecutionDisplay = ({
         }
       >
         <ExecutionDetails
-          proxyId={proxyId}
-          proxyName={proxyName}
+          smartProxy={smartProxy}
           jobId={jobId}
           jobStatus={jobStatus}
-          pollCount={pollCount}
           isPolling={isPolling}
           targets={targets}
           submittedAt={submittedAt}
@@ -75,23 +71,26 @@ const ExecutionDisplay = ({
 };
 
 ExecutionDisplay.propTypes = {
-  proxyId: PropTypes.string.isRequired,
-  proxyName: PropTypes.string.isRequired,
+  smartProxy: PropTypes.shape({
+    id: PropTypes.number,
+    name: PropTypes.string,
+  }),
   jobId: PropTypes.string.isRequired,
   jobStatus: PropTypes.string.isRequired,
-  pollCount: PropTypes.number.isRequired,
   isPolling: PropTypes.bool.isRequired,
   targets: PropTypes.arrayOf(PropTypes.string).isRequired,
   submittedAt: PropTypes.string,
   completedAt: PropTypes.string,
-  taskName: PropTypes.string.isRequired,
+  taskName: PropTypes.string,
   taskDescription: PropTypes.string,
   taskParameters: PropTypes.object,
 };
 
 ExecutionDisplay.defaultProps = {
+  smartProxy: null,
   submittedAt: null,
   completedAt: null,
+  taskName: null,
   taskDescription: null,
   taskParameters: {},
 };

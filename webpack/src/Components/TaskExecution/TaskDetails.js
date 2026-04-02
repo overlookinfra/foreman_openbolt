@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { translate as __ } from 'foremanReact/common/I18n';
+import { displayValue } from '../common/helpers';
 import {
   Card,
   CardBody,
@@ -12,15 +13,6 @@ import {
 import { Table, Thead, Tbody, Tr, Th, Td } from '@patternfly/react-table';
 
 const TaskDetails = ({ taskName, taskDescription, taskParameters }) => {
-  const displayValue = value => {
-    if (value === null || value === undefined) {
-      return '-';
-    }
-    if (typeof value === 'object') {
-      return JSON.stringify(value);
-    }
-    return String(value);
-  };
 
   return (
     <Card>
@@ -86,12 +78,13 @@ const TaskDetails = ({ taskName, taskDescription, taskParameters }) => {
 };
 
 TaskDetails.propTypes = {
-  taskName: PropTypes.string.isRequired,
+  taskName: PropTypes.string,
   taskDescription: PropTypes.string,
   taskParameters: PropTypes.object,
 };
 
 TaskDetails.defaultProps = {
+  taskName: null,
   taskDescription: null,
   taskParameters: {},
 };
