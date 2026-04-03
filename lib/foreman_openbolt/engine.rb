@@ -15,7 +15,7 @@ module ForemanOpenbolt
     initializer 'foreman_openbolt.register_plugin', before: :finisher_hook do |app|
       app.reloader.to_prepare do
         Foreman::Plugin.register :foreman_openbolt do
-          requires_foreman '>= 3.14.0'
+          requires_foreman '>= 3.17.0'
           register_gettext
 
           settings do
