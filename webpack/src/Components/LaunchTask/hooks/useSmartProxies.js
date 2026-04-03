@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { translate as __ } from 'foremanReact/common/I18n';
+import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
-import { useShowMessage } from '../../common/helpers';
+import { useShowMessage, extractErrorMessage } from '../../common/helpers';
 
 export const useSmartProxies = () => {
   const showMessage = useShowMessage();
@@ -16,18 +16,12 @@ export const useSmartProxies = () => {
           per_page: 'all',
           search: 'feature=OpenBolt',
         })}`;
-        const { data, status } = await API.get(endpoint);
+        const { data } = await API.get(endpoint);
 
-        if (status !== 200) {
-          const error = data
-            ? data.error || JSON.stringify(data)
-            : 'Unknown error';
-          throw new Error(`HTTP ${status} - ${error}`);
-        }
+        const results = data.results || [];
+        setSmartProxies(results);
 
-        setSmartProxies(data.results || []);
-
-        if (data.results.length === 0) {
+        if (results.length === 0) {
           showMessage(
             __(
               'No Smart Proxies found. Please check that one or more proxy has the smart_proxy_openbolt package installed and enabled.'
@@ -35,7 +29,12 @@ export const useSmartProxies = () => {
           );
         }
       } catch (error) {
-        showMessage(__('Failed to load Smart Proxies: ') + error.message);
+        showMessage(
+          sprintf(
+            __('Failed to load Smart Proxies: %s'),
+            extractErrorMessage(error)
+          )
+        );
       } finally {
         setIsLoadingProxies(false);
       }

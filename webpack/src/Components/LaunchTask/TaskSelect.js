@@ -24,9 +24,9 @@ const TaskSelect = ({
     <Flex spaceItems={{ default: 'spaceItemsSm' }}>
       <FlexItem flex={{ default: 'flex_1' }}>
         <FormSelect
-          id="task-select"
+          id="task-name-input"
           // Force remount on isDisabled so the tooltip based on the title changes
-          key={`task-select-${isDisabled}`}
+          key={`task-name-input-${isDisabled}`}
           title={
             isDisabled
               ? __('You must first select a Smart Proxy')
@@ -67,7 +67,7 @@ const TaskSelect = ({
       </FlexItem>
     </Flex>
     <span id="task-select-helper" className="pf-v5-u-screen-reader">
-      {__('Select a OpenBolt task to execute on the specified targets')}
+      {__('Select an OpenBolt task to execute on the specified targets')}
     </span>
   </FormGroup>
 );

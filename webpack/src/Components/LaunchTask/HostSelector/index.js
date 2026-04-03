@@ -4,11 +4,12 @@
  */
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { sprintf, translate as __ } from 'foremanReact/common/I18n';
+import { translate as __ } from 'foremanReact/common/I18n';
 import { API } from 'foremanReact/redux/API';
 import {
   FormGroup,
   HelperText,
+  HelperTextItem,
   Select,
   SelectOption,
   InputGroup,
@@ -17,24 +18,25 @@ import {
   FormHelperText,
 } from '@patternfly/react-core';
 import { FilterIcon } from '@patternfly/react-icons';
+import { extractErrorMessage } from '../../common/helpers';
 import { SearchSelect } from './SearchSelect';
 import { SelectedChips } from './SelectedChips';
 import { HostSearch } from './HostSearch';
 
-// Was from JobWizardConstants. Move into ours maybe.
-const HOST_METHODS = {
-  hosts: __('Hosts'),
-  hostGroups: __('Host groups'),
-  searchQuery: __('Search query'),
+const HOST_METHOD_LABELS = {
+  hosts: () => __('Hosts'),
+  hostGroups: () => __('Host groups'),
+  searchQuery: () => __('Search query'),
 };
+
 const ERROR_MESSAGES = {
-  hosts: __('Please select at least one host'),
-  hostGroups: __('Please select at least one host group'),
-  searchQuery: __('Please enter a search query'),
+  hosts: () => __('Please select at least one host'),
+  hostGroups: () => __('Please select at least one host group'),
+  searchQuery: () => __('Please enter a search query'),
 };
 
 const HostSelector = ({ onChange, targetCount = 0 }) => {
-  const [hostMethod, setHostMethod] = useState(HOST_METHODS.hosts);
+  const [hostMethod, setHostMethod] = useState('hosts');
   const [isOpen, setIsOpen] = useState(false);
   const [errorText, setErrorText] = useState('');
   const [hostsSearchQuery, setHostsSearchQuery] = useState('');
@@ -121,7 +123,7 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
         }
       } catch (error) {
         if (!cancelled) {
-          setFetchError(error.message || __('Failed to fetch hosts'));
+          setFetchError(extractErrorMessage(error));
           onChange([]);
         }
       } finally {
@@ -143,7 +145,7 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
   const onSelect = (_event, selection) => {
     setHostMethod(selection);
     setIsOpen(false);
-    setErrorText(ERROR_MESSAGES[selection] || '');
+    setErrorText(ERROR_MESSAGES[selection]());
   };
 
   const onToggleClick = () => setIsOpen(!isOpen);
@@ -154,25 +156,18 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
       onClick={onToggleClick}
       isExpanded={isOpen}
       icon={<FilterIcon />}
+      aria-label={__('Select host targeting method')}
     >
-      {hostMethod}
+      {HOST_METHOD_LABELS[hostMethod]()}
     </MenuToggle>
   );
 
   return (
     <div className="host-selector">
       <FormGroup fieldId="host-selector" label={__('Hosts')}>
-        {targetCount > 0 && (
-          <HelperText>
-            <HelperText variant="success">
-              {sprintf(__('%s hosts selected'), targetCount)}
-            </HelperText>
-          </HelperText>
-        )}
-
         {isLoading && (
-          <HelperText>
-            <HelperText>{__('Loading hosts...')}</HelperText>
+          <HelperText aria-live="polite">
+            <HelperTextItem>{__('Loading hosts...')}</HelperTextItem>
           </HelperText>
         )}
 
@@ -188,16 +183,16 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
                 className="without_select2"
                 aria-label={__('Host selection method')}
               >
-                {Object.values(HOST_METHODS).map((method, index) => (
-                  <SelectOption key={index} value={method}>
-                    {method}
+                {Object.entries(HOST_METHOD_LABELS).map(([key, labelFn]) => (
+                  <SelectOption key={key} value={key}>
+                    {labelFn()}
                   </SelectOption>
                 ))}
               </Select>
             </FormGroup>
           </InputGroupItem>
 
-          {hostMethod === HOST_METHODS.hosts && (
+          {hostMethod === 'hosts' && (
             <SearchSelect
               selected={selectedTargets.hosts}
               setSelected={setSelectedHosts}
@@ -208,7 +203,7 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
             />
           )}
 
-          {hostMethod === HOST_METHODS.hostGroups && (
+          {hostMethod === 'hostGroups' && (
             <SearchSelect
               selected={selectedTargets.hostGroups}
               setSelected={setSelectedHostGroups}
@@ -219,7 +214,7 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
             />
           )}
 
-          {hostMethod === HOST_METHODS.searchQuery && (
+          {hostMethod === 'searchQuery' && (
             <HostSearch
               setValue={setHostsSearchQuery}
               value={hostsSearchQuery}
@@ -228,14 +223,14 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
         </InputGroup>
 
         {!hasSelection && (
-          <FormHelperText>
-            <HelperText variant="error">{errorText}</HelperText>
+          <FormHelperText aria-live="assertive">
+            <HelperTextItem variant="error">{errorText}</HelperTextItem>
           </FormHelperText>
         )}
 
         {fetchError && (
-          <FormHelperText>
-            <HelperText variant="error">{fetchError}</HelperText>
+          <FormHelperText aria-live="assertive">
+            <HelperTextItem variant="error">{fetchError}</HelperTextItem>
           </FormHelperText>
         )}
       </FormGroup>

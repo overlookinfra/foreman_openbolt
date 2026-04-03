@@ -1,7 +1,6 @@
-// TODO: More a11y tags
 import React, { useState, useCallback } from 'react';
 import { useHistory } from 'react-router-dom';
-import { translate as __ } from 'foremanReact/common/I18n';
+import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 
 import { API } from 'foremanReact/redux/API';
 import {
@@ -28,7 +27,7 @@ import HostSelector from './HostSelector';
 import { useSmartProxies } from './hooks/useSmartProxies';
 import { useTasksData } from './hooks/useTasksData';
 import { useOpenBoltOptions } from './hooks/useOpenBoltOptions';
-import { useShowMessage } from '../common/helpers';
+import { useShowMessage, extractErrorMessage } from '../common/helpers';
 
 const LaunchTask = () => {
   const history = useHistory();
@@ -96,7 +95,7 @@ const LaunchTask = () => {
             defaults[paramName] = paramMeta.default;
           } else if (
             ['boolean', 'optional[boolean]'].includes(
-              paramMeta.type.toLowerCase()
+              paramMeta.type?.toLowerCase()
             )
           ) {
             defaults[paramName] = false;
@@ -174,36 +173,18 @@ const LaunchTask = () => {
           options: visibleOptions,
         };
 
-        const { data, status } = await API.post(ROUTES.API.LAUNCH_TASK, body);
-
-        // TODO: On non-200, the post above automatically throws an exception, so
-        // figure out how to handle it instead to extract the message in the
-        // response body.
-        if (status !== 200) {
-          const error = data
-            ? data.error || JSON.stringify(data)
-            : 'Unknown error';
-          throw new Error(`HTTP ${status} - ${error}`);
-        }
-
-        const selectedProxyData = smartProxies.find(
-          p => p.id.toString() === selectedProxy.toString()
-        );
+        const { data } = await API.post(ROUTES.API.LAUNCH_TASK, body);
 
         history.push({
           pathname: ROUTES.PAGES.TASK_EXECUTION,
           search: new URLSearchParams({
-            proxy_id: selectedProxy,
             job_id: data.job_id,
-            proxy_name: selectedProxyData?.name || 'Unknown',
           }).toString(),
         });
       } catch (error) {
-        const errorMessage =
-          error.response?.data?.error ||
-          error.message ||
-          __('Unknown error occurred');
-        showMessage(__('Failed to launch task: ') + errorMessage);
+        showMessage(
+          sprintf(__('Failed to launch task: %s'), extractErrorMessage(error))
+        );
       } finally {
         setIsSubmitting(false);
       }
@@ -265,7 +246,8 @@ const LaunchTask = () => {
                   isDisabled={!isFormValid}
                   isLoading={isSubmitting}
                 >
-                  {`🚀 ${__('Launch Task')}`}
+                  <span aria-hidden="true">🚀</span>
+                  {` ${__('Launch Task')}`}
                 </Button>
               </FlexItem>
             </Flex>

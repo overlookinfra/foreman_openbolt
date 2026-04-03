@@ -1,85 +1,41 @@
 # frozen_string_literal: true
 
-# !/usr/bin/env rake
-
-begin
-  require 'rdoc/task'
-rescue LoadError
-  require 'rdoc/rdoc'
-  require 'rake/rdoctask'
-  RDoc::Task = Rake::RDocTask
-end
-
-RDoc::Task.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'rdoc'
-  rdoc.title    = 'ForemanOpenbolt'
-  rdoc.options << '--line-numbers'
-  rdoc.rdoc_files.include('README.rdoc')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
-require 'rake/testtask'
-
-Rake::TestTask.new(:test) do |t|
-  t.libs << 'lib'
-  t.libs << 'test'
-  t.pattern = 'test/**/*_test.rb'
-  t.verbose = false
-end
-
-begin
-  require 'rubocop/rake_task'
-  RuboCop::RakeTask.new
-rescue LoadError
-  puts 'Rubocop not loaded.'
-end
-
-# This is all kinda screwy. Fix it up later.
-LINTERS = {
-  ruby: { cmd: 'rubocop', fix: '--auto-correct' },
-  erb: { cmd: 'erb_lint', fix: '--autocorrect', glob: '**/*.erb' },
-  js: { image: 'registry.access.redhat.com/ubi9/nodejs-20:latest', cmd: 'npm run lint --', fix: '--fix' },
-}.freeze
-
 namespace :lint do
-  def fix?
-    !ENV['FIX'].nil?
+  desc 'Run Ruby linter'
+  task :ruby do
+    args = ENV['FIX'] ? '--autocorrect' : ''
+    sh "rubocop #{args}".strip
   end
 
-  def local?
-    !ENV['LOCAL'].nil?
+  desc 'Run ERB linter'
+  task :erb do
+    args = ENV['FIX'] ? '--autocorrect' : ''
+    sh "erb_lint #{args} **/*.erb".strip
   end
 
-  def bin
-    ENV['CONTAINER_BIN'] || 'docker'
-  end
-
-  LINTERS.each do |name, cfg|
-    desc "Run #{name} linter#{' (fix)' if fix?}"
-    task name do
-      cmd = [cfg[:cmd]]
-      cmd << cfg[:fix] if fix?
-      cmd << cfg[:glob] unless cfg[:glob].nil? || cfg[:glob].empty? # rubocop:disable Rails/Blank
-      cmd = cmd.join(' ')
-      if cfg[:image] && !local?
-        cmd = "#{bin} run --rm -v #{Dir.pwd}:/code #{cfg[:image]} /bin/bash -c " +
-              "'cd /code && npm install --loglevel=error && #{cmd}'"
-      end
-      sh cmd
+  desc 'Run JavaScript linter'
+  task :js do
+    args = ENV['FIX'] ? '-- --fix' : ''
+    if ENV['CONTAINER'] # Because npm is kind of a security nightmare
+      bin = ENV['CONTAINER_BIN'] || 'docker'
+      puts 'The npm ci command may take a while, be patient!'
+      sh "#{bin} run --rm -v #{Dir.pwd}:/code -w /code node:20 sh -c 'npm ci --loglevel=error && npm run lint #{args}'".strip
+    else
+      sh "npm run lint #{args}".strip
     end
   end
-
-  desc 'Run all linters'
-  task all: LINTERS.keys
-
-  desc 'Run all linters and apply fixes'
-  task :fix do
-    ENV['FIX'] = 'true'
-    Rake::Task['lint:all'].invoke
-  end
 end
 
-task default: ['lint:all', 'test']
+desc 'Run all linters'
+task lint: ['lint:ruby', 'lint:erb', 'lint:js']
+
+desc 'Run all linters and apply fixes'
+task 'lint:fix' do
+  ENV['FIX'] = 'true'
+  Rake::Task['lint'].invoke
+end
+
+task default: ['lint']
 
 begin
   require 'rubygems'

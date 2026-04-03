@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { translate as __ } from 'foremanReact/common/I18n';
+import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 import { Popover, Button } from '@patternfly/react-core';
 import { Table, Tbody, Tr, Td } from '@patternfly/react-table';
 
@@ -17,7 +17,12 @@ const HostsPopover = ({ targets }) => {
         border: '1px solid var(--pf-v5-global--BorderColor--100)',
       }}
     >
-      <Table variant="compact" borders isStriped>
+      <Table
+        variant="compact"
+        borders
+        isStriped
+        aria-label={__('Target hosts')}
+      >
         <Tbody>
           {targets.map((host, index) => (
             <Tr key={index}>
@@ -31,7 +36,11 @@ const HostsPopover = ({ targets }) => {
 
   return (
     <Popover bodyContent={popoverContent} position="right" maxWidth="600px">
-      <Button variant="link" isInline>
+      <Button
+        variant="link"
+        isInline
+        aria-label={sprintf(__('%s target hosts'), targets.length)}
+      >
         {targets.length}
       </Button>
     </Popover>

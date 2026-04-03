@@ -8,16 +8,19 @@ module Actions
       end
 
       def run
-        proxy = ::SmartProxy.find(input[:proxy_id])
+        proxy = ::SmartProxy.find_by(id: input[:proxy_id])
+        unless proxy
+          Rails.logger.warn("Proxy #{input[:proxy_id]} not found during cleanup for job #{input[:job_id]}, skipping")
+          return
+        end
+
         api = ::ProxyAPI::Openbolt.new(url: proxy.url)
-
         response = api.delete_job_artifacts(job_id: input[:job_id])
-        Rails.logger.info("Cleaned up artifacts for job #{input[:job_id]}: #{response}")
-
-        Rails.logger.info("Would delete artifacts for job #{input[:job_id]} on proxy #{proxy.name}")
+        Rails.logger.debug("Cleaned up artifacts for job #{input[:job_id]} on proxy #{proxy.name}: #{response}")
       rescue StandardError => e
         # Don't fail the action if cleanup fails - it's not critical
-        Rails.logger.error("Failed to cleanup artifacts for job #{input[:job_id]}: #{e.message}")
+        Rails.logger.error("Failed to cleanup artifacts for job #{input[:job_id]}: #{e.class}: #{e.message}")
+        Rails.logger.error(e.backtrace.join("\n")) if e.backtrace
       end
 
       def rescue_strategy
@@ -30,10 +33,8 @@ module Actions
       end
 
       def humanized_input
-        {
-          job_id: input[:job_id],
-          proxy: ::SmartProxy.find_by(id: input[:proxy_id])&.name,
-        }
+        proxy_name = ::SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
+        "job #{input[:job_id]} on #{proxy_name}"
       end
     end
   end
