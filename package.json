@@ -7,9 +7,7 @@
     "lint": "tfm-lint --plugin -d /webpack",
     "test": "tfm-test --config jest.config.js",
     "test:watch": "tfm-test --plugin --watchAll",
-    "test:current": "tfm-test --plugin --watch",
-    "publish-coverage": "tfm-publish-coverage",
-    "create-react-component": "yo react-domain"
+    "test:current": "tfm-test --plugin --watch"
   },
   "repository": {
     "type": "git",
@@ -19,23 +17,21 @@
     "url": "http://projects.theforeman.org/projects/foreman_openbolt/issues"
   },
   "peerDependencies": {
-    "@theforeman/vendor": ">= 6.0.0"
+    "@theforeman/vendor": ">= 15.0.1"
   },
   "dependencies": {
     "react-intl": "^2.8.0"
   },
   "devDependencies": {
     "@babel/core": "^7.7.0",
-    "@sheerun/mutationobserver-shim": "^0.3.3",
-    "@theforeman/builder": ">= 6.0.0",
-    "@theforeman/eslint-plugin-foreman": "6.0.0",
-    "@theforeman/find-foreman": "^4.8.0",
-    "@theforeman/test": "^8.0.0",
-    "@theforeman/vendor-dev": "^6.0.0",
+    "@testing-library/react": "^10.4.9",
+    "@testing-library/react-hooks": "^3.7.0",
+    "@theforeman/builder": ">= 15.0.1",
+    "@theforeman/eslint-plugin-foreman": ">= 15.0.1",
+    "@theforeman/test": ">= 15.0.1",
+    "@theforeman/vendor-dev": ">= 15.0.1",
     "babel-eslint": "^10.0.3",
-    "eslint": "^6.7.2",
-    "prettier": "^1.19.1",
-    "stylelint-config-standard": "^18.0.0",
-    "stylelint": "^9.3.0"
+    "eslint": "^6.8.0",
+    "prettier": "^1.19.1"
   }
 }
