@@ -103,7 +103,7 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
       assert_equal 'exception', @job.reload.status
     end
 
-    test 'retries on proxy error in status response without changing job status' do
+    test 'marks exception immediately on proxy application error' do
       status_stub = stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
                     .to_return(status: 200, body: { 'error' => { 'message' => 'Job not found: test-job' } }.to_json,
                       headers: { 'Content-Type' => 'application/json' })
@@ -111,10 +111,19 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
       action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
       run_action(action)
 
-      # Proxy was called (error was detected and handled, not ignored)
       assert_requested(status_stub)
-      # Job stays running (not immediately marked as failed)
-      assert_equal 'running', @job.reload.status
+      assert_equal 'exception', @job.reload.status
+    end
+
+    test 'marks exception immediately when proxy response has no status' do
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 200, body: { 'unexpected' => 'data' }.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      run_action(action)
+
+      assert_equal 'exception', @job.reload.status
     end
 
     test 'marks job as exception after exhausting retry limit' do

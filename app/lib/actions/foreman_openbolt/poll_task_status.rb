@@ -81,9 +81,19 @@ module Actions
           status_result = api.job_status(job_id: job_id)
 
           proxy_error = extract_proxy_error(status_result)
-          raise "Proxy returned error: #{proxy_error}" if proxy_error
+          if proxy_error
+            log("Proxy returned error for job #{job_id}: #{proxy_error}", :error)
+            task_job.update!(status: 'exception')
+            finish
+            return
+          end
 
-          raise "Proxy returned response without status: #{status_result.inspect}" unless status_result&.dig('status')
+          unless status_result&.dig('status')
+            log("Proxy returned response without status for job #{job_id}: #{status_result.inspect}", :error)
+            task_job.update!(status: 'exception')
+            finish
+            return
+          end
 
           input[:retry_count] = 0
           new_status = status_result['status']
