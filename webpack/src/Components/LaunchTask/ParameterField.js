@@ -105,6 +105,7 @@ const ParameterField = ({
         isChecked={!!(value ?? defaultValue)}
         onChange={(_event, checked) => onChange(name, checked)}
         aria-label={name}
+        label={name}
       />
     );
   }
@@ -125,6 +126,7 @@ const ParameterField = ({
       value={resolvedValue}
       onChange={(_event, newValue) => onChange(name, newValue)}
       isRequired={isRequired && !hasEncryptedDefault}
+      aria-label={description || name}
     />
   );
 };

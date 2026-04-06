@@ -16,7 +16,6 @@ ForemanOpenbolt::Engine.routes.draw do
 
   # Task job management endpoints
   get 'fetch_task_history', to: 'task#fetch_task_history'
-  get 'fetch_task_history/:id', to: 'task#show', as: :task_job
 end
 
 Foreman::Application.routes.draw do

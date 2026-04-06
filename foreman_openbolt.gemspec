@@ -18,14 +18,12 @@ Gem::Specification.new do |s|
   s.files = Dir['{app,config,db,lib,locale,webpack}/**/*'] + ['LICENSE', 'Rakefile', 'README.md', 'package.json']
   s.test_files = Dir['test/**/*'] + Dir['webpack/**/__tests__/*.js']
 
-  s.required_ruby_version = '>= 2.7', '< 5'
+  s.required_ruby_version = '>= 3.0', '< 5'
 
   s.add_dependency 'foreman-tasks', '>= 11.0.0', '< 13'
 
   s.add_development_dependency 'erb_lint', '~> 0.9.0'
   s.add_development_dependency 'rake', '~> 13.0', '>= 13.0.6'
-  s.add_development_dependency 'rdoc', '~> 6.5'
-  s.add_development_dependency 'theforeman-rubocop', '~> 0.1.2'
-  # cleanup after https://github.com/theforeman/theforeman-rubocop/pull/16 is merged
   s.add_development_dependency 'rubocop-rake', '~> 0.6.0'
+  s.add_development_dependency 'theforeman-rubocop', '~> 0.1.2'
 end

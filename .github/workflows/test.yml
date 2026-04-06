@@ -12,28 +12,41 @@ env:
 
 jobs:
 
-  rubocop_and_matrix:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install npm dependencies
+        run: npm ci --loglevel=error
+      - name: Run linters
+        run: bundle exec rake lint
+
+  setup_matrix:
     runs-on: ubuntu-latest
     outputs:
       ruby: ${{ steps.ruby.outputs.versions }}
     steps:
       - uses: actions/checkout@v6
-      - name: Install Ruby ${{ matrix.ruby }}
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: "3.3"
-          bundler-cache: true
-      - name: Run Rubocop
-        run: bundle exec rake rubocop
       - id: ruby
-        uses: voxpupuli/ruby-version@v2
-  test:
+        uses: voxpupuli/ruby-version@v1
+
+  gem_build_test:
     runs-on: ubuntu-latest
-    needs: rubocop_and_matrix
+    needs: setup_matrix
     strategy:
       fail-fast: false
       matrix:
-        ruby: ${{ fromJSON(needs.rubocop_and_matrix.outputs.ruby) }}
+        ruby: ${{ fromJSON(needs.setup_matrix.outputs.ruby) }}
     name: Ruby ${{ matrix.ruby }}
     steps:
       - uses: actions/checkout@v6
@@ -48,8 +61,8 @@ jobs:
   tests:
     if: always()
     needs:
-      - rubocop_and_matrix
-      - test
+      - lint
+      - gem_build_test
     runs-on: ubuntu-24.04
     name: Test suite
     steps:

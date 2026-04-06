@@ -26,13 +26,18 @@ const LoadingIndicator = ({ jobStatus }) => {
     <Card>
       <CardBody>
         <Bullseye>
-          <EmptyState variant={EmptyStateVariant.lg}>
+          <EmptyState
+            variant={EmptyStateVariant.lg}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
             <EmptyStateHeader
               titleText={getMessage()}
               icon={<EmptyStateIcon icon={Spinner} />}
               headingLevel="h3"
             />
-            <EmptyStateBody role="status" aria-live="polite" aria-atomic="true">
+            <EmptyStateBody>
               {__(
                 'This page will update automatically when the task completes.'
               )}

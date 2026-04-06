@@ -15,10 +15,11 @@ const SmartProxySelect = ({
 }) => (
   <FormGroup label={__('Smart Proxy')} fieldId="smart-proxy-input">
     <FormSelect
-      id="proxy-select"
+      id="smart-proxy-input"
       value={selectedProxy}
       onChange={onProxyChange}
       isDisabled={isLoading}
+      aria-label={__('Select Smart Proxy')}
       title={__('Select a Smart Proxy to run the task from.')}
       // Foreman tries injecting select2 which breaks this component
       className="without_select2"

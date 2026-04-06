@@ -37,12 +37,13 @@ const FieldTable = ({ rows }) => {
       isStickyHeader
       gridBreakPoint="grid-md"
       style={{ wordBreak: 'break-word' }}
+      aria-label={__('Parameters and options')}
     >
       <Thead>
         <Tr>
           <Th aria-label="Row expand control" />
-          <Th width={25}>Name</Th>
-          <Th width={75}>Value</Th>
+          <Th width={25}>{__('Name')}</Th>
+          <Th width={75}>{__('Value')}</Th>
         </Tr>
       </Thead>
 
@@ -74,7 +75,7 @@ const FieldTable = ({ rows }) => {
                     onToggle: () => toggle(rowKey),
                   }}
                 />
-                <Td dataLabel="Name">
+                <Td dataLabel={__('Name')}>
                   <span className="pf-v5-u-font-family-monospace">{name}</span>
                   {required && (
                     <span
@@ -82,13 +83,15 @@ const FieldTable = ({ rows }) => {
                         color: 'red',
                         marginLeft: '0.25rem',
                       }}
-                      title="Required"
+                      title={__('Required')}
+                      role="img"
+                      aria-label={__('Required')}
                     >
                       *
                     </span>
                   )}
                 </Td>
-                <Td dataLabel="Value">{valueCell}</Td>
+                <Td dataLabel={__('Value')}>{valueCell}</Td>
               </Tr>
 
               {(type || description) && (
