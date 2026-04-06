@@ -34,7 +34,7 @@ class TaskJobTest < ForemanOpenbolt::PluginTestCase
   end
 
   context 'duration' do
-    # submitted_at is set automatically by callback, but test nil is handled correctly
+    # submitted_at could be nil for old rows that predate the column
     test 'returns nil when submitted_at is nil' do
       job = FactoryBot.build(:task_job, submitted_at: nil)
       assert_nil job.duration
@@ -159,17 +159,6 @@ class TaskJobTest < ForemanOpenbolt::PluginTestCase
   end
 
   context 'callbacks' do
-    test 'set_submitted_at sets submitted_at on create when nil' do
-      job = FactoryBot.create(:task_job, submitted_at: nil)
-      assert_not_nil job.submitted_at
-    end
-
-    test 'set_submitted_at does not override existing submitted_at' do
-      custom_time = 1.hour.ago
-      job = FactoryBot.create(:task_job, submitted_at: custom_time)
-      assert_in_delta custom_time.to_f, job.submitted_at.to_f, 1.0
-    end
-
     test 'set_completed_at sets completed_at when status changes to completed' do
       job = FactoryBot.create(:task_job, status: 'running')
       assert_nil job.completed_at

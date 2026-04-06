@@ -8,6 +8,7 @@ FactoryBot.define do
     task_description { 'Install a package on the target host' }
     status { 'pending' }
     targets { ['host1.example.com', 'host2.example.com'] }
+    submitted_at { Time.current }
     task_parameters { { 'name' => 'nginx' } }
     openbolt_options { { 'transport' => 'ssh' } }
 

@@ -18,7 +18,6 @@ module ForemanOpenbolt
     validates :job_id, presence: true, uniqueness: true
     validates :status, inclusion: { in: STATUSES }
     validates :targets, presence: true
-    validates :submitted_at, presence: true
 
     # Scopes
     scope :running, -> { where(status: RUNNING_STATUSES) }
@@ -27,7 +26,6 @@ module ForemanOpenbolt
     scope :for_proxy, ->(proxy) { where(smart_proxy: proxy) }
 
     # Callbacks
-    before_validation :set_submitted_at, on: :create
     before_update :set_completed_at, if: :status_changed_to_completed?
     after_update :cleanup_proxy_artifacts, if: :saved_result_and_log?
 
@@ -41,8 +39,8 @@ module ForemanOpenbolt
         targets: targets,
         task_parameters: parameters,
         openbolt_options: options,
-        status: 'pending'
-        # submitted_at is set by callback
+        status: 'pending',
+        submitted_at: Time.current
       )
     end
 
@@ -81,10 +79,6 @@ module ForemanOpenbolt
 
     def formatted_targets
       targets&.join(', ') || ''
-    end
-
-    def set_submitted_at
-      self.submitted_at ||= Time.current
     end
 
     def set_completed_at
