@@ -15,6 +15,7 @@ export const useShowMessage = () => {
 };
 
 export const extractErrorMessage = error => {
+  if (!error) return __('Unknown error');
   const rawError =
     error.response?.data?.error || error.message || __('Unknown error');
   if (typeof rawError === 'object')
@@ -41,5 +42,7 @@ export const formatDuration = duration => {
 
 export const formatDate = dateString => {
   if (!dateString) return '-';
-  return new Date(dateString).toLocaleString();
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString();
 };
