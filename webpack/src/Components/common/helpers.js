@@ -29,7 +29,7 @@ export const displayValue = value => {
 };
 
 export const formatDuration = duration => {
-  if (!duration || duration < 0) return '-';
+  if (duration === null || duration === undefined || duration < 0) return '-';
   const totalSeconds = Math.round(duration);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
