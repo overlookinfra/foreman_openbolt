@@ -50,7 +50,7 @@ The [theforeman/foreman_proxy](https://github.com/theforeman/puppet-foreman_prox
 The Foreman plugin provides UI elements to start Tasks on various nodes.
 Foreman then talks to a Smartproxy to run OpenBolt.
 The Smartproxy also establishes the connections to the various targets.
-This is usually a ssh or WinRM connection (and soon choria, see [the TODO section](#todo).
+This is usually a ssh or WinRM connection (and soon choria, see [the TODO section](#todo)).
 
 You need to have `bolt` in your `$PATH` on the Smartproxy.
 You can use the legacy bolt packages from Perforce from the `puppet-tools` repo on [apt.puppet.com](https://apt.puppet.com/) or [yum.puppet.com](https://yum.puppet.com/).
@@ -59,7 +59,7 @@ OpenBolt packages are available at [yum.voxpupuli.org](https://yum.voxpupuli.org
 
 **The Foreman integration is tested with OpenBolt and the last Bolt opensource release 4.0.0**
 
-The integration is supported on Foreman 3.15 and all following versions, including development/nightly builds.
+The integration is supported on Foreman 3.17 and all following versions, including development/nightly builds.
 
 OpenBolt relies on Tasks & Plans. They are distributed as puppet modules.
 The plugin assumes that you deployed your code.
@@ -115,11 +115,21 @@ For failed tasks but also for passed tasks.
 
 ![service task passed on two nodes](./ext/task-successful-result.png)
 
+## Development
+
+### Linting
+
+```bash
+bundle install
+npm install --legacy-peer-deps
+bundle exec rake lint        # Run all linters (rubocop, erb_lint, eslint)
+bundle exec rake lint:fix    # Auto-fix where possible
+```
 
 ## TODO
 
 * Integrate plans into the web UI
-* provide a choria transport plugin
+* Provide a choria transport plugin
 
 ## Contributing & support
 
@@ -145,14 +155,68 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-## how to release
+## How to Release
 
-* bump version in `lib/foreman_openbolt/version.rb` and `package.json`
-* run `CHANGELOG_GITHUB_TOKEN=github_pat... bundle exec rake changelog`
-* create a PR
-* get a review & merge
-* create and push a tag
-* github actions will publish the tag
+### Version locations
 
-The Foreman team packages this gem as Debian package (deb) and as RedHat package (rpm).
-They have a bot that will automatically propose an rpm/deb update at [github.com/theforeman/foreman-packaging](https://github.com/theforeman/foreman-packaging/pulls).
+Update the version in these files:
+
+1. `lib/foreman_openbolt/version.rb` -- the gem version (authoritative source)
+2. `package.json` -- the npm package version (must match)
+
+If the minimum Foreman version changes, also update:
+
+3. `lib/foreman_openbolt/engine.rb` -- `requires_foreman '>= X.Y.Z'`
+4. `foreman_openbolt.spec.erb` -- `%global foreman_min_version X.Y.Z`
+5. `.github/workflows/build.yml` -- default `foreman_version` and `foreman_packaging_ref` inputs
+
+### Release steps
+
+1. Bump the version in the two files listed above
+2. Generate the changelog:
+   ```bash
+   CHANGELOG_GITHUB_TOKEN=github_pat_... bundle exec rake changelog
+   ```
+3. Create a PR with the version bump and changelog, get it reviewed and merged
+4. Create and push a tag matching the version:
+   ```bash
+   git tag 1.1.0
+   git push origin 1.1.0
+   ```
+5. The [release workflow](.github/workflows/release.yml) runs automatically on tag push and:
+   - Builds the gem
+   - Creates a GitHub Release with auto-generated notes and the gem attached
+   - Publishes the gem to GitHub Packages
+   - Publishes the gem to RubyGems.org (requires the `release` environment)
+   - Verifies the gem is available on RubyGems.org
+
+### RPM/DEB packaging
+
+After the gem is published to RubyGems, both RPM and DEB packages need to be updated in [theforeman/foreman-packaging](https://github.com/theforeman/foreman-packaging).
+
+A bot automatically creates PRs against the `rpm/develop` and `deb/develop` branches to pick up the new gem version. These PRs build packages for Foreman nightly.
+
+For stable Foreman releases (3.17, 3.18, etc.), the packaging changes need to be cherry-picked from the develop branches into the corresponding stable branches. For each release you want to support:
+
+**RPM:** Clone foreman-packaging, checkout the target branch (e.g. `rpm/3.18`), and run `bump_rpm.sh`:
+```bash
+cd foreman-packaging
+git checkout rpm/3.18
+git checkout -b bump_rpm/rubygem-foreman_openbolt
+./bump_rpm.sh packages/plugins/rubygem-foreman_openbolt
+# Review changes, push, and open a PR targeting rpm/3.18
+```
+
+**DEB:** Checkout the target branch (e.g. `deb/3.18`) and update these files manually:
+- `debian/gem.list` -- new gem filename
+- `foreman_openbolt.rb` -- new version
+- `debian/control` -- dependency versions (if changed)
+- `debian/changelog` -- add a new entry
+
+```bash
+git checkout deb/3.18
+git checkout -b bump_deb/ruby-foreman-openbolt
+# Make the changes above, push, and open a PR targeting deb/3.18
+```
+
+PRs against stable branches should be labeled "Stable branch".
