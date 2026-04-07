@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - id: ruby
-        uses: voxpupuli/ruby-version@v1
+        uses: voxpupuli/ruby-version@v2
 
   gem_build_test:
     runs-on: ubuntu-latest
