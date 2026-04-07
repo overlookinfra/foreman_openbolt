@@ -27,11 +27,11 @@ jobs:
           node-version: "22"
           cache: npm
       - name: Install npm dependencies
-        run: npm ci --loglevel=error
+        run: npm ci --legacy-peer-deps --loglevel=error
       - name: Run linters
         run: bundle exec rake lint
 
-  setup_matrix:
+  gem_build_matrix:
     runs-on: ubuntu-latest
     outputs:
       ruby: ${{ steps.ruby.outputs.versions }}
@@ -42,11 +42,11 @@ jobs:
 
   gem_build_test:
     runs-on: ubuntu-latest
-    needs: setup_matrix
+    needs: gem_build_matrix
     strategy:
       fail-fast: false
       matrix:
-        ruby: ${{ fromJSON(needs.setup_matrix.outputs.ruby) }}
+        ruby: ${{ fromJSON(needs.gem_build_matrix.outputs.ruby) }}
     name: Ruby ${{ matrix.ruby }}
     steps:
       - uses: actions/checkout@v6
@@ -58,11 +58,57 @@ jobs:
       - name: Verify gem builds
         run: gem build --strict --verbose *.gemspec
 
+  unit_test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        foreman_ref:
+          - 3.17-stable
+          - 3.18-stable
+          - develop
+    name: Unit tests (Foreman ${{ matrix.foreman_ref }})
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.0"
+          bundler-cache: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: test/docker/Dockerfile
+          build-args: FOREMAN_REF=${{ matrix.foreman_ref }}
+          cache-from: type=gha,scope=test-${{ matrix.foreman_ref }}
+          cache-to: type=gha,mode=max,scope=test-${{ matrix.foreman_ref }}
+          load: true
+          tags: foreman-openbolt-test:${{ matrix.foreman_ref }}
+
+      - name: Set up test infrastructure
+        run: FOREMAN_REF=${{ matrix.foreman_ref }} bundle exec rake test:up
+
+      - name: Run Ruby unit tests
+        run: bundle exec rake test:ruby
+
+      - name: Run JavaScript unit tests
+        run: bundle exec rake test:js
+
+      - name: Stop test containers
+        if: always()
+        run: bundle exec rake test:down
+
   tests:
     if: always()
     needs:
       - lint
       - gem_build_test
+      - unit_test
     runs-on: ubuntu-24.04
     name: Test suite
     steps:

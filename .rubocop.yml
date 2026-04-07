@@ -41,5 +41,8 @@ Metrics/ParameterLists:
 Naming/MethodParameterName:
   Enabled: false
 
+Style/SpecialGlobalVars:
+  Enabled: false
+
 Layout/LineLength:
   Max: 160

@@ -1,0 +1,33 @@
+name: foreman-openbolt-test
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: foreman
+      POSTGRES_PASSWORD: foreman
+      POSTGRES_DB: foreman_test
+    tmpfs: /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foreman"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  test:
+    image: foreman-openbolt-test:${FOREMAN_REF:-3.18-stable}
+    build:
+      context: ../..
+      dockerfile: test/docker/Dockerfile
+      args:
+        FOREMAN_REF: ${FOREMAN_REF:-3.18-stable}
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: test
+      DATABASE_URL: postgresql://foreman:foreman@db:5432/foreman_test
+    volumes:
+      - ../..:/opt/foreman_openbolt
+    working_dir: /opt/foreman
+    command: ["tail", "-f", "/dev/null"]
