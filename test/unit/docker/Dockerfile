@@ -4,7 +4,7 @@
 # at runtime via the rake test:up task.
 #
 # Build:
-#   FOREMAN_REF=3.18-stable docker compose -f test/docker/docker-compose.yml build test
+#   FOREMAN_BRANCH=3.18-stable docker compose -f test/unit/docker/docker-compose.yml build test
 
 FROM rockylinux:9
 
@@ -20,15 +20,15 @@ RUN dnf module enable -y nodejs:22 postgresql:16 && \
       redhat-rpm-config && \
     dnf clean all
 
-ARG FOREMAN_REF=3.18-stable
+ARG FOREMAN_BRANCH=3.18-stable
 
-# Clone Foreman at the specified ref (tag, branch, or SHA).
+# Clone Foreman at the specified branch.
 RUN git init /opt/foreman
 
 WORKDIR /opt/foreman
 
 RUN git remote add origin https://github.com/theforeman/foreman.git && \
-    git fetch --depth=1 origin ${FOREMAN_REF} && \
+    git fetch --depth=1 origin ${FOREMAN_BRANCH} && \
     git checkout FETCH_HEAD
 
 # Configure database for the test container.
@@ -41,7 +41,7 @@ ENV BUNDLE_WITHOUT="release console journald libvirt ec2 openstack vmware teleme
 ENV BUNDLE_PATH="/opt/bundle"
 RUN bundle install --jobs=4
 
-COPY test/docker/entrypoint.sh /entrypoint.sh
+COPY test/unit/docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
