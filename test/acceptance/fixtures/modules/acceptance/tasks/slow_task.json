@@ -1,0 +1,14 @@
+{
+  "input_method": "environment",
+  "description": "A task that sleeps for a specified number of seconds",
+  "parameters": {
+    "seconds": {
+      "type": "Integer",
+      "description": "Number of seconds to sleep",
+      "default": 5
+    }
+  },
+  "implementations": [
+    {"name": "slow_task.sh", "requirements": ["shell"]}
+  ]
+}

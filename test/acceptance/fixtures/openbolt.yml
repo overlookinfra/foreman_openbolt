@@ -1,0 +1,7 @@
+---
+:enabled: https
+:environment_path: /etc/puppetlabs/code/environments/production
+:workers: 5
+:concurrency: 20
+:connect_timeout: 30
+:log_dir: /var/log/foreman-proxy/openbolt
