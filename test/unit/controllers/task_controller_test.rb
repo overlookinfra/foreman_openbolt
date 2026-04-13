@@ -261,7 +261,7 @@ class TaskControllerTest < ActionController::TestCase
       }, session: @session
 
       assert_response :bad_request
-      assert_match(/No Foreman setting found/, JSON.parse(response.body)['error'])
+      assert_match(/No saved value for encrypted option/, JSON.parse(response.body)['error'])
     end
 
     test 'passes non-encrypted options through unchanged' do
@@ -298,7 +298,7 @@ class TaskControllerTest < ActionController::TestCase
       body = JSON.parse(response.body)
       assert_equal 'winrm', body['transport']['default']
       assert_equal 'admin', body['user']['default']
-      assert_nil body['verbose']['default']
+      assert_equal false, body['verbose']['default']
     end
 
     test 'shows encrypted placeholder instead of real value for encrypted settings' do

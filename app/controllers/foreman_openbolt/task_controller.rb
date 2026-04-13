@@ -44,11 +44,18 @@ module ForemanOpenbolt
     def fetch_openbolt_options
       options = @openbolt_api.openbolt_options
 
-      # Get defaults from Foreman settings
+      # Get defaults from Foreman settings.
+      # For encrypted settings, show the placeholder only if a non-empty value
+      # has been saved, so the UI shows an empty field for unconfigured passwords
+      # instead of a misleading placeholder.
       defaults = {}
       openbolt_settings.each do |setting|
         key = setting.name.sub(/^openbolt_/, '')
-        defaults[key] = setting.encrypted? ? ENCRYPTED_PLACEHOLDER : setting.value unless setting.value.nil?
+        if setting.encrypted?
+          defaults[key] = ENCRYPTED_PLACEHOLDER unless setting.value.to_s.empty?
+        else
+          defaults[key] = setting.value
+        end
       end
 
       # Merge the defaults into the options metadata
@@ -230,7 +237,7 @@ module ForemanOpenbolt
     end
 
     def openbolt_settings
-      @openbolt_settings ||= Setting.where("name LIKE 'openbolt_%'")
+      @openbolt_settings ||= Foreman.settings.select { |s| s.name.start_with?('openbolt_') }
     end
 
     def encrypted_settings
@@ -240,9 +247,9 @@ module ForemanOpenbolt
     def merge_encrypted_defaults(options)
       encrypted = options.select { |_, v| v == ENCRYPTED_PLACEHOLDER }
       encrypted.each do |key, _|
-        setting = Setting.find_by(name: "openbolt_#{key}")
-        raise ArgumentError, "No Foreman setting found for option '#{key}'. Configure it in Administer > Settings or provide a value." if setting.nil?
-        options[key] = setting.value
+        value = Setting["openbolt_#{key}"]
+        raise ArgumentError, "No saved value for encrypted option '#{key}'. Configure it in Administer > Settings or provide a value." if value.nil? || value.to_s.empty?
+        options[key] = value
       end
       options
     end
