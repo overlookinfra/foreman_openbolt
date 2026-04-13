@@ -22,7 +22,7 @@ class TransportOptionsTest < AcceptanceTestCase
     options = all('#task-name-input option').map(&:text)
 
     %w[echo complex_params failing_task noop_task slow_task target_conditional].each do |task|
-      assert options.any? { |option| option == "acceptance::#{task}" },
+      assert options.any?("acceptance::#{task}"),
         "Expected acceptance::#{task} in task list, got: #{options}"
     end
   end

@@ -19,7 +19,7 @@ class Container
   def self.image_exists?(image_name)
     # exit 1 = image not found
     Shell.capture(['docker', 'image', 'inspect', image_name],
-      print_command: false, allowed_exit_codes: [0, 1]).exitcode == 0
+      print_command: false, allowed_exit_codes: [0, 1]).exitcode.zero?
   end
 
   def self.build_image(dockerfile:, tag: 'latest', context: nil, build_args: {}, platform: nil)

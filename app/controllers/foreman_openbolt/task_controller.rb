@@ -246,9 +246,12 @@ module ForemanOpenbolt
 
     def merge_encrypted_defaults(options)
       encrypted = options.select { |_, v| v == ENCRYPTED_PLACEHOLDER }
-      encrypted.each do |key, _|
+      encrypted.each_key do |key|
         value = Setting["openbolt_#{key}"]
-        raise ArgumentError, "No saved value for encrypted option '#{key}'. Configure it in Administer > Settings or provide a value." if value.nil? || value.to_s.empty?
+        if value.nil? || value.to_s.empty?
+          raise ArgumentError,
+            "No saved value for encrypted option '#{key}'. Configure it in Administer > Settings or provide a value."
+        end
         options[key] = value
       end
       options

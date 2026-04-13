@@ -61,7 +61,7 @@ class AcceptanceTestCase < Test::Unit::TestCase
 
   def select_first_proxy
     assert_selector '#smart-proxy-input option', minimum: 2, wait: 15
-    proxy_option = find('#smart-proxy-input option:not([value=""])', match: :first)
+    proxy_option = first('#smart-proxy-input option:not([value=""])')
     select proxy_option.text, from: 'smart-proxy-input'
   end
 

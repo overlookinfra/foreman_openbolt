@@ -33,15 +33,15 @@ module ForemanOpenbolt
 
               # rubocop:disable Lint/ConstantDefinitionInBlock
               TRANSPORTS = {
-                'ssh': N_('SSH'),
-                'winrm': N_('WinRM'),
+                ssh: N_('SSH'),
+                winrm: N_('WinRM'),
               }.freeze
               LOG_LEVELS = {
-                'error': N_('Error'),
-                'warning': N_('Warning'),
-                'info': N_('Info'),
-                'debug': N_('Debug'),
-                'trace': N_('Trace'),
+                error: N_('Error'),
+                warning: N_('Warning'),
+                info: N_('Info'),
+                debug: N_('Debug'),
+                trace: N_('Trace'),
               }.freeze
               # rubocop:enable Lint/ConstantDefinitionInBlock
 
@@ -62,7 +62,7 @@ module ForemanOpenbolt
                 default: false,
                 full_name: N_('Verbose'),
                 description: N_(
-                  'Run the OpenBolt command with the --verbose flag. This prints additional information ' +
+                  'Run the OpenBolt command with the --verbose flag. This prints additional information ' \
                   'during OpenBolt execution and will print any out::verbose plan statements.'
                 )
               setting 'openbolt_noop',
@@ -98,7 +98,7 @@ module ForemanOpenbolt
                 default: '',
                 full_name: N_('SSH Private Key'),
                 description: N_(
-                  'Path on the smart proxy host to the private key used for SSH authentication. This key must be ' +
+                  'Path on the smart proxy host to the private key used for SSH authentication. This key must be ' \
                   'readable by the foreman-proxy user.'
                 )
               setting 'openbolt_run-as',
@@ -106,7 +106,7 @@ module ForemanOpenbolt
                 default: '',
                 full_name: N_('SSH Run As User'),
                 description: N_(
-                  'The user to run commands as on the target host. This requires that the user specified ' +
+                  'The user to run commands as on the target host. This requires that the user specified ' \
                   'in the "user" option has permission to run commands as this user.'
                 )
               setting 'openbolt_sudo-password',

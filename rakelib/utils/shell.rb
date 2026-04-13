@@ -34,9 +34,7 @@ module Shell
     system(*Array(cmd))
     abort "Command not found: #{display}".red unless $?
     exitcode = $?.exitstatus
-    unless allowed_exit_codes.include?(exitcode)
-      abort "Command failed! Command: #{display}, Exit code: #{exitcode}".red
-    end
+    abort "Command failed! Command: #{display}, Exit code: #{exitcode}".red unless allowed_exit_codes.include?(exitcode)
     exitcode
   end
 

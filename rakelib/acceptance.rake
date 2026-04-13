@@ -22,14 +22,14 @@ TARGETS = %w[target1 target2].freeze
 
 def wait_for(description, timeout: 120, interval: 2)
   puts "==> Waiting for #{description}...".magenta
-  deadline = Time.now + timeout
+  deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
   loop do
     begin
       return if yield
-    rescue StandardError => error
-      warn "  Retrying #{description}: #{error.message}".yellow
+    rescue StandardError => e
+      warn "  Retrying #{description}: #{e.message}".yellow
     end
-    abort "FATAL: #{description} did not become ready within #{timeout}s".red if Time.now > deadline
+    abort "FATAL: #{description} did not become ready within #{timeout}s".red if Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
     sleep interval
   end
 end
@@ -45,7 +45,7 @@ def foreman_exec_capture(cmd, quiet: false)
   # exit 1 = command failed inside container (caller decides if that's fatal)
   result = Shell.capture(['docker', 'exec', FOREMAN_CONTAINER, 'bash', '-c', cmd],
     print_command: false, allowed_exit_codes: [0, 1])
-  return result.output.strip if result.exitcode == 0
+  return result.output.strip if result.exitcode.zero?
   warn "foreman_exec_capture failed (exit #{result.exitcode}): #{cmd}\n  output: #{result.output}".yellow unless quiet
   nil
 end
@@ -75,7 +75,7 @@ end
 def register_target(target, fqdn, os_id:, hg_id:)
   reg_data = { registration_command: {
     insecure: true, setup_insights: false, setup_remote_execution: false,
-    operatingsystem_id: os_id, hostgroup_id: hg_id,
+    operatingsystem_id: os_id, hostgroup_id: hg_id
   } }.to_json
 
   reg_output = foreman_exec_capture(
@@ -101,7 +101,7 @@ def register_target(target, fqdn, os_id:, hg_id:)
   # Run with TTY so puppet output streams in real time
   reg_ssh = "ssh #{SSH_OPTS} -tt -i /opt/foreman-proxy/.ssh/id_rsa openbolt@#{target} 'sudo bash /tmp/register.sh && rm -f /tmp/register.sh'"
   Shell.run(['docker', 'exec', '-t', FOREMAN_CONTAINER, 'bash', '-c',
-    reg_ssh])
+             reg_ssh])
 
   verify_result = target_ssh_capture(target, 'sudo /opt/puppetlabs/bin/puppet ssl verify')
   abort "FATAL: cert for #{fqdn} was not created".red if verify_result.nil?
@@ -134,7 +134,7 @@ def build_foreman_image(foreman_version)
     wait_for('systemd in installer container', timeout: 60) do
       # exit 1 = system still starting up
       result = Shell.capture(['docker', 'exec', 'foreman-installer-setup',
-        'systemctl', 'is-system-running'], print_command: false, allowed_exit_codes: [0, 1])
+                              'systemctl', 'is-system-running'], print_command: false, allowed_exit_codes: [0, 1])
       %w[running degraded].include?(result.output.strip)
     end
 
@@ -184,8 +184,8 @@ end
 # --- Acceptance tasks ---
 
 namespace :acceptance do
+  desc 'Build RPMs for foreman_openbolt and smart_proxy_openbolt'
   task :build_rpms do
-
     unless File.exist?(ACCEPTANCE_SSH_KEY)
       FileUtils.mkdir_p(File.dirname(ACCEPTANCE_SSH_KEY))
       Shell.run(['ssh-keygen', '-t', 'rsa', '-b', '2048', '-f', ACCEPTANCE_SSH_KEY, '-N', '', '-q'])
@@ -217,6 +217,7 @@ namespace :acceptance do
     end
   end
 
+  desc 'Start Foreman containers'
   task start: :build_rpms do
     # FOREMAN_IMAGE is passed to compose
     ENV['FOREMAN_IMAGE'] = build_foreman_image(FOREMAN_VERSION)
@@ -226,7 +227,7 @@ namespace :acceptance do
     Container.compose(ACCEPTANCE_COMPOSE, 'up', '-d', '--wait')
   end
 
-  desc 'Build RPMs, start containers, and configure Foreman for acceptance tests'
+  desc 'Configure Foreman for acceptance tests'
   task up: :start do
     # Install plugin RPMs (remove old versions first if present)
     puts "==> Installing plugin RPMs...".magenta
@@ -251,7 +252,7 @@ namespace :acceptance do
     puts "==> Seeding plugin data...".magenta
     # exit 1 = Foreman internal seed error (db_pending_seed); plugin settings still register
     Shell.run(['docker', 'exec', FOREMAN_CONTAINER, 'bash', '-c',
-      'cd /usr/share/foreman && RAILS_ENV=production foreman-rake db:seed'],
+               'cd /usr/share/foreman && RAILS_ENV=production foreman-rake db:seed'],
       allowed_exit_codes: [0, 1])
 
     # Disable bruteforce protection before restarting so API polling during
@@ -319,7 +320,7 @@ namespace :acceptance do
     puts "==> Configuring host group for registration...".magenta
     all_hgs = foreman_api('GET', '/hostgroups?per_page=all')
     abort "FATAL: Could not list host groups from Foreman: #{all_hgs}".red unless all_hgs.is_a?(Hash)
-    hg_id = all_hgs.dig('results')&.find { |hg| hg['name'] == 'acceptance' }&.dig('id')
+    hg_id = all_hgs['results']&.find { |hg| hg['name'] == 'acceptance' }&.dig('id')
     if hg_id
       puts '    Host group already exists.'
     else
@@ -344,7 +345,7 @@ namespace :acceptance do
     puts "==> Registering targets with Foreman...".magenta
     all_hosts = foreman_api('GET', '/hosts?per_page=all')
     abort "FATAL: Could not list hosts from Foreman: #{all_hosts}".red unless all_hosts.is_a?(Hash)
-    known_hosts = all_hosts.dig('results')&.map { |host| host['name'] } || []
+    known_hosts = all_hosts['results']&.map { |host| host['name'] } || []
 
     TARGETS.each do |target|
       fqdn = target_ssh_capture(target, 'hostname -f')
@@ -425,7 +426,7 @@ task :acceptance do
 ensure
   begin
     Rake::Task['acceptance:down'].invoke
-  rescue StandardError => error
-    warn "Warning: acceptance:down cleanup failed: #{error.message}".yellow
+  rescue StandardError => e
+    warn "Warning: acceptance:down cleanup failed: #{e.message}".yellow
   end
 end

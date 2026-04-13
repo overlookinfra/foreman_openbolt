@@ -61,7 +61,7 @@ task :test do
 ensure
   begin
     Rake::Task['test:unit:down'].invoke
-  rescue StandardError => error
-    warn "Warning: test:unit:down cleanup failed: #{error.message}".yellow
+  rescue StandardError => e
+    warn "Warning: test:unit:down cleanup failed: #{e.message}".yellow
   end
 end

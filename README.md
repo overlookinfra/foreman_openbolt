@@ -120,7 +120,7 @@ bundle exec rake lint        # Run all linters (rubocop, erb_lint, eslint)
 bundle exec rake lint:fix    # Auto-fix where possible
 ```
 
-The JavaScript linter requires npm dependencies. You can either install them locally (`npm install --legacy-peer-deps`) or run the linter inside a container:
+Ruby and ERB linters run directly. The JavaScript linter requires npm dependencies, so either install them locally (`npm install --legacy-peer-deps`) or run lint:js inside a container:
 
 ```bash
 CONTAINER=1 bundle exec rake lint:js
