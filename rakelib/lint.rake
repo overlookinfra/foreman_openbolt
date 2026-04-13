@@ -24,7 +24,7 @@ namespace :lint do
       puts 'The npm ci command may take a while, be patient!'.magenta
       lint_args = ENV['FIX'] ? '-- --fix' : ''
       Shell.run(['docker', 'run', '--rm', '-v', "#{Dir.pwd}:/code", '-w', '/code',
-        'node:20', 'sh', '-c', "npm ci --loglevel=error && npm run lint #{lint_args}"])
+                 'node:20', 'sh', '-c', "npm ci --legacy-peer-deps --loglevel=error && npm run lint #{lint_args}"])
     else
       cmd = ['npm', 'run', 'lint']
       cmd.push('--', '--fix') if ENV['FIX']
