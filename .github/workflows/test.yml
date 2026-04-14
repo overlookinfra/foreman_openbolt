@@ -63,11 +63,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        foreman_ref:
-          - 3.17-stable
-          - 3.18-stable
+        foreman_version:
+          - '3.17'
+          - '3.18'
           - develop
-    name: Unit tests (Foreman ${{ matrix.foreman_ref }})
+    name: Unit tests (Foreman ${{ matrix.foreman_version }})
     steps:
       - uses: actions/checkout@v6
       - name: Set up Ruby
@@ -83,25 +83,25 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: test/docker/Dockerfile
-          build-args: FOREMAN_REF=${{ matrix.foreman_ref }}
-          cache-from: type=gha,scope=test-${{ matrix.foreman_ref }}
-          cache-to: type=gha,mode=max,scope=test-${{ matrix.foreman_ref }}
+          file: test/unit/docker/Dockerfile
+          build-args: FOREMAN_BRANCH=${{ matrix.foreman_version == 'develop' && 'develop' || format('{0}-stable', matrix.foreman_version) }}
+          cache-from: type=gha,scope=test-${{ matrix.foreman_version }}
+          cache-to: type=gha,mode=max,scope=test-${{ matrix.foreman_version }}
           load: true
-          tags: foreman-openbolt-test:${{ matrix.foreman_ref }}
+          tags: foreman-openbolt-test:${{ matrix.foreman_version == 'develop' && 'develop' || format('{0}-stable', matrix.foreman_version) }}
 
       - name: Set up test infrastructure
-        run: FOREMAN_REF=${{ matrix.foreman_ref }} bundle exec rake test:up
+        run: FOREMAN_VERSION=${{ matrix.foreman_version }} bundle exec rake test:unit:up
 
       - name: Run Ruby unit tests
-        run: bundle exec rake test:ruby
+        run: bundle exec rake test:unit:ruby
 
       - name: Run JavaScript unit tests
-        run: bundle exec rake test:js
+        run: bundle exec rake test:unit:js
 
       - name: Stop test containers
         if: always()
-        run: bundle exec rake test:down
+        run: bundle exec rake test:unit:down
 
   tests:
     if: always()

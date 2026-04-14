@@ -1,4 +1,4 @@
-name: foreman-openbolt-test
+name: foreman-openbolt-unit
 
 services:
   db:
@@ -15,12 +15,12 @@ services:
       retries: 10
 
   test:
-    image: foreman-openbolt-test:${FOREMAN_REF:-3.18-stable}
+    image: foreman-openbolt-test:${FOREMAN_BRANCH:-3.18-stable}
     build:
-      context: ../..
-      dockerfile: test/docker/Dockerfile
+      context: ../../..
+      dockerfile: test/unit/docker/Dockerfile
       args:
-        FOREMAN_REF: ${FOREMAN_REF:-3.18-stable}
+        FOREMAN_BRANCH: ${FOREMAN_BRANCH:-3.18-stable}
     depends_on:
       db:
         condition: service_healthy
@@ -28,6 +28,6 @@ services:
       RAILS_ENV: test
       DATABASE_URL: postgresql://foreman:foreman@db:5432/foreman_test
     volumes:
-      - ../..:/opt/foreman_openbolt
+      - ../../..:/opt/foreman_openbolt
     working_dir: /opt/foreman
     command: ["tail", "-f", "/dev/null"]

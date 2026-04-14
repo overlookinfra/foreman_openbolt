@@ -6,7 +6,7 @@ module ProxyAPI
   class Openbolt < Resource
     def initialize(args)
       @url = args[:url]
-      super args
+      super
     end
 
     def fetch_tasks

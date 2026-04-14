@@ -17,5 +17,10 @@ Gemfile.lock
 coverage
 # Local testing files
 *.rpm
+*.deb
 /vendor
 /.vendor
+.ruby-version
+# Acceptance test artifacts
+test/acceptance/fixtures/keys/
+/pkg/

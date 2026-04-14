@@ -1,0 +1,69 @@
+name: foreman-openbolt-acceptance
+
+services:
+  foreman:
+    container_name: foreman-openbolt-test
+    hostname: foreman.example.com
+    image: ${FOREMAN_IMAGE:-foreman-openbolt:3.18}
+    pull_policy: never
+    platform: linux/amd64
+    privileged: true
+    ports:
+      - "443:443"
+      - "8443:8443"
+    entrypoint: /entrypoint.sh
+    volumes:
+      # Entrypoint script (prepares SSH keys, fixtures, then starts systemd)
+      - ./foreman/entrypoint.sh:/entrypoint.sh:ro
+      # Plugin RPMs built by rake build:rpm
+      - ../../../pkg:/opt/pkg:ro
+      # Fixture modules for acceptance tasks
+      - ../fixtures/modules:/opt/fixtures/modules:ro
+      # SSH private key for bolt to connect to targets
+      - ../fixtures/keys/id_rsa:/tmp/ssh/id_rsa:ro
+      # OpenBolt plugin config for smart-proxy
+      - ../fixtures/openbolt.yml:/etc/foreman-proxy/settings.d/openbolt.yml:ro
+    depends_on:
+      - target1
+      - target2
+    tmpfs:
+      - /run
+      - /tmp:rw,exec,nosuid
+    healthcheck:
+      test: ["CMD", "curl", "-sk", "https://localhost/api/v2/status"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 60s
+
+  chrome:
+    container_name: foreman-openbolt-chrome
+    image: ${SELENIUM_IMAGE:-selenium/standalone-chrome:latest}
+    shm_size: 2g
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    depends_on:
+      - foreman
+
+  target1:
+    container_name: foreman-openbolt-target1
+    hostname: target1.example.com
+    image: foreman-openbolt-target
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: target/Dockerfile
+    volumes:
+      - ../fixtures/keys/id_rsa.pub:/tmp/id_rsa.pub:ro
+
+  target2:
+    container_name: foreman-openbolt-target2
+    hostname: target2.example.com
+    image: foreman-openbolt-target
+    pull_policy: never
+    build:
+      context: .
+      dockerfile: target/Dockerfile
+    volumes:
+      - ../fixtures/keys/id_rsa.pub:/tmp/id_rsa.pub:ro

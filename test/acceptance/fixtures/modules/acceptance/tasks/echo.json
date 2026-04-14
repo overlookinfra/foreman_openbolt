@@ -1,0 +1,13 @@
+{
+  "input_method": "environment",
+  "description": "Echo a message back with the hostname",
+  "parameters": {
+    "message": {
+      "type": "String",
+      "description": "The message to echo back"
+    }
+  },
+  "implementations": [
+    {"name": "echo.sh", "requirements": ["shell"]}
+  ]
+}

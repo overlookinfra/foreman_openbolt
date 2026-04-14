@@ -1,48 +1,106 @@
-inherit_gem:
-  theforeman-rubocop:
-    - default.yml
-    - rules/style_lenient.yml
+---
+plugins:
+  - rubocop-capybara
+  - rubocop-performance
+  - rubocop-rails
+  - rubocop-rake
 
 AllCops:
   TargetRubyVersion: 3.0
+  NewCops: enable
   Exclude:
     - '**/*.spec'
+    - '.bundle/**/*'
     - 'node_modules/**/*'
     - 'vendor/**/*'
     - '.vendor/**/*'
 
-require:
-  - rubocop-rake
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
 
-Rails/RakeEnvironment:
+Layout/EmptyLineAfterGuardClause:
   Enabled: false
 
-Metrics/ClassLength:
+Layout/HashAlignment:
   Enabled: false
 
-Metrics/BlockLength:
-  Enabled: false
+Layout/LineLength:
+  Max: 160
 
-Metrics/AbcSize:
-  Enabled: false
-
-Metrics/CyclomaticComplexity:
-  Enabled: false
-
-Metrics/MethodLength:
-  Enabled: false
-
-Metrics/PerceivedComplexity:
-  Enabled: false
-
-Metrics/ParameterLists:
+Metrics:
   Enabled: false
 
 Naming/MethodParameterName:
   Enabled: false
 
+Naming/PredicateMethod:
+  Enabled: false
+
+Performance/Casecmp:
+  Enabled: false
+
+Performance/CollectionLiteralInLoop:
+  Enabled: false
+
+Rails/Blank:
+  Exclude:
+    - 'Rakefile'
+    - 'rakelib/**/*'
+
+Rails/RakeEnvironment:
+  Enabled: false
+
+# Acceptance tests use Test::Unit, not Rails Minitest, so assert_not
+# is not defined. Exclude the cop that rewrites refute to assert_not.
+Rails/RefuteMethods:
+  Exclude:
+    - 'test/acceptance/**/*'
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/EmptyMethod:
+  EnforcedStyle: expanded
+
+Style/FetchEnvVar:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/HashSyntax:
+  Enabled: false
+
+Style/IfUnlessModifier:
+  Enabled: false
+
+Style/NumericLiteralPrefix:
+  Enabled: false
+
+Style/NumericPredicate:
+  Enabled: false
+
+Style/OneClassPerFile:
+  Enabled: false
+
 Style/SpecialGlobalVars:
   Enabled: false
 
-Layout/LineLength:
-  Max: 160
+Style/StringLiterals:
+  Enabled: false
+
+Style/SymbolArray:
+  EnforcedStyle: brackets
+  MinSize: 1
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/WordArray:
+  Enabled: false

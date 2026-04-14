@@ -1,0 +1,13 @@
+{
+  "input_method": "environment",
+  "description": "A task that succeeds on target1 and fails on target2",
+  "parameters": {
+    "succeed_on": {
+      "type": "String",
+      "description": "Hostname prefix that should succeed"
+    }
+  },
+  "implementations": [
+    {"name": "target_conditional.sh", "requirements": ["shell"]}
+  ]
+}

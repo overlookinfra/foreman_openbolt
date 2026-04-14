@@ -97,12 +97,12 @@ module Actions
 
           input[:retry_count] = 0
           new_status = status_result['status']
-          if new_status != task_job.status
+          if new_status == task_job.status
+            log("Poll for OpenBolt job #{job_id}: status=#{new_status}")
+          else
             previous_status = task_job.status
             task_job.update!(status: new_status)
             log("OpenBolt job #{job_id} status changed from '#{previous_status}' to '#{new_status}'", :info)
-          else
-            log("Poll for OpenBolt job #{job_id}: status=#{new_status}")
           end
 
           # If completed, fetch full results

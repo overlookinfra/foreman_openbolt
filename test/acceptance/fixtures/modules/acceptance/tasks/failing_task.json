@@ -1,0 +1,8 @@
+{
+  "input_method": "environment",
+  "description": "A task that always fails",
+  "parameters": {},
+  "implementations": [
+    {"name": "failing_task.sh", "requirements": ["shell"]}
+  ]
+}

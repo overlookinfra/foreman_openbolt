@@ -1,0 +1,8 @@
+{
+  "input_method": "environment",
+  "description": "A no-op task that returns a status",
+  "parameters": {},
+  "implementations": [
+    {"name": "noop_task.sh", "requirements": ["shell"]}
+  ]
+}

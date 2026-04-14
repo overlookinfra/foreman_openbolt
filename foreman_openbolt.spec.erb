@@ -6,7 +6,7 @@ LICENSES = JSON.load(File.read(File.join(root, 'licenses.json')))
 -%>
 %global gem_name <%= spec.name %>
 %global plugin_name <%= spec.name.sub(/\Aforeman_/, '') %>
-%global foreman_min_version 3.15.0
+%global foreman_min_version 3.17.0
 <%
 has_assets = spec.files.any? { |f| f.start_with?('app/assets/') }
 has_cronjob = spec.files.any? { |f| f =~ %r{\Aextra/.*\.cron\z} }
@@ -43,7 +43,7 @@ Source0: <%= download_path %>%{gem_name}-%{version}.gem
 
 # start specfile generated dependencies
 Requires: foreman >= %{foreman_min_version}
-Requires: rubygem(foreman-tasks) >= 8.3.0
+Requires: rubygem(foreman-tasks) >= 11.0.0
 <% if has_assets || has_webpack -%>
 BuildRequires: foreman-assets >= %{foreman_min_version}
 <% end -%>

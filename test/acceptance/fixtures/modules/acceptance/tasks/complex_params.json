@@ -1,0 +1,30 @@
+{
+  "input_method": "environment",
+  "description": "A task with multiple parameter types for testing command building",
+  "parameters": {
+    "required_string": {
+      "type": "String",
+      "description": "A required string parameter"
+    },
+    "optional_string": {
+      "type": "Optional[String]",
+      "description": "An optional string parameter"
+    },
+    "array_param": {
+      "type": "Array",
+      "description": "An array parameter"
+    },
+    "with_default": {
+      "type": "String",
+      "description": "A parameter with a default value",
+      "default": "default_value"
+    },
+    "hash_param": {
+      "type": "Optional[Hash]",
+      "description": "An optional hash parameter"
+    }
+  },
+  "implementations": [
+    {"name": "complex_params.sh", "requirements": ["shell"]}
+  ]
+}

@@ -1,0 +1,77 @@
+---
+name: Acceptance Tests
+
+on:
+  workflow_dispatch:
+
+env:
+  BUNDLE_WITHOUT: release
+  BUNDLE_WITH: acceptance
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        foreman_version:
+          - '3.17'
+          - '3.18'
+    name: Acceptance (Foreman ${{ matrix.foreman_version }})
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
+      # The Foreman image is built via docker run + foreman-installer + docker commit
+      # (not docker build, because we need systemd), so Buildx layer caching doesn't apply.
+      # Cache the full image as a tarball instead.
+      - name: Cache Foreman container image
+        uses: actions/cache@v4
+        with:
+          path: /tmp/foreman-image.tar
+          key: foreman-image-${{ matrix.foreman_version }}-${{ hashFiles('test/acceptance/docker/foreman/Dockerfile') }}
+
+      - name: Load cached Foreman image
+        run: |
+          if [ -f /tmp/foreman-image.tar ]; then
+            docker load -i /tmp/foreman-image.tar
+          fi
+
+      - name: Start acceptance test infrastructure
+        run: FOREMAN_VERSION=${{ matrix.foreman_version }} bundle exec rake acceptance:up
+        timeout-minutes: 30
+
+      - name: Save Foreman image to cache
+        if: always()
+        run: |
+          IMAGE=$(docker images --format '{{.Repository}}:{{.Tag}}' | grep '^foreman-openbolt:' | head -1)
+          if [ -n "$IMAGE" ]; then
+            docker save "$IMAGE" -o /tmp/foreman-image.tar
+          fi
+
+      - name: Run acceptance tests
+        run: bundle exec rake acceptance:run
+
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          docker logs foreman-openbolt-test > /tmp/foreman.log 2>&1 || true
+          docker logs foreman-openbolt-target1 > /tmp/target1.log 2>&1 || true
+          docker logs foreman-openbolt-target2 > /tmp/target2.log 2>&1 || true
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-logs-${{ matrix.foreman_version }}
+          path: /tmp/*.log
+
+      - name: Stop acceptance test containers
+        if: always()
+        run: bundle exec rake acceptance:down

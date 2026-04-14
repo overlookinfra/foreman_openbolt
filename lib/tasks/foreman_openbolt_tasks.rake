@@ -17,7 +17,7 @@ namespace :openbolt do
       end
     end
 
-    if proxies.count.zero?
+    if proxies.none?
       puts "No smart proxies found"
     else
       openbolt_count = proxies.with_features('OpenBolt').count
