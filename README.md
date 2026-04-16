@@ -289,18 +289,40 @@ After the gem is published to RubyGems, both RPM and DEB packages need to be upd
 
 A bot automatically creates PRs against the `rpm/develop` and `deb/develop` branches to pick up the new gem version. These PRs build packages for Foreman nightly.
 
-For stable Foreman releases (3.17, 3.18, etc.), the packaging changes need to be cherry-picked from the develop branches into the corresponding stable branches. For each release you want to support:
+For stable Foreman releases (currently 3.17 and 3.18), cherry-pick the packaging commits from the develop branches into the corresponding stable branches. For each stable version you want to support:
 
-**RPM:** Clone foreman-packaging, checkout the target branch (e.g. `rpm/3.18`), and run `bump_rpm.sh`:
+```bash
+cd foreman-packaging
+
+# RPM: cherry-pick from rpm/develop into a branch off the stable target
+git checkout rpm/3.18
+git checkout -b cherry-pick/rubygem-foreman_openbolt-rpm-3.18
+git cherry-pick <commit-from-rpm/develop>
+# Push to your fork and open a PR targeting rpm/3.18
+
+# DEB: same approach for the deb side
+git checkout deb/3.18
+git checkout -b cherry-pick/rubygem-foreman-openbolt-deb-3.18
+git cherry-pick <commit-from-deb/develop>
+# Push to your fork and open a PR targeting deb/3.18
+```
+
+PRs against stable branches should be labeled "Stable branch".
+
+**Alternative: manual version bump**
+
+If the cherry-pick doesn't apply cleanly, you can bump the version manually on the stable branch instead.
+
+*RPM:* Checkout the target branch and run `bump_rpm.sh`:
 ```bash
 cd foreman-packaging
 git checkout rpm/3.18
 git checkout -b bump_rpm/rubygem-foreman_openbolt
 ./bump_rpm.sh packages/plugins/rubygem-foreman_openbolt
-# Review changes, push, and open a PR targeting rpm/3.18
+# Review changes, push to your fork, and open a PR targeting rpm/3.18
 ```
 
-**DEB:** Checkout the target branch (e.g. `deb/3.18`) and update these files manually:
+*DEB:* Checkout the target branch and update these files:
 - `debian/gem.list` -- new gem filename
 - `foreman_openbolt.rb` -- new version
 - `debian/control` -- dependency versions (if changed)
@@ -309,7 +331,5 @@ git checkout -b bump_rpm/rubygem-foreman_openbolt
 ```bash
 git checkout deb/3.18
 git checkout -b bump_deb/ruby-foreman-openbolt
-# Make the changes above, push, and open a PR targeting deb/3.18
+# Make the changes above, push to your fork, and open a PR targeting deb/3.18
 ```
-
-PRs against stable branches should be labeled "Stable branch".
