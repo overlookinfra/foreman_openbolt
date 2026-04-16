@@ -7,18 +7,21 @@ require_relative 'utils/container'
 
 FOREMAN_PACKAGING_REPO = ENV.fetch('FOREMAN_PACKAGING_REPO', 'https://github.com/theforeman/foreman-packaging.git')
 GEMSPEC = 'foreman_openbolt.gemspec'
-GEM_FILENAME = "foreman_openbolt-#{Gem::Specification.load(GEMSPEC).version}.gem".freeze
+GEM_VERSION = Gem::Specification.load(GEMSPEC).version.to_s.freeze
+GEM_FILENAME = "foreman_openbolt-#{GEM_VERSION}.gem".freeze
 
-def foreman_packaging_path(foreman_version)
-  @foreman_packaging_path ||= begin
-    branch = "rpm/#{foreman_version}"
-    dir = File.join(Dir.tmpdir, "foreman-packaging-#{foreman_version}")
+def foreman_packaging_path(foreman_version, branch_prefix: 'rpm')
+  @foreman_packaging_paths ||= {}
+  key = "#{branch_prefix}-#{foreman_version}"
+  @foreman_packaging_paths[key] ||= begin
+    branch = "#{branch_prefix}/#{foreman_version}"
+    dir = File.join(Dir.tmpdir, "foreman-packaging-#{key}")
     if File.directory?(dir)
-      puts "Updating foreman-packaging (#{foreman_version})...".magenta
+      puts "Updating foreman-packaging (#{branch})...".magenta
       Shell.run(['git', '-C', dir, 'fetch', '--depth', '1', 'origin', branch])
       Shell.run(['git', '-C', dir, 'reset', '--hard', 'FETCH_HEAD'])
     else
-      puts "Cloning foreman-packaging (#{foreman_version})...".magenta
+      puts "Cloning foreman-packaging (#{branch})...".magenta
       Shell.run(['git', 'clone', '--depth', '1', '--branch', branch,
                  FOREMAN_PACKAGING_REPO, dir])
     end
@@ -27,7 +30,7 @@ def foreman_packaging_path(foreman_version)
 end
 
 def build_rpm_builder_image(foreman_version)
-  image_name = "foreman-rpm-builder:#{foreman_version}"
+  image_name = "foreman-openbolt-rpm-builder:#{foreman_version}"
   return image_name if Container.image_exists?(image_name)
 
   puts "Building RPM builder image for Foreman #{foreman_version}...".magenta
@@ -44,13 +47,14 @@ def build_rpm_builder_image(foreman_version)
       dnf install -y glibc-langpack-en
       dnf install -y https://yum.theforeman.org/releases/#{foreman_version}/el9/x86_64/foreman-release.rpm
       dnf install -y rubygems-devel foreman-plugin foreman-assets rubygem-foreman-tasks
+      pip3 install semver
       rpmdev-setuptree
     BASH
   end
 end
 
 def build_deb_builder_image(foreman_version)
-  image_name = "foreman-deb-builder:#{foreman_version}"
+  image_name = "foreman-openbolt-deb-builder:#{foreman_version}"
   return image_name if Container.image_exists?(image_name)
 
   puts "Building DEB builder image for Foreman #{foreman_version}...".magenta
@@ -68,8 +72,10 @@ def build_deb_builder_image(foreman_version)
         >> /etc/apt/sources.list.d/foreman.list
       wget -qO- https://deb.theforeman.org/foreman.asc | gpg --dearmor \
         > /etc/apt/trusted.gpg.d/foreman.gpg
+      wget -qO- https://deb.nodesource.com/setup_22.x | bash -
       apt-get update
-      apt-get install -y gem2deb debhelper ruby ruby-dev
+      apt-get install -y gem2deb debhelper rake ruby ruby-dev nodejs \
+        foreman-assets foreman-nulldb ruby-foreman-tasks
     BASH
   end
 end
@@ -91,36 +97,75 @@ namespace :build do
       image: build_rpm_builder_image(FOREMAN_VERSION),
       cmd: <<~BASH,
         set -e
-        cp /build/pkg/#{GEM_FILENAME} ~/rpmbuild/SOURCES/
-        gem2rpm -t /build/foreman_openbolt.spec.erb \
-          ~/rpmbuild/SOURCES/#{GEM_FILENAME} > ~/rpmbuild/SPECS/rubygem-foreman_openbolt.spec
-        rpmbuild -ba ~/rpmbuild/SPECS/rubygem-foreman_openbolt.spec
+        GEM=~/rpmbuild/SOURCES/#{GEM_FILENAME}
+        SPEC=~/rpmbuild/SPECS/rubygem-foreman_openbolt.spec
+
+        cp /build/pkg/#{GEM_FILENAME} "$GEM"
+        cd /opt/foreman-packaging
+        gem2rpm -t gem2rpm/foreman_plugin.spec.erb "$GEM" > "$SPEC"
+
+        # foreman_plugin template leaves foreman_min_version as FIXME and npm
+        # dependency sections empty; fill them from the gem contents
+        UNPACKED=$(mktemp -d)
+        gem unpack --target "$UNPACKED" "$GEM"
+        PLUGIN_DIR="$UNPACKED/foreman_openbolt-#{GEM_VERSION}"
+        REQUIRES=$(grep -Erh 'requires_foreman\\s' "$PLUGIN_DIR/lib" | sed -E 's/[^0-9.]//g; q')
+        if [ -z "$REQUIRES" ]; then
+          echo "ERROR: Could not extract requires_foreman version from $PLUGIN_DIR/lib" >&2
+          exit 1
+        fi
+        sed -i "s/foreman_min_version FIXME/foreman_min_version $REQUIRES/" "$SPEC"
+        /opt/foreman-packaging/update-requirements npm "$PLUGIN_DIR/package.json" "$SPEC"
+        rm -rf "$UNPACKED"
+
+        rpmbuild -ba "$SPEC"
         cp ~/rpmbuild/RPMS/noarch/rubygem-foreman_openbolt-*.rpm /build/pkg/
       BASH
       volumes: { Dir.pwd => '/build', foreman_packaging_path(FOREMAN_VERSION) => '/opt/foreman-packaging' },
       platform: 'linux/amd64'
     )
 
-    puts "RPM built: #{Dir.glob('pkg/rubygem-foreman_openbolt-*.rpm').first}".green
+    rpm = Dir.glob('pkg/rubygem-foreman_openbolt-*.rpm').first
+    abort 'RPM build produced no output file in pkg/'.red unless rpm
+    puts "RPM built: #{rpm}".green
   end
 
-  desc 'Build DEB using Debian container'
+  desc 'Build DEB using foreman-packaging debian directory'
   task deb: :gem do
+    gem_version = GEM_VERSION
     FileUtils.rm_f(Dir.glob('pkg/ruby-foreman-openbolt*.deb'))
+
+    deb_packaging = foreman_packaging_path(FOREMAN_VERSION, branch_prefix: 'deb')
+
     Container.run_once(
       image: build_deb_builder_image(FOREMAN_VERSION),
       cmd: <<~BASH,
         set -e
-        mkdir -p /build-deb/cache
-        cp /build/pkg/#{GEM_FILENAME} /build-deb/cache/
-        cd /build-deb
-        gem2deb --gem-install /build-deb/cache/#{GEM_FILENAME}
-        cp /build-deb/*.deb /build/pkg/
+        export BUNDLE_ALLOW_ROOT=true
+
+        # Copy packaging to a clean temp dir so build artifacts don't pollute
+        # the foreman-packaging checkout
+        BUILD_DIR=$(mktemp -d)/ruby-foreman-openbolt
+        cp -a /opt/foreman-packaging-deb/plugins/ruby-foreman-openbolt "$BUILD_DIR"
+        cd "$BUILD_DIR"
+
+        mkdir -p cache
+        cp /build/pkg/#{GEM_FILENAME} cache/
+
+        # Update all version references to match the gem we're building
+        echo "gem 'foreman_openbolt', '#{gem_version}'" > foreman_openbolt.rb
+        sed -i "s/foreman_openbolt-[0-9.]*\\.gem/#{GEM_FILENAME}/" debian/gem.list
+        sed -i "1s/([^)]*)/(#{gem_version}-1)/" debian/changelog
+
+        dpkg-buildpackage -us -uc -b
+        cp "$BUILD_DIR"/../ruby-foreman-openbolt*.deb /build/pkg/
       BASH
-      volumes: { Dir.pwd => '/build' },
+      volumes: { Dir.pwd => '/build', deb_packaging => '/opt/foreman-packaging-deb' },
       platform: 'linux/amd64'
     )
 
-    puts "DEB built: #{Dir.glob('pkg/ruby-foreman-openbolt*.deb').first}".green
+    deb = Dir.glob('pkg/ruby-foreman-openbolt*.deb').first
+    abort 'DEB build produced no output file in pkg/'.red unless deb
+    puts "DEB built: #{deb}".green
   end
 end
