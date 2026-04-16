@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.1.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.1.0) (2026-04-16)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.0.0...1.1.0)
+
+Code quality improvements and bug fixes across the whole plugin:
+
+**Backend:**
+- Centralize proxy response parsing in `ProxyAPI::Openbolt#parse_response`
+- Improve TaskController error handling, fix boolean `false` setting defaults being dropped (e.g. --no-host-key-check)
+- Overhaul PollTaskStatus with improved logging and error detection
+- Fix CleanupProxyArtifacts to log and return on missing proxy instead of raising into its own rescue
+- Enable proxy artifact cleanup
+- Remove unnecessary proxy requirement from job_status/job_result endpoints
+
+**Frontend:**
+- Extract shared methods to common/helpers.js
+- Lots of small fixes to various components to align with React best practices, avoid edge case crashes, and remove dead code
+- Align TaskExecution and TaskHistory pages with consistent Submitted/Completed/Duration fields and shared status colors
+- Remove proxy_id/proxy_name URL params from TaskExecution, serve smart_proxy info from job_status API instead
+- Lots of a11y fixes
+
+**Merged pull requests:**
+
+- Update README with additional release details [\#46](https://github.com/overlookinfra/foreman_openbolt/pull/46) ([nmburgan](https://github.com/nmburgan))
+- Acceptance tests, build tasks, and fixes [\#41](https://github.com/overlookinfra/foreman_openbolt/pull/41) ([nmburgan](https://github.com/nmburgan))
+- Add containerized unit testing [\#36](https://github.com/overlookinfra/foreman_openbolt/pull/36) ([nmburgan](https://github.com/nmburgan))
+- Lots of cleanup and fixes, bump required Foreman version to 3.17+ and Ruby 3.0+ [\#34](https://github.com/overlookinfra/foreman_openbolt/pull/34) ([nmburgan](https://github.com/nmburgan))
+
 ## [1.0.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.0.0) (2026-03-02)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/0.1.1...1.0.0)
