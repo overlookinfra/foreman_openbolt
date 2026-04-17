@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.1](https://github.com/overlookinfra/foreman_openbolt/tree/1.1.1) (2026-04-17)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.1.0...1.1.1)
+
+**Merged pull requests:**
+
+- Add prepare\_release and update release automation [\#50](https://github.com/overlookinfra/foreman_openbolt/pull/50) ([nmburgan](https://github.com/nmburgan))
+- Add test dir back into gem files and update build tasks [\#49](https://github.com/overlookinfra/foreman_openbolt/pull/49) ([nmburgan](https://github.com/nmburgan))
+- Rakefile: Remove executeable bit [\#48](https://github.com/overlookinfra/foreman_openbolt/pull/48) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [1.1.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.1.0) (2026-04-16)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.0.0...1.1.0)
