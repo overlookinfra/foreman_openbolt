@@ -1,25 +1,18 @@
 # Changelog
 
+## [1.1.1](https://github.com/overlookinfra/foreman_openbolt/tree/1.1.1) (2026-04-17)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.1.0...1.1.1)
+
+**Merged pull requests:**
+
+- Add prepare\_release and update release automation [\#50](https://github.com/overlookinfra/foreman_openbolt/pull/50) ([nmburgan](https://github.com/nmburgan))
+- Add test dir back into gem files and update build tasks [\#49](https://github.com/overlookinfra/foreman_openbolt/pull/49) ([nmburgan](https://github.com/nmburgan))
+- Rakefile: Remove executeable bit [\#48](https://github.com/overlookinfra/foreman_openbolt/pull/48) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [1.1.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.1.0) (2026-04-16)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.0.0...1.1.0)
-
-Code quality improvements and bug fixes across the whole plugin:
-
-**Backend:**
-- Centralize proxy response parsing in `ProxyAPI::Openbolt#parse_response`
-- Improve TaskController error handling, fix boolean `false` setting defaults being dropped (e.g. --no-host-key-check)
-- Overhaul PollTaskStatus with improved logging and error detection
-- Fix CleanupProxyArtifacts to log and return on missing proxy instead of raising into its own rescue
-- Enable proxy artifact cleanup
-- Remove unnecessary proxy requirement from job_status/job_result endpoints
-
-**Frontend:**
-- Extract shared methods to common/helpers.js
-- Lots of small fixes to various components to align with React best practices, avoid edge case crashes, and remove dead code
-- Align TaskExecution and TaskHistory pages with consistent Submitted/Completed/Duration fields and shared status colors
-- Remove proxy_id/proxy_name URL params from TaskExecution, serve smart_proxy info from job_status API instead
-- Lots of a11y fixes
 
 **Merged pull requests:**
 
