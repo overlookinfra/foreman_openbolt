@@ -252,7 +252,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ### Version locations
 
-Update the version in these files:
+The version is maintained in two files:
 
 1. `lib/foreman_openbolt/version.rb` -- the gem version (authoritative source)
 2. `package.json` -- the npm package version (must match)
@@ -264,18 +264,13 @@ If the minimum Foreman version changes, also update:
 
 ### Release steps
 
-1. Bump the version in the two files listed above
-2. Generate the changelog:
-   ```bash
-   CHANGELOG_GITHUB_TOKEN=github_pat_... bundle exec rake changelog
-   ```
-3. Create a PR with the version bump and changelog, get it reviewed and merged
-4. Create and push a tag matching the version:
-   ```bash
-   git tag 1.1.0
-   git push origin 1.1.0
-   ```
-5. The [release workflow](.github/workflows/release.yml) runs automatically on tag push and:
+1. Go to [Actions > Prepare Release](../../actions/workflows/prepare_release.yml) and run the workflow with the version to release (e.g. `1.2.0`)
+2. The workflow bumps the version in `version.rb` and `package.json`, generates the changelog, and opens a PR with the `skip-changelog` label
+3. Review and merge the PR
+4. Go to [Actions > Release](../../actions/workflows/release.yml) and run the workflow with the same version
+5. The release workflow:
+   - Verifies the version in `version.rb` matches the input
+   - Creates and pushes a git tag
    - Builds the gem
    - Creates a GitHub Release with auto-generated notes and the gem attached
    - Publishes the gem to GitHub Packages
