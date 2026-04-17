@@ -21,6 +21,7 @@ jobs:
     if: github.repository_owner == 'overlookinfra'
     permissions:
       contents: write
+      issues: read # changelog generator reads release-summary issues
       pull-requests: write
     steps:
       - name: Validate version format
