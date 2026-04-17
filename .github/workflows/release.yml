@@ -1,21 +1,78 @@
 ---
-name: Gem Release
+name: Release
 
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.2.0)'
+        required: true
+        type: string
 
 permissions: {}
 
 jobs:
-  build-release:
+  create-tag:
+    name: Create tag
+    runs-on: ubuntu-24.04
     # Prevent releases from forked repositories
     if: github.repository_owner == 'overlookinfra'
+    permissions:
+      contents: write
+    steps:
+      - name: Validate version format
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Version '$VERSION' must be in X.Y.Z format"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify source version matches release version
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if ! grep -q "VERSION = '$VERSION'" lib/foreman_openbolt/version.rb; then
+            echo "::error::version.rb does not contain version '$VERSION'. Did you merge the prepare-release PR?"
+            exit 1
+          fi
+          if ! grep -q "\"version\": \"$VERSION\"" package.json; then
+            echo "::error::package.json does not contain version '$VERSION'. Did you merge the prepare-release PR?"
+            exit 1
+          fi
+
+      - name: Check tag does not already exist
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [ -n "$(git tag -l "$VERSION")" ]; then
+            echo "::error::Tag '$VERSION' already exists"
+            exit 1
+          fi
+
+      - name: Create and push tag
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git tag "$VERSION"
+          git push origin "$VERSION"
+
+  build-release:
+    needs: create-tag
     name: Build the gem
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.version }}
       - name: Install Ruby
         uses: ruby/setup-ruby@v1
         with:
@@ -46,7 +103,8 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create --repo ${{ github.repository }} ${{ github.ref_name }} --generate-notes *.gem
+          VERSION: ${{ inputs.version }}
+        run: gh release create --repo ${{ github.repository }} "$VERSION" --generate-notes *.gem
 
   release-to-github:
     needs: build-release
