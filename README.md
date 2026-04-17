@@ -260,8 +260,7 @@ Update the version in these files:
 If the minimum Foreman version changes, also update:
 
 3. `lib/foreman_openbolt/engine.rb` -- `requires_foreman '>= X.Y.Z'`
-4. `foreman_openbolt.spec.erb` -- `%global foreman_min_version X.Y.Z`
-5. `.github/workflows/build.yml` -- default `foreman_version` and `foreman_packaging_ref` inputs
+4. `.github/workflows/build.yml` -- default `foreman_version` and `foreman_packaging_ref` inputs
 
 ### Release steps
 

@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.description = 'This plugin adds OpenBolt integration into Foreman, ' \
                   'allowing users to run tasks and plans present in their environment.'
 
-  s.files = Dir['{app,config,db,lib,locale,webpack}/**/*'] + ['LICENSE', 'Rakefile', 'README.md', 'package.json']
+  s.files = Dir['{app,config,db,lib,locale,test,webpack}/**/*'] + ['LICENSE', 'Rakefile', 'README.md', 'package.json']
 
   s.required_ruby_version = '>= 3.0', '< 5'
 
