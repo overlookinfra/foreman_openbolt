@@ -91,13 +91,13 @@ class TransportOptionsTest < AcceptanceTestCase
       text: 'Select a task to see parameters', wait: 10
   end
 
-  def test_transport_option_renders_as_select_with_ssh_and_winrm
-    # The transport OpenBolt option has type ["ssh", "winrm"] and
-    # ParameterField renders array-typed values as a <select>.
+  def test_transport_option_renders_as_select_with_ssh_winrm_and_choria
+    # The transport OpenBolt option has type ["ssh", "winrm", "choria"]
+    # and ParameterField renders array-typed values as a <select>.
     field = find_by_id('param_transport', wait: 10)
     assert_equal 'select', field.tag_name
     option_values = all('#param_transport option').map(&:value)
-    assert_equal %w[ssh winrm], option_values
+    assert_equal %w[ssh winrm choria], option_values
     assert_equal 'ssh', field.value
   end
 
@@ -117,5 +117,45 @@ class TransportOptionsTest < AcceptanceTestCase
     select 'ssh', from: 'param_transport'
     assert_selector '#param_host-key-check', wait: 10
     assert_selector '#param_private-key', wait: 10
+  end
+
+  def test_switching_transport_to_choria_hides_ssh_only_options_and_shows_choria_options
+    # SSH-only options are present on load because the default transport is ssh.
+    assert_selector '#param_host-key-check', wait: 10
+    assert_selector '#param_private-key', wait: 10
+    assert_selector '#param_run-as', wait: 10
+    assert_selector '#param_sudo-password', wait: 10
+
+    # Switching transport to choria should hide ssh-only options and reveal
+    # choria-tagged options (OpenBoltOptionsSection filters by transport).
+    select 'choria', from: 'param_transport'
+    assert_no_selector '#param_host-key-check', wait: 10
+    assert_no_selector '#param_private-key', wait: 10
+    assert_no_selector '#param_run-as', wait: 10
+    assert_no_selector '#param_sudo-password', wait: 10
+
+    assert_selector '#param_choria-config-file', wait: 10
+    assert_selector '#param_choria-ssl-ca', wait: 10
+    assert_selector '#param_choria-brokers', wait: 10
+
+    # choria-task-agent must render as a <select> whose options match the
+    # proxy's enum exactly. The launch form gets the enum from the proxy's
+    # option metadata type array, so a drift in the proxy-side enum (or a
+    # mismatch with engine.rb's CHORIA_TASK_AGENTS collection shown on the
+    # Settings page) would only surface at task launch time otherwise.
+    task_agent = find_by_id('param_choria-task-agent', wait: 10)
+    assert_equal 'select', task_agent.tag_name
+    assert_equal %w[bolt_tasks shell], all('#param_choria-task-agent option').map(&:value)
+    assert_equal 'bolt_tasks', task_agent.value
+
+    # Switching back to ssh restores ssh-only options and hides choria-only ones.
+    # Includes the select-type field so a future regression that special-cases
+    # selects in the transport filter would be caught here.
+    select 'ssh', from: 'param_transport'
+    assert_selector '#param_host-key-check', wait: 10
+    assert_selector '#param_private-key', wait: 10
+    assert_no_selector '#param_choria-config-file', wait: 10
+    assert_no_selector '#param_choria-task-agent', wait: 10
+    assert_no_selector '#param_choria-brokers', wait: 10
   end
 end

@@ -52,15 +52,25 @@ module ProxyAPI
     end
 
     def parse_response(response, operation)
-      raise ProxyException.new(@url, nil, "No response from Smart Proxy during #{operation}") unless response
+      unless response
+        raise ProxyException.new(
+          @url, RuntimeError.new("No response from Smart Proxy during #{operation}"),
+          "No response from Smart Proxy during #{operation}"
+        )
+      end
 
       body = response.body
-      raise ProxyException.new(@url, nil, "Empty response body from Smart Proxy during #{operation}") if body.nil?
+      if body.nil?
+        raise ProxyException.new(
+          @url, RuntimeError.new("Empty response body from Smart Proxy during #{operation}"),
+          "Empty response body from Smart Proxy during #{operation}"
+        )
+      end
 
       JSON.parse(body)
     rescue JSON::ParserError => e
       raise ProxyException.new(
-        @url, nil,
+        @url, e,
         "Invalid JSON from Smart Proxy during #{operation}: #{e.message}. " \
         "Response body (first 500 chars): #{body.to_s[0..500]}"
       )
