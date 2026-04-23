@@ -10,7 +10,7 @@ afterEach(() => {
 });
 
 describe('useJobPolling', () => {
-  test('returns undefined state when jobId is null', () => {
+  test('returns initial pending state and does not poll when jobId is null', () => {
     const { result } = renderHook(() => useJobPolling(null));
     expect(result.current.status).toBe('pending');
     expect(result.current.isPolling).toBe(false);

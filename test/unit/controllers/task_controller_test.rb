@@ -141,6 +141,20 @@ class TaskControllerTest < ActionController::TestCase
       assert_match(/Task execution failed/, JSON.parse(response.body)['error'])
     end
 
+    test 'returns bad_gateway when proxy returns invalid JSON' do
+      stub_request(:post, "#{@proxy.url}/openbolt/launch/task")
+        .to_return(status: 200, body: 'not valid json',
+          headers: { 'Content-Type' => 'application/json' })
+
+      post :launch_task, params: {
+        proxy_id: @proxy.id,
+        task_name: 'mymod::install',
+        targets: 'host1',
+      }, session: @session
+      assert_response :bad_gateway
+      assert_match(/Smart Proxy error/, JSON.parse(response.body)['error'])
+    end
+
     test 'returns error when proxy returns no job ID' do
       stub_request(:post, "#{@proxy.url}/openbolt/launch/task")
         .to_return(status: 200, body: { 'status' => 'ok' }.to_json,
@@ -214,7 +228,7 @@ class TaskControllerTest < ActionController::TestCase
       ForemanTasks.stubs(:async_task)
     end
 
-    test 'replaces encrypted placeholder with real setting value before sending to proxy' do
+    test 'sends real encrypted value to proxy and scrubs it in database' do
       Setting['openbolt_password'] = 'real-secret-password'
 
       post :launch_task, params: {
@@ -226,27 +240,11 @@ class TaskControllerTest < ActionController::TestCase
 
       assert_response :success
 
-      # Verify the real value was sent to the proxy (not the placeholder)
-      proxy_request = WebMock::RequestRegistry.instance
-                                              .requested_signatures
-                                              .hash
-                                              .keys
-                                              .find { |sig| sig.uri.path == '/openbolt/launch/task' }
-      sent_body = JSON.parse(proxy_request.body)
-      assert_equal 'real-secret-password', sent_body['options']['password']
-    end
+      assert_requested(:post, "#{@proxy.url}/openbolt/launch/task") do |req|
+        sent_body = JSON.parse(req.body)
+        sent_body['options']['password'] == 'real-secret-password'
+      end
 
-    test 'scrubs encrypted options before storing in database' do
-      Setting['openbolt_password'] = 'real-secret-password'
-
-      post :launch_task, params: {
-        proxy_id: @proxy.id,
-        task_name: 'mymod::install',
-        targets: 'host1.example.com',
-        options: { 'password' => '[Use saved encrypted default]', 'transport' => 'ssh' },
-      }, session: @session
-
-      assert_response :success
       job = ForemanOpenbolt::TaskJob.find_by(job_id: 'encrypted-job-1')
       assert_equal '*****', job.openbolt_options['password']
       assert_equal 'ssh', job.openbolt_options['transport']
@@ -315,6 +313,83 @@ class TaskControllerTest < ActionController::TestCase
 
       body = JSON.parse(response.body)
       assert_equal '[Use saved encrypted default]', body['password']['default']
+    end
+  end
+
+  context 'fetch_openbolt_options with Choria settings defaults' do
+    # Mirrors the real GET /openbolt/tasks/options response for Choria
+    # (see smart_proxy_openbolt/lib/smart_proxy_openbolt/main.rb OPENBOLT_OPTIONS).
+    def self.choria_proxy_options
+      {
+        'choria-task-agent' => { 'type' => %w[bolt_tasks shell], 'transport' => ['choria'], 'sensitive' => false },
+        'choria-config-file' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-mcollective-certname' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-ssl-ca' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-ssl-cert' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-ssl-key' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-collective' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-puppet-environment' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-rpc-timeout' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-task-timeout' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-command-timeout' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-brokers' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+        'choria-broker-timeout' => { 'type' => 'string', 'transport' => ['choria'], 'sensitive' => false },
+      }
+    end
+
+    test 'merges all Choria setting values into their option defaults' do
+      Setting['openbolt_choria-task-agent'] = 'shell'
+      Setting['openbolt_choria-config-file'] = '/etc/choria/client.conf'
+      Setting['openbolt_choria-mcollective-certname'] = 'primary.example.com'
+      Setting['openbolt_choria-ssl-ca'] = '/etc/choria/ca.pem'
+      Setting['openbolt_choria-ssl-cert'] = '/etc/choria/client.pem'
+      Setting['openbolt_choria-ssl-key'] = '/etc/choria/client.key'
+      Setting['openbolt_choria-collective'] = 'mcollective'
+      Setting['openbolt_choria-puppet-environment'] = 'production'
+      Setting['openbolt_choria-rpc-timeout'] = 60
+      Setting['openbolt_choria-task-timeout'] = 300
+      Setting['openbolt_choria-command-timeout'] = 120
+      Setting['openbolt_choria-brokers'] = 'broker.example.com:4222'
+      Setting['openbolt_choria-broker-timeout'] = 10
+
+      stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
+        .to_return(status: 200, body: self.class.choria_proxy_options.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      get :fetch_openbolt_options, params: { proxy_id: @proxy.id }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 'shell', body['choria-task-agent']['default']
+      assert_equal '/etc/choria/client.conf', body['choria-config-file']['default']
+      assert_equal 'primary.example.com', body['choria-mcollective-certname']['default']
+      assert_equal '/etc/choria/ca.pem', body['choria-ssl-ca']['default']
+      assert_equal '/etc/choria/client.pem', body['choria-ssl-cert']['default']
+      assert_equal '/etc/choria/client.key', body['choria-ssl-key']['default']
+      assert_equal 'mcollective', body['choria-collective']['default']
+      assert_equal 'production', body['choria-puppet-environment']['default']
+      assert_equal 60, body['choria-rpc-timeout']['default']
+      assert_equal 300, body['choria-task-timeout']['default']
+      assert_equal 120, body['choria-command-timeout']['default']
+      assert_equal 'broker.example.com:4222', body['choria-brokers']['default']
+      assert_equal 10, body['choria-broker-timeout']['default']
+    end
+
+    test 'omits nil-default settings and keeps real defaults when Choria settings are not configured' do
+      stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
+        .to_return(status: 200, body: self.class.choria_proxy_options.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      get :fetch_openbolt_options, params: { proxy_id: @proxy.id }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 'bolt_tasks', body['choria-task-agent']['default']
+      assert_not body['choria-config-file'].key?('default')
+      assert_not body['choria-mcollective-certname'].key?('default')
+      assert_not body['choria-ssl-key'].key?('default')
+      assert_not body['choria-brokers'].key?('default')
+      assert_not body['choria-broker-timeout'].key?('default')
     end
   end
 

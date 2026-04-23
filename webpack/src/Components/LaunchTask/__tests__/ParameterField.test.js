@@ -83,4 +83,49 @@ describe('ParameterField', () => {
     fireEvent.change(input, { target: { value: 'new-value' } });
     expect(handleChange).toHaveBeenCalledWith('username', 'new-value');
   });
+
+  test('shows empty field for encrypted default instead of the placeholder value', () => {
+    const { container } = render(
+      <ParameterField
+        name="password"
+        metadata={{
+          type: 'String',
+          sensitive: true,
+          default: '[Use saved encrypted default]',
+        }}
+        onChange={jest.fn()}
+      />
+    );
+    const input = container.querySelector('input[type="password"]');
+    expect(input.value).toBe('');
+  });
+
+  test('shows encrypted placeholder when value matches placeholder', () => {
+    const { container } = render(
+      <ParameterField
+        name="password"
+        metadata={{
+          type: 'String',
+          sensitive: true,
+          default: '[Use saved encrypted default]',
+        }}
+        value="[Use saved encrypted default]"
+        onChange={jest.fn()}
+      />
+    );
+    const input = container.querySelector('input[type="password"]');
+    expect(input.value).toBe('[Use saved encrypted default]');
+  });
+
+  test('renders empty text input when value is undefined and no default', () => {
+    const { container } = render(
+      <ParameterField
+        name="tmpdir"
+        metadata={{ type: 'String' }}
+        onChange={jest.fn()}
+      />
+    );
+    const input = container.querySelector('input[type="text"]');
+    expect(input.value).toBe('');
+  });
 });

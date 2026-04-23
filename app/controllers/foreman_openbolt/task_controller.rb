@@ -53,7 +53,7 @@ module ForemanOpenbolt
         key = setting.name.sub(/^openbolt_/, '')
         if setting.encrypted?
           defaults[key] = ENCRYPTED_PLACEHOLDER unless setting.value.to_s.empty?
-        else
+        elsif !setting.value.to_s.empty?
           defaults[key] = setting.value
         end
       end
@@ -136,6 +136,9 @@ module ForemanOpenbolt
       rescue ActiveRecord::RecordInvalid => e
         log_exception('launch_task', e)
         render_error("Database error: #{e.message}", :internal_server_error)
+      rescue ProxyAPI::ProxyException => e
+        log_exception('launch_task', e)
+        render_error("Smart Proxy error: #{e.message}", :bad_gateway)
       rescue StandardError => e
         log_exception('launch_task', e)
         render_error("Error launching task: #{e.message}", :internal_server_error)
