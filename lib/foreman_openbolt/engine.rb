@@ -35,6 +35,7 @@ module ForemanOpenbolt
               TRANSPORTS = {
                 ssh: N_('SSH'),
                 winrm: N_('WinRM'),
+                choria: N_('Choria'),
               }.freeze
               LOG_LEVELS = {
                 error: N_('Error'),
@@ -43,20 +44,48 @@ module ForemanOpenbolt
                 debug: N_('Debug'),
                 trace: N_('Trace'),
               }.freeze
+              CHORIA_TASK_AGENTS = {
+                bolt_tasks: N_('Bolt Tasks'),
+                shell: N_('Shell'),
+              }.freeze
               # rubocop:enable Lint/ConstantDefinitionInBlock
 
-              setting 'openbolt_transport',
-                type: :string,
-                default: 'ssh',
-                full_name: N_('Transport'),
-                description: N_('The transport method to use for connecting to target hosts'),
-                collection: proc { TRANSPORTS }
+              # General (all transports)
               setting 'openbolt_log-level',
                 type: :string,
                 default: 'debug',
                 full_name: N_('Log Level'),
                 description: N_('Set the log level during OpenBolt execution'),
                 collection: proc { LOG_LEVELS }
+              setting 'openbolt_noop',
+                type: :boolean,
+                default: false,
+                full_name: N_('No Operation'),
+                description: N_(
+                  'Run the OpenBolt command with the --noop flag, which will make no changes to the target host'
+                )
+              setting 'openbolt_password',
+                type: :string,
+                default: nil,
+                full_name: N_('Password'),
+                description: N_('Password used for SSH or WinRM authentication'),
+                encrypted: true
+              setting 'openbolt_tmpdir',
+                type: :string,
+                default: nil,
+                full_name: N_('Temporary Directory'),
+                description: N_('Directory to use for temporary files on target hosts during OpenBolt execution')
+              setting 'openbolt_transport',
+                type: :string,
+                default: 'ssh',
+                full_name: N_('Transport'),
+                description: N_('The transport method to use for connecting to target hosts'),
+                collection: proc { TRANSPORTS }
+              setting 'openbolt_user',
+                type: :string,
+                default: nil,
+                full_name: N_('User'),
+                description: N_('Username used for SSH or WinRM authentication')
               setting 'openbolt_verbose',
                 type: :boolean,
                 default: false,
@@ -65,29 +94,102 @@ module ForemanOpenbolt
                   'Run the OpenBolt command with the --verbose flag. This prints additional information ' \
                   'during OpenBolt execution and will print any out::verbose plan statements.'
                 )
-              setting 'openbolt_noop',
-                type: :boolean,
-                default: false,
-                full_name: N_('No Operation'),
+
+              # Choria
+              setting 'openbolt_choria-broker-timeout',
+                type: :integer,
+                default: nil,
+                full_name: N_('Choria Broker Timeout'),
+                description: N_('Time in seconds to wait when establishing a connection to a Choria broker.')
+              setting 'openbolt_choria-brokers',
+                type: :string,
+                default: nil,
+                full_name: N_('Choria Brokers'),
                 description: N_(
-                  'Run the OpenBolt command with the --noop flag, which will make no changes to the target host'
+                  'Comma-separated list of Choria broker addresses in host or host:port format ' \
+                  '(e.g. broker1.example.com:4222,broker2.example.com:4222). Port defaults to 4222 if omitted. ' \
+                  'When not set, the Choria client checks the config file, then SRV records, then falls back to puppet:4222.'
                 )
-              setting 'openbolt_tmpdir',
+              setting 'openbolt_choria-collective',
                 type: :string,
-                default: '',
-                full_name: N_('Temporary Directory'),
-                description: N_('Directory to use for temporary files on target hosts during OpenBolt execution')
-              setting 'openbolt_user',
+                default: nil,
+                full_name: N_('Choria Collective'),
+                description: N_('Choria collective to route messages through.')
+              setting 'openbolt_choria-command-timeout',
+                type: :integer,
+                default: nil,
+                full_name: N_('Choria Command Timeout'),
+                description: N_('Time in seconds to wait for command completion on target nodes.')
+              setting 'openbolt_choria-config-file',
                 type: :string,
-                default: '',
-                full_name: N_('User'),
-                description: N_('Username used for SSH or WinRM authentication')
-              setting 'openbolt_password',
+                default: nil,
+                full_name: N_('Choria Config File'),
+                description: N_(
+                  'Path on the smart proxy host to the Choria client configuration file. This file ' \
+                  'must be readable by the foreman-proxy user. When not set, the proxy uses a built-in default.'
+                )
+              setting 'openbolt_choria-mcollective-certname',
                 type: :string,
-                default: '',
-                full_name: N_('Password'),
-                description: N_('Password used for SSH or WinRM authentication'),
-                encrypted: true
+                default: nil,
+                full_name: N_('Choria MCollective Certname'),
+                description: N_(
+                  'Override the MCollective certname for Choria client identity. When not set, the ' \
+                  'proxy derives this automatically from its SSL certificate.'
+                )
+              setting 'openbolt_choria-puppet-environment',
+                type: :string,
+                default: nil,
+                full_name: N_('Choria Puppet Environment'),
+                description: N_(
+                  'Puppet environment used by the Choria bolt_tasks agent to locate task files. ' \
+                  "Only applies when the Choria Task Agent is 'bolt_tasks'. Defaults to " \
+                  "'production' when not specified."
+                )
+              setting 'openbolt_choria-rpc-timeout',
+                type: :integer,
+                default: nil,
+                full_name: N_('Choria RPC Timeout'),
+                description: N_('Time in seconds to wait for RPC responses from target nodes.')
+              setting 'openbolt_choria-ssl-ca',
+                type: :string,
+                default: nil,
+                full_name: N_('Choria SSL CA'),
+                description: N_(
+                  'Path on the smart proxy host to the Choria CA certificate. This file must be ' \
+                  'readable by the foreman-proxy user.'
+                )
+              setting 'openbolt_choria-ssl-cert',
+                type: :string,
+                default: nil,
+                full_name: N_('Choria SSL Certificate'),
+                description: N_(
+                  'Path on the smart proxy host to the Choria client SSL certificate. This file ' \
+                  'must be readable by the foreman-proxy user.'
+                )
+              setting 'openbolt_choria-ssl-key',
+                type: :string,
+                default: nil,
+                full_name: N_('Choria SSL Key'),
+                description: N_(
+                  'Path on the smart proxy host to the Choria client SSL private key. This file ' \
+                  'must be readable by the foreman-proxy user.'
+                )
+              setting 'openbolt_choria-task-agent',
+                type: :string,
+                default: 'bolt_tasks',
+                full_name: N_('Choria Task Agent'),
+                description: N_(
+                  'Choria agent used to execute tasks on target nodes. Use the bolt_tasks agent for ' \
+                  'standard OpenBolt tasks, or the shell agent to run shell commands.'
+                ),
+                collection: proc { CHORIA_TASK_AGENTS }
+              setting 'openbolt_choria-task-timeout',
+                type: :integer,
+                default: nil,
+                full_name: N_('Choria Task Timeout'),
+                description: N_('Time in seconds to wait for task completion on target nodes.')
+
+              # SSH
               setting 'openbolt_host-key-check',
                 type: :boolean,
                 default: true,
@@ -95,7 +197,7 @@ module ForemanOpenbolt
                 description: N_('Whether to perform host key verification when connecting to targets over SSH')
               setting 'openbolt_private-key',
                 type: :string,
-                default: '',
+                default: nil,
                 full_name: N_('SSH Private Key'),
                 description: N_(
                   'Path on the smart proxy host to the private key used for SSH authentication. This key must be ' \
@@ -103,7 +205,7 @@ module ForemanOpenbolt
                 )
               setting 'openbolt_run-as',
                 type: :string,
-                default: '',
+                default: nil,
                 full_name: N_('SSH Run As User'),
                 description: N_(
                   'The user to run commands as on the target host. This requires that the user specified ' \
@@ -111,10 +213,12 @@ module ForemanOpenbolt
                 )
               setting 'openbolt_sudo-password',
                 type: :string,
-                default: '',
+                default: nil,
                 full_name: N_('SSH Sudo Password'),
                 description: N_('Password used for privilege escalation when using SSH'),
                 encrypted: true
+
+              # WinRM
               setting 'openbolt_ssl',
                 type: :boolean,
                 default: true,

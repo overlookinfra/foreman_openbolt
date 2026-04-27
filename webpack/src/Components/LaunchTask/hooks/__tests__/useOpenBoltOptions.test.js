@@ -47,6 +47,7 @@ describe('useOpenBoltOptions', () => {
       transport: 'ssh',
       verbose: false,
     });
+    expect(result.current.openBoltOptions.verbose).toBe(false);
     expect(result.current.openBoltOptions.user).toBeUndefined();
   });
 

@@ -8,7 +8,7 @@ describe('LoadingIndicator', () => {
     expect(screen.getByText(/running/i)).toBeInTheDocument();
   });
 
-  test('shows running status message for pending jobs', () => {
+  test('shows current status message for pending jobs', () => {
     render(<LoadingIndicator jobStatus="pending" />);
     expect(screen.getByText(/pending/i)).toBeInTheDocument();
   });
