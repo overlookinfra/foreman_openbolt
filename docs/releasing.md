@@ -33,23 +33,22 @@ After the gem is published to RubyGems, both RPM and DEB packages need to be upd
 
 A bot automatically creates PRs against the `rpm/develop` and `deb/develop` branches to pick up the new gem version. These PRs build packages for Foreman nightly.
 
-For stable Foreman releases (currently 3.17 and 3.18), cherry-pick the packaging commits from the develop branches into the corresponding stable branches. For each stable version you want to support:
+For stable Foreman releases, cherry-pick the packaging commits from the develop branches into the corresponding stable branches. The `backport` rake task automates this for all supported versions:
 
 ```bash
-cd foreman-packaging
-
-# RPM: cherry-pick from rpm/develop into a branch off the stable target
-git checkout rpm/3.18
-git checkout -b cherry-pick/rubygem-foreman_openbolt-rpm-3.18
-git cherry-pick <commit-from-rpm/develop>
-# Push to your fork and open a PR targeting rpm/3.18
-
-# DEB: same approach for the deb side
-git checkout deb/3.18
-git checkout -b cherry-pick/rubygem-foreman-openbolt-deb-3.18
-git cherry-pick <commit-from-deb/develop>
-# Push to your fork and open a PR targeting deb/3.18
+rake backport
 ```
+
+This will:
+1. Determine the supported Foreman version range (from `engine.rb` and the latest Foreman release tag)
+2. Clone `foreman-packaging` with your fork as `origin` (detected via `gh auth`)
+3. Find the latest `smart_proxy_openbolt` and `foreman_openbolt` bump commits on `rpm/develop` and `deb/develop`
+4. For each supported version, create a cherry-pick branch, apply both commits, and push to your fork
+5. If `gh` is available and authenticated, create PRs against `theforeman/foreman-packaging`
+
+The task requires `gh` to be authenticated with a classic token that has the `public_repo` scope, or a fine-grained token with `read:org` access to `theforeman` and push access to your fork.
+
+You can override the GitHub username with `GITHUB_USER=<username> rake backport`.
 
 PRs against stable branches should be labeled "Stable branch".
 
