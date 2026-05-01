@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.2.0) (2026-05-01)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.1.1...1.2.0)
+
+**Implemented enhancements:**
+
+- Add Choria transport support and a few fixes [\#55](https://github.com/overlookinfra/foreman_openbolt/pull/55) ([nmburgan](https://github.com/nmburgan))
+
 ## [1.1.1](https://github.com/overlookinfra/foreman_openbolt/tree/1.1.1) (2026-04-17)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.1.0...1.1.1)
