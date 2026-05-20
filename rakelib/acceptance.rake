@@ -395,6 +395,24 @@ namespace :acceptance do
     task.options = ENV.fetch('TESTOPTS', '--verbose')
     task.verbose = true
   end
+  desc 'Run the acceptance tests'
+  task :run => :verify_acceptance_gems
+
+  desc 'Verify that the acceptance set of gems are installed before running tests'
+  task :verify_acceptance_gems do
+    require 'capybara'
+  rescue LoadError
+    abort <<~MSG.red
+      FATAL: cannot load 'capybara'. Acceptance test gems are not installed.
+
+      The :acceptance group is optional in the Gemfile. Install it with:
+
+          bundle config set --local with acceptance
+          bundle install
+
+      Then re-run this task.
+    MSG
+  end
 
   desc 'Stop acceptance test containers'
   task :down do

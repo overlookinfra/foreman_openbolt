@@ -1,5 +1,18 @@
 # frozen_string_literal: true
 
+# Suppress a noisy deprecation warning emitted by Capybara 3.40.0 on Ruby 3.4+:
+#   URI::RFC3986_PARSER.make_regexp is obsolete. Use URI::RFC2396_PARSER.make_regexp explicitly.
+# Fixed upstream in teamcapybara/capybara#2781 but not yet released. Remove this
+# block once Capybara ships a release with that PR.
+module SuppressCapybaraURIDeprecation
+  TARGET = 'URI::RFC3986_PARSER.make_regexp is obsolete'
+  def warn(message, **)
+    return if message.to_s.include?(TARGET)
+    super
+  end
+end
+Warning.singleton_class.prepend(SuppressCapybaraURIDeprecation)
+
 require 'capybara'
 require 'capybara/dsl'
 require 'selenium-webdriver'
