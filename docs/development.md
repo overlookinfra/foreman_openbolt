@@ -39,7 +39,8 @@ Acceptance tests exercise the plugin through the browser using Capybara and Sele
 **Prerequisites:**
 
 ```bash
-bundle install --with acceptance
+bundle config set --local with acceptance
+bundle install
 ```
 
 The [smart_proxy_openbolt](https://github.com/overlookinfra/smart_proxy_openbolt) and [foreman-packaging](https://github.com/theforeman/foreman-packaging) repos are cloned automatically when needed.
