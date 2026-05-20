@@ -395,8 +395,10 @@ namespace :acceptance do
     task.options = ENV.fetch('TESTOPTS', '--verbose')
     task.verbose = true
   end
+  desc 'Run the acceptance tests'
   task :run => :verify_acceptance_gems
 
+  desc 'Verify that the acceptance set of gems are installed before running tests'
   task :verify_acceptance_gems do
     require 'capybara'
   rescue LoadError
