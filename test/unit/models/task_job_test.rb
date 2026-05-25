@@ -200,6 +200,22 @@ class TaskJobTest < ForemanOpenbolt::PluginTestCase
       end
       assert_equal({ 'items' => [] }, job.reload.result)
     end
+
+    test 'cleanup_proxy_artifacts schedules Dynflow action when log is saved without result' do
+      # The callback fires on `saved_change_to_result? || saved_change_to_log?`.
+      # Only the result-changed branch was previously tested. A regression
+      # that accidentally dropped the `||` (so the callback only fires on
+      # result changes) would leave proxies accumulating orphaned artifacts
+      # for log-only updates and the existing tests would all still pass.
+      job = FactoryBot.create(:task_job, status: 'success', completed_at: Time.current)
+      ForemanTasks.expects(:async_task).with(
+        ::Actions::ForemanOpenbolt::CleanupProxyArtifacts,
+        job.smart_proxy_id,
+        job.job_id
+      )
+
+      job.update!(log: 'task finished')
+    end
   end
 
   context 'create_from_execution!' do
