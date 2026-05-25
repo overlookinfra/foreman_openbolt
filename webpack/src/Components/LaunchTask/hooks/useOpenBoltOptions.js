@@ -21,7 +21,7 @@ export const useOpenBoltOptions = () => {
 
       try {
         const { data } = await API.get(
-          `${ROUTES.API.FETCH_OPENBOLT_OPTIONS}?proxy_id=${proxyId}`
+          `${ROUTES.API.FETCH_OPENBOLT_OPTIONS}?smart_proxy_id=${proxyId}`
         );
 
         setOpenBoltOptionsMetadata(data || {});

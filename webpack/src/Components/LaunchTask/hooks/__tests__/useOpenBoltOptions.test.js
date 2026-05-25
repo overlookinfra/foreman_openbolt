@@ -42,6 +42,13 @@ describe('useOpenBoltOptions', () => {
       await result.current.fetchOpenBoltOptions(42);
     });
 
+    // Pin the wire-format key: the Foreman controller reads
+    // `params[:smart_proxy_id]`, so a regression here (e.g. reverting to
+    // `proxy_id=`) would silently 400 the options fetch. Parallels the
+    // equivalent assertion in useTasksData.test.js.
+    expect(API.get).toHaveBeenCalledWith(
+      expect.stringContaining('smart_proxy_id=42')
+    );
     expect(result.current.openBoltOptionsMetadata).toEqual(options);
     expect(result.current.openBoltOptions).toEqual({
       transport: 'ssh',
