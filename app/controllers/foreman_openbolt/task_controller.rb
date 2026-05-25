@@ -56,7 +56,7 @@ module ForemanOpenbolt
         parameters: params[:parameters] || {},
         options: params[:options] || {}
       )
-      render json: { job_id: job_id }
+      render json: { job_id: job_id, kind: 'task' }
     rescue ForemanOpenbolt::Common::LaunchError,
            ForemanOpenbolt::Common::MissingEncryptedDefault => e
       log_exception('launch_task', e)

@@ -20,4 +20,26 @@ end
 
 Foreman::Application.routes.draw do
   mount ForemanOpenbolt::Engine, at: '/foreman_openbolt'
+
+  namespace :api, defaults: { format: 'json' } do
+    scope '(:apiv)',
+      module: :v2,
+      defaults: { apiv: 'v2' },
+      apiv: /v1|v2/,
+      constraints: ApiConstraints.new(version: 2, default: true) do
+      scope '/openbolt', as: 'openbolt' do
+        get  'smart_proxies/:smart_proxy_id/tasks',         to: 'openbolt#tasks',          as: 'smart_proxy_tasks'
+        post 'smart_proxies/:smart_proxy_id/tasks/reload',  to: 'openbolt#reload_tasks',   as: 'smart_proxy_reload_tasks'
+        get  'smart_proxies/:smart_proxy_id/tasks/options', to: 'openbolt#task_options',   as: 'smart_proxy_task_options'
+
+        # Launch is kind-specific (future: POST 'launch/plan').
+        post 'launch/task', to: 'openbolt#launch_task', as: 'launch_task'
+
+        # Job queries are kind-agnostic. Reads come from the Foreman DB, populated by PollTaskStatus.
+        get 'jobs',                to: 'openbolt#jobs',       as: 'jobs'
+        get 'jobs/:job_id/status', to: 'openbolt#job_status', as: 'job_status'
+        get 'jobs/:job_id/result', to: 'openbolt#job_result', as: 'job_result'
+      end
+    end
+  end
 end

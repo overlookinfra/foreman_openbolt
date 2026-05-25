@@ -26,6 +26,7 @@ module ForemanOpenbolt
     def task_job_status(task_job)
       {
         job_id: task_job.job_id,
+        kind: 'task',
         status: task_job.status,
         submitted_at: task_job.submitted_at,
         completed_at: task_job.completed_at,
@@ -43,6 +44,7 @@ module ForemanOpenbolt
 
     def task_job_result(task_job)
       {
+        kind: 'task',
         status: task_job.status,
         command: task_job.command,
         value: task_job.result,

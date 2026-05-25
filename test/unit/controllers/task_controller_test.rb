@@ -82,6 +82,7 @@ class TaskControllerTest < ActionController::TestCase
       assert_response :success
       body = JSON.parse(response.body)
       assert_equal 'launched-job-1', body['job_id']
+      assert_equal 'task', body['kind']
     end
 
     test 'schedules polling after creating task' do
@@ -183,6 +184,7 @@ class TaskControllerTest < ActionController::TestCase
       assert_equal job.targets, body['targets']
       assert_equal @proxy.id, body['smart_proxy']['id']
       assert_equal @proxy.name, body['smart_proxy']['name']
+      assert_equal 'task', body['kind']
     end
 
     test 'returns error when job_id is missing' do
@@ -209,6 +211,7 @@ class TaskControllerTest < ActionController::TestCase
       assert_equal job.result, body['value']
       assert_equal job.log, body['log']
       assert_equal job.command, body['command']
+      assert_equal 'task', body['kind']
     end
 
     test 'returns not_found when job does not exist' do
@@ -405,6 +408,7 @@ class TaskControllerTest < ActionController::TestCase
       assert_equal 3, body['total']
       assert_equal 1, body['page']
       assert_equal 2, body['per_page']
+      assert(body['results'].all? { |row| row['kind'] == 'task' })
     end
 
     test 'caps per_page at 100' do

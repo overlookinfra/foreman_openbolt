@@ -68,6 +68,7 @@ A handful of core/default Tasks & Plans are also included in the [OpenBolt rpm/d
 ## Documentation
 
 - [Usage](docs/usage.md): screenshots and walkthrough of the UI
+- [API](docs/api.md): REST API reference, authentication, and example requests
 - [Development](docs/development.md): linting, unit tests, acceptance tests, building packages
 - [Releasing](docs/releasing.md): version locations, release steps, RPM/DEB packaging
 - [Choria Testing](docs/choria-testing.md): setting up Choria on a Foreman install for transport testing
