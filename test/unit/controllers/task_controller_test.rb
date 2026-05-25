@@ -39,11 +39,14 @@ class TaskControllerTest < ActionController::TestCase
       assert_response :not_found
     end
 
-    test 'returns internal_server_error when proxy is unreachable' do
+    test 'returns bad_gateway when proxy is unreachable' do
       stub_request(:get, "#{@proxy.url}/openbolt/tasks").to_timeout
 
+      # ProxyAPI::Openbolt now wraps transport-layer failures as
+      # ProxyException, so render_openbolt_api_call hits the bad_gateway
+      # rescue rather than the generic StandardError fallback.
       get :fetch_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
-      assert_response :internal_server_error
+      assert_response :bad_gateway
     end
   end
 
@@ -75,7 +78,7 @@ class TaskControllerTest < ActionController::TestCase
         smart_proxy_id: @proxy.id,
         task_name: 'mymod::install',
         targets: 'host1.example.com',
-        params: { 'name' => 'nginx' },
+        parameters: { 'name' => 'nginx' },
         options: { 'transport' => 'ssh' },
       }, session: @session
 
@@ -119,13 +122,13 @@ class TaskControllerTest < ActionController::TestCase
     test 'returns error when task_name is missing' do
       post :launch_task, params: { smart_proxy_id: @proxy.id, targets: 'host1' }, session: @session
       assert_response :bad_request
-      assert_match(/task_name/, JSON.parse(response.body)['error']['message'])
+      assert_match(/Task name and targets cannot be empty/, JSON.parse(response.body)['error']['message'])
     end
 
     test 'returns error when targets is missing' do
       post :launch_task, params: { smart_proxy_id: @proxy.id, task_name: 'test::task' }, session: @session
       assert_response :bad_request
-      assert_match(/targets/, JSON.parse(response.body)['error']['message'])
+      assert_match(/Task name and targets cannot be empty/, JSON.parse(response.body)['error']['message'])
     end
 
     test 'returns error when proxy returns error in response' do
@@ -168,6 +171,53 @@ class TaskControllerTest < ActionController::TestCase
       }, session: @session
       assert_response :bad_request
       assert_match(/No job ID returned/, JSON.parse(response.body)['error']['message'])
+    end
+
+    test 'rejects whitespace-only task_name and targets' do
+      post :launch_task, params: {
+        smart_proxy_id: @proxy.id,
+        task_name: '   ',
+        targets: '   ',
+      }, session: @session
+      assert_response :bad_request
+      assert_match(/Task name and targets cannot be empty/,
+        JSON.parse(response.body)['error']['message'])
+    end
+
+    # Parity with the API controller's partial-state coverage. Both controllers
+    # share the {error: {message: ...}} envelope, but the rescue paths are
+    # separate (UI uses an inline rescue chain, API uses rescue_from), so
+    # both need explicit assertions.
+    test 'returns 500 with error shape when TaskJob persistence fails' do
+      ForemanOpenbolt::TaskJob.stubs(:create_from_execution!).raises(
+        ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)
+      )
+
+      post :launch_task, params: {
+        smart_proxy_id: @proxy.id,
+        task_name: 'mymod::install',
+        targets: 'host1.example.com',
+      }, session: @session
+
+      assert_response :internal_server_error
+      body = JSON.parse(response.body)
+      assert_match(/launched-job-1/, body['error']['message'])
+      assert_match(/could not.*record/i, body['error']['message'])
+    end
+
+    test 'returns 500 with error shape when async polling cannot be scheduled' do
+      ForemanTasks.stubs(:async_task).raises(StandardError, 'dynflow down')
+
+      post :launch_task, params: {
+        smart_proxy_id: @proxy.id,
+        task_name: 'mymod::install',
+        targets: 'host1.example.com',
+      }, session: @session
+
+      assert_response :internal_server_error
+      body = JSON.parse(response.body)
+      assert_match(/launched-job-1/, body['error']['message'])
+      assert_match(/background polling could not be scheduled/i, body['error']['message'])
     end
   end
 
@@ -317,6 +367,51 @@ class TaskControllerTest < ActionController::TestCase
       body = JSON.parse(response.body)
       assert_equal '[Use saved encrypted default]', body['password']['default']
     end
+
+    test 'omits default when a non-encrypted setting is set to empty string' do
+      # openbolt_options_with_defaults skips a saved value when
+      # `setting.value.to_s.empty?`, so an empty-string setting must not
+      # produce a `default` key. Without this pinned, a regression that
+      # treats empty strings as valid defaults would push "" to the UI as
+      # the chosen default and override the proxy's real default.
+      Setting['openbolt_user'] = ''
+
+      proxy_options = {
+        'user' => { 'type' => 'string', 'default' => 'bolt' },
+      }
+      stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
+        .to_return(status: 200, body: proxy_options.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      # Proxy default ('bolt') stays untouched. Empty Foreman setting doesn't override.
+      assert_equal 'bolt', body['user']['default']
+    end
+
+    test 'omits encrypted placeholder when an encrypted setting is set to empty string' do
+      # Parallel check for the encrypted branch: an empty saved value must
+      # not produce the ENCRYPTED_PLACEHOLDER, otherwise the UI would show
+      # "[Use saved encrypted default]" for a setting that has no real value.
+      # That is a misleading placeholder.
+      Setting['openbolt_password'] = ''
+
+      proxy_options = {
+        'password' => { 'type' => 'string', 'sensitive' => true },
+      }
+      stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
+        .to_return(status: 200, body: proxy_options.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_not body['password'].key?('default'),
+        "expected 'password' to have no 'default' key when the setting is empty"
+    end
   end
 
   context 'fetch_openbolt_options with Choria settings defaults' do
@@ -425,6 +520,48 @@ class TaskControllerTest < ActionController::TestCase
 
       body = JSON.parse(response.body)
       assert_equal 20, body['per_page']
+    end
+
+    # The next four tests pin behavior that's only otherwise covered through
+    # the API surface. paginated_task_jobs is a shared helper. Without these,
+    # a future change that silently un-floors per_page or drops the 'all'
+    # branch would only break the API suite while the UI tests pass.
+    test 'floors per_page at 1 when zero is requested' do
+      get :fetch_task_history, params: { per_page: 0 }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 1, body['per_page']
+    end
+
+    test 'floors per_page at 1 when a negative value is requested' do
+      get :fetch_task_history, params: { per_page: -5 }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 1, body['per_page']
+    end
+
+    test "per_page='all' returns every job in a single page" do
+      4.times { FactoryBot.create(:task_job, smart_proxy: @proxy) }
+
+      get :fetch_task_history, params: { per_page: 'all' }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 4, body['results'].length
+      assert_equal 4, body['per_page']
+    end
+
+    test "per_page='all' on empty DB does not 500" do
+      # Guards against will_paginate rejecting per_page: 0 when the table
+      # is empty. paginated_task_jobs floors the count at 1.
+      get :fetch_task_history, params: { per_page: 'all' }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal [], body['results']
+      assert_equal 0, body['total']
     end
   end
 

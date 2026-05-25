@@ -105,9 +105,10 @@ module ForemanOpenbolt
       job_id = response['id']
 
       task_job = begin
-        # Treat task metadata as optional. ProxyAPI::Openbolt does not wrap
-        # transport errors, so any RestClient/Errno/SocketError would otherwise
-        # abort a perfectly running proxy job over a missing description.
+        # Treat task metadata as optional. ProxyAPI::Openbolt wraps transport
+        # errors as ProxyException, but a metadata-fetch failure (any cause)
+        # should not abort a perfectly running proxy job over a missing
+        # description. Catch broadly and degrade to an empty description.
         metadata = begin
           fetched = openbolt_api.tasks[task_name]
           if fetched.nil?
