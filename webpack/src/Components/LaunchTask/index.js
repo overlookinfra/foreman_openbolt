@@ -29,6 +29,21 @@ import { useTasksData } from './hooks/useTasksData';
 import { useOpenBoltOptions } from './hooks/useOpenBoltOptions';
 import { useShowMessage, extractErrorMessage } from '../common/helpers';
 
+// Exported so tests can use the launch wire format
+export const buildLaunchPayload = ({
+  proxyId,
+  taskName,
+  targets,
+  parameters,
+  options,
+}) => ({
+  smart_proxy_id: proxyId,
+  task_name: taskName,
+  targets: targets.join(','),
+  parameters,
+  options,
+});
+
 const LaunchTask = () => {
   const history = useHistory();
   const showMessage = useShowMessage();
@@ -165,13 +180,13 @@ const LaunchTask = () => {
           }
         );
 
-        const body = {
-          smart_proxy_id: selectedProxy,
-          task_name: selectedTask,
-          targets: targets.join(','),
-          params: taskParameters,
+        const body = buildLaunchPayload({
+          proxyId: selectedProxy,
+          taskName: selectedTask,
+          targets,
+          parameters: taskParameters,
           options: visibleOptions,
-        };
+        });
 
         const { data } = await API.post(ROUTES.API.LAUNCH_TASK, body);
 
