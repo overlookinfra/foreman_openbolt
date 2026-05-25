@@ -166,7 +166,7 @@ const LaunchTask = () => {
         );
 
         const body = {
-          proxy_id: selectedProxy,
+          smart_proxy_id: selectedProxy,
           task_name: selectedTask,
           targets: targets.join(','),
           params: taskParameters,

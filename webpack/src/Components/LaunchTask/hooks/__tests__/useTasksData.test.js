@@ -42,7 +42,7 @@ describe('useTasksData', () => {
       expect.stringContaining('fetch_tasks')
     );
     expect(API.get).toHaveBeenCalledWith(
-      expect.stringContaining('proxy_id=42')
+      expect.stringContaining('smart_proxy_id=42')
     );
     expect(result.current.taskMetadata).toEqual(tasks);
     expect(result.current.isLoadingTasks).toBe(false);
