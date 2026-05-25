@@ -42,13 +42,6 @@ module Actions
         log("Polling finished for OpenBolt job #{input[:job_id]}")
       end
 
-      def extract_proxy_error(response)
-        error_value = response&.dig('error')
-        return nil if error_value.nil? || (error_value.respond_to?(:empty?) && error_value.empty?)
-
-        error_value.is_a?(Hash) ? error_value['message'] || error_value.to_s : error_value.to_s
-      end
-
       def poll_and_reschedule
         job_id = input[:job_id]
         task_job = ::ForemanOpenbolt::TaskJob.find_by(job_id: job_id)
@@ -77,16 +70,10 @@ module Actions
         begin
           api = ::ProxyAPI::Openbolt.new(url: proxy.url)
 
-          # Fetch current status
+          # Fetch current status. ProxyAPI::Openbolt raises ProxyReportedError
+          # for a 200 + {"error": ...} result, which is handled in the resuce. Transport
+          # failures raise plain ProxyException and fall through to the retry loop.
           status_result = api.job_status(job_id: job_id)
-
-          proxy_error = extract_proxy_error(status_result)
-          if proxy_error
-            log("Proxy returned error for job #{job_id}: #{proxy_error}", :error)
-            task_job.update!(status: 'exception')
-            finish
-            return
-          end
 
           unless status_result&.dig('status')
             log("Proxy returned response without status for job #{job_id}: #{status_result.inspect}", :error)
@@ -122,6 +109,23 @@ module Actions
           suspend do |suspended_action|
             world.clock.ping(suspended_action, POLL_INTERVAL.from_now.to_time, :poll)
           end
+        rescue ::ProxyAPI::Openbolt::ProxyReportedError => e
+          # Proxy answered with an error that is final and not retryable. Mark exception and stop.
+          log("Proxy reported permanent error for job #{job_id}: #{e.message}", :error)
+          # Capture the persisted status before update! mutates the in-memory
+          # record so the rescue log reflects what's actually on disk.
+          previous_status = task_job.status
+          begin
+            task_job.update!(status: 'exception')
+          rescue StandardError => update_error
+            log(
+              "Could not mark TaskJob #{job_id} as exception after proxy-reported " \
+              "error: #{update_error.class}: #{update_error.message}. Row remains " \
+              "in '#{previous_status}' state and will not be re-polled.", :error
+            )
+            log(update_error.backtrace.join("\n"), :error) if update_error.backtrace
+          end
+          finish
         rescue StandardError => e
           exception("Error polling task status for job #{job_id}", e)
 
