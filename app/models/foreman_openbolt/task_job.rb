@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
+
 module ForemanOpenbolt
   class TaskJob < ApplicationRecord
     self.table_name = 'openbolt_task_jobs'
@@ -97,7 +99,7 @@ module ForemanOpenbolt
     def cleanup_proxy_artifacts
       return unless completed?
 
-      ForemanTasks.async_task(::Actions::ForemanOpenbolt::CleanupProxyArtifacts,
+      ForemanTasks.async_task(Actions::ForemanOpenbolt::CleanupProxyArtifacts,
         smart_proxy_id,
         job_id)
       Rails.logger.debug { "Scheduled cleanup for job #{job_id} on proxy #{smart_proxy_id}" }

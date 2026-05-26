@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module ForemanOpenbolt
-  class Engine < ::Rails::Engine
+  class Engine < Rails::Engine
     isolate_namespace ForemanOpenbolt
     engine_name 'foreman_openbolt'
 

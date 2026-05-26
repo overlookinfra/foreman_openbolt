@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
+require 'proxy_api/openbolt'
+
 module Actions
   module ForemanOpenbolt
     class CleanupProxyArtifacts < Actions::EntryAction
@@ -8,13 +11,13 @@ module Actions
       end
 
       def run
-        proxy = ::SmartProxy.find_by(id: input[:proxy_id])
+        proxy = SmartProxy.find_by(id: input[:proxy_id])
         unless proxy
           Rails.logger.warn("Proxy #{input[:proxy_id]} not found during cleanup for job #{input[:job_id]}, skipping")
           return
         end
 
-        api = ::ProxyAPI::Openbolt.new(url: proxy.url)
+        api = ProxyAPI::Openbolt.new(url: proxy.url)
         response = api.delete_job_artifacts(job_id: input[:job_id])
         Rails.logger.debug { "Cleaned up artifacts for job #{input[:job_id]} on proxy #{proxy.name}: #{response}" }
       rescue StandardError => e

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'proxy_api/openbolt'
+
 # This is a Dynflow action that polls the status of an OpenBolt task job
 # from the Smart Proxy. It periodically checks the job status until it is
 # completed, then fetches the final results.
@@ -68,7 +70,7 @@ module Actions
         end
 
         begin
-          api = ::ProxyAPI::Openbolt.new(url: proxy.url)
+          api = ProxyAPI::Openbolt.new(url: proxy.url)
 
           # Fetch current status. ProxyAPI::Openbolt raises ProxyReportedError
           # for a 200 + {"error": ...} envelope, which is handled below as
@@ -112,7 +114,7 @@ module Actions
           suspend do |suspended_action|
             world.clock.ping(suspended_action, POLL_INTERVAL.from_now.to_time, :poll)
           end
-        rescue ::ProxyAPI::Openbolt::ProxyReportedError => e
+        rescue ProxyAPI::Openbolt::ProxyReportedError => e
           # Proxy answered with a domain-level error envelope. Permanent: retrying
           # will get the same answer. Mark exception and stop.
           log("Proxy reported permanent error for job #{job_id}: #{e.message}", :error)

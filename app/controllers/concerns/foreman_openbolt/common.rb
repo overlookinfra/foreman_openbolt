@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
+require 'proxy_api/openbolt'
+
 module ForemanOpenbolt
   module Common
     ENCRYPTED_PLACEHOLDER = '[Use saved encrypted default]'
