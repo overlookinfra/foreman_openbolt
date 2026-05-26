@@ -42,9 +42,9 @@ class TaskControllerTest < ActionController::TestCase
     test 'returns bad_gateway when proxy is unreachable' do
       stub_request(:get, "#{@proxy.url}/openbolt/tasks").to_timeout
 
-      # ProxyAPI::Openbolt now wraps transport-layer failures as
-      # ProxyException, so render_openbolt_api_call hits the bad_gateway
-      # rescue rather than the generic StandardError fallback.
+      # ProxyAPI::Openbolt wraps transport-layer failures as ProxyException,
+      # so the controller's rescue_from ProxyException handler renders 502
+      # instead of letting the error propagate to Foreman's default handler.
       get :fetch_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :bad_gateway
     end
@@ -185,9 +185,8 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     # Parity with the API controller's partial-state coverage. Both controllers
-    # share the {error: {message: ...}} envelope, but the rescue paths are
-    # separate (UI uses an inline rescue chain, API uses rescue_from), so
-    # both need explicit assertions.
+    # use rescue_from PartialLaunchError to render the shared error envelope,
+    # but each declares its own handler, so both need explicit assertions.
     test 'returns 500 with error shape when TaskJob persistence fails' do
       ForemanOpenbolt::TaskJob.stubs(:create_from_execution!).raises(
         ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)

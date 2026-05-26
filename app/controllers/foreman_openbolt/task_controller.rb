@@ -16,6 +16,31 @@ module ForemanOpenbolt
     ]
     before_action :load_task_job, only: [:job_status, :job_result]
 
+    rescue_from StandardError do |error|
+      Foreman::Logging.exception('OpenBolt UI unexpected error', error)
+      render_json_error("Internal server error: #{error.message}", :internal_server_error)
+    end
+
+    rescue_from ForemanOpenbolt::Common::LaunchError do |error|
+      logger.warn("OpenBolt UI launch failed: #{error.class}: #{error.message}")
+      render_json_error(error.message, :bad_request)
+    end
+
+    rescue_from ForemanOpenbolt::Common::PartialLaunchError do |error|
+      Foreman::Logging.exception("OpenBolt UI partial launch failure: #{error.message}", error)
+      render_json_error(error.message, :internal_server_error)
+    end
+
+    rescue_from ProxyAPI::ProxyException do |error|
+      Foreman::Logging.exception('OpenBolt UI proxy call failed', error)
+      render_json_error("Smart Proxy error: #{error.message}", :bad_gateway)
+    end
+
+    rescue_from ForemanOpenbolt::Common::MissingEncryptedDefault do |error|
+      logger.warn("OpenBolt UI missing encrypted default failure: #{error.message}")
+      render_json_error(error.message, :bad_request)
+    end
+
     # React-rendered pages
     def page_launch_task
       render 'foreman_openbolt/react_page'
@@ -30,21 +55,15 @@ module ForemanOpenbolt
     end
 
     def fetch_tasks
-      render_openbolt_api_call(:tasks)
+      render json: @openbolt_api.tasks
     end
 
     def reload_tasks
-      render_openbolt_api_call(:reload_tasks)
+      render json: @openbolt_api.reload_tasks
     end
 
     def fetch_openbolt_options
       render json: openbolt_options_with_defaults
-    rescue ProxyAPI::ProxyException => e
-      log_exception('fetch_openbolt_options', e)
-      render_json_error("Smart Proxy error: #{e.message}", :bad_gateway)
-    rescue StandardError => e
-      log_exception('fetch_openbolt_options', e)
-      render_json_error("Internal server error: #{e.message}", :internal_server_error)
     end
 
     def launch_task
@@ -56,20 +75,7 @@ module ForemanOpenbolt
         parameters: params[:parameters] || {},
         options: params[:options] || {}
       )
-      render json: { job_id: job_id, kind: 'task' }
-    rescue ForemanOpenbolt::Common::LaunchError,
-           ForemanOpenbolt::Common::MissingEncryptedDefault => e
-      log_exception('launch_task', e)
-      render_json_error(e.message, :bad_request)
-    rescue ForemanOpenbolt::Common::PartialLaunchError => e
-      log_exception('launch_task', e)
-      render_json_error(e.message, :internal_server_error)
-    rescue ProxyAPI::ProxyException => e
-      log_exception('launch_task', e)
-      render_json_error("Smart Proxy error: #{e.message}", :bad_gateway)
-    rescue StandardError => e
-      log_exception('launch_task', e)
-      render_json_error("Error launching task: #{e.message}", :internal_server_error)
+      render json: { job_id: job_id, kind: 'task' }, status: :created
     end
 
     def job_status
@@ -84,26 +90,11 @@ module ForemanOpenbolt
       paginated = paginated_task_jobs(per_page_param: params[:per_page], page: params[:page])
 
       render json: {
-        results: paginated.map { |job| task_job_status(job) },
         total: paginated.total_entries,
         page: paginated.current_page,
         per_page: paginated.per_page,
+        results: paginated.map { |job| task_job_status(job) },
       }
-    rescue StandardError => e
-      log_exception('fetch_task_history', e)
-      render_json_error("Error loading task history: #{e.message}", :internal_server_error)
-    end
-
-    def render_openbolt_api_call(method_name, **args)
-      result = @openbolt_api.send(method_name, **args)
-      logger.debug("OpenBolt API call #{method_name} successful for proxy #{@smart_proxy.name}")
-      render json: result
-    rescue ProxyAPI::ProxyException => e
-      log_exception(method_name, e)
-      render_json_error("Smart Proxy error: #{e.message}", :bad_gateway)
-    rescue StandardError => e
-      log_exception(method_name, e)
-      render_json_error("Internal server error: #{e.message}", :internal_server_error)
     end
   end
 end
