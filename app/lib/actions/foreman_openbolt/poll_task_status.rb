@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'proxy_api/openbolt'
+
 # This is a Dynflow action that polls the status of an OpenBolt task job
 # from the Smart Proxy. It periodically checks the job status until it is
 # completed, then fetches the final results.

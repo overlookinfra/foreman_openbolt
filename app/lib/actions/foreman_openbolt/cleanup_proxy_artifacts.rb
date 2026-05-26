@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
+require 'proxy_api/openbolt'
+
 module Actions
   module ForemanOpenbolt
     class CleanupProxyArtifacts < Actions::EntryAction

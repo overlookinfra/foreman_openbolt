@@ -1,13 +1,14 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
 require 'proxy_api/openbolt'
 
 module Api
   module V2
-    class OpenboltController < ::Api::V2::BaseController
-      include ::Api::Version2
-      include ::ForemanOpenbolt::Common
-      include ::ForemanOpenbolt::Tasks
+    class OpenboltController < Api::V2::BaseController
+      include Api::Version2
+      include ForemanOpenbolt::Common
+      include ForemanOpenbolt::Tasks
 
       resource_description do
         resource_id 'openbolt'
@@ -16,29 +17,29 @@ module Api
       end
 
       def resource_class
-        ::ForemanOpenbolt::TaskJob
+        ForemanOpenbolt::TaskJob
       end
 
       before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
       before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
       before_action :load_task_job, only: [:job_status, :job_result]
 
-      rescue_from ::ForemanOpenbolt::Common::LaunchError do |error|
+      rescue_from ForemanOpenbolt::Common::LaunchError do |error|
         logger.warn("OpenBolt API launch failed: #{error.class}: #{error.message}")
         render_json_error(error.message, :bad_request)
       end
 
-      rescue_from ::ForemanOpenbolt::Common::PartialLaunchError do |error|
-        ::Foreman::Logging.exception("OpenBolt API partial launch failure: #{error.message}", error)
+      rescue_from ForemanOpenbolt::Common::PartialLaunchError do |error|
+        Foreman::Logging.exception("OpenBolt API partial launch failure: #{error.message}", error)
         render_json_error(error.message, :internal_server_error)
       end
 
-      rescue_from ::ProxyAPI::ProxyException do |error|
-        ::Foreman::Logging.exception('OpenBolt API proxy call failed', error)
+      rescue_from ProxyAPI::ProxyException do |error|
+        Foreman::Logging.exception('OpenBolt API proxy call failed', error)
         render_json_error("Smart Proxy error: #{error.message}", :bad_gateway)
       end
 
-      rescue_from ::ForemanOpenbolt::Common::MissingEncryptedDefault do |error|
+      rescue_from ForemanOpenbolt::Common::MissingEncryptedDefault do |error|
         logger.warn("OpenBolt API missing encrypted default failure: #{error.message}")
         render_json_error(error.message, :bad_request)
       end
@@ -85,7 +86,7 @@ module Api
       end
 
       api :GET, '/jobs', N_('List OpenBolt jobs recorded in Foreman')
-      param_group :pagination, ::Api::V2::BaseController
+      param_group :pagination, Api::V2::BaseController
       def jobs
         paginated = paginated_task_jobs(per_page_param: params[:per_page], page: params[:page])
 

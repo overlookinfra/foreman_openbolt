@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
+
 module ForemanOpenbolt
   class TaskJob < ApplicationRecord
     self.table_name = 'openbolt_task_jobs'

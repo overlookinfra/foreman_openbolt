@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
 require 'foreman_openbolt/engine'
 require 'proxy_api/openbolt'
 
 module ForemanOpenbolt
-  class TaskController < ::ApplicationController
+  class TaskController < ApplicationController
     include ForemanOpenbolt::Common
     include ForemanOpenbolt::Tasks
 

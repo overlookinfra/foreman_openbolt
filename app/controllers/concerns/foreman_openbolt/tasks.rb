@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'foreman/logging'
+
 module ForemanOpenbolt
   module Tasks
     def find_task_job(job_id)
@@ -55,13 +57,13 @@ module ForemanOpenbolt
     def paginated_task_jobs(per_page_param:, page:)
       per_page = if per_page_param == 'all'
                    # will_paginate won't do per_page: 0
-                   [::ForemanOpenbolt::TaskJob.count, 1].max
+                   [ForemanOpenbolt::TaskJob.count, 1].max
                  elsif per_page_param.present?
                    per_page_param.to_i.clamp(1, 100)
                  else
                    20
                  end
-      ::ForemanOpenbolt::TaskJob.includes(:smart_proxy).recent.paginate(page: page, per_page: per_page)
+      ForemanOpenbolt::TaskJob.includes(:smart_proxy).recent.paginate(page: page, per_page: per_page)
     end
 
     # Submits a task to the smart proxy, saves the TaskJob, and schedules polling.
