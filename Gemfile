@@ -14,6 +14,7 @@ gem 'rubocop-rake', '~> 0.7'
 
 group :acceptance, optional: true do
   gem 'capybara', '~> 3.0'
+  gem 'faraday', '~> 2.0'
   gem 'selenium-webdriver', '~> 4.0'
   gem 'test-unit', '~> 3.0'
 end
