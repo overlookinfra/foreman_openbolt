@@ -80,7 +80,7 @@ module ForemanOpenbolt
       return unless @smart_proxy
       @openbolt_api = ProxyAPI::Openbolt.new(url: @smart_proxy.url)
     rescue StandardError => e
-      log_exception("load_openbolt_api for proxy #{@smart_proxy.name}", e)
+      Foreman::Logging.exception("load_openbolt_api for proxy #{@smart_proxy.name}", e)
       render_json_error('Failed to connect to Smart Proxy', :bad_gateway)
     end
 
@@ -89,11 +89,6 @@ module ForemanOpenbolt
     # produced them.
     def render_json_error(message, status)
       render json: { error: { message: message } }, status: status
-    end
-
-    def log_exception(message, exception)
-      logger.error("#{message}: #{exception.class}: #{exception.message}")
-      logger.error(exception.backtrace.join("\n")) if exception.backtrace
     end
   end
 end

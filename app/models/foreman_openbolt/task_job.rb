@@ -102,8 +102,7 @@ module ForemanOpenbolt
         job_id)
       Rails.logger.debug { "Scheduled cleanup for job #{job_id} on proxy #{smart_proxy_id}" }
     rescue StandardError => e
-      Rails.logger.error("Failed to schedule cleanup for job #{job_id}: #{e.class}: #{e.message}")
-      Rails.logger.error(e.backtrace.join("\n")) if e.backtrace
+      Foreman::Logging.exception("Failed to schedule cleanup for job #{job_id}", e)
     end
   end
 end

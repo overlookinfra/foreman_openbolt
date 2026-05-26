@@ -138,13 +138,14 @@ module ForemanOpenbolt
           job_id: job_id
         )
       rescue StandardError => e
-        logger.error(
+        # Log the original error and backtrace via Foreman::Logging. The
+        # PartialLaunchError raised below points to its own raise site, not
+        # the underlying cause.
+        Foreman::Logging.exception(
           "OpenBolt job #{job_id} launched on proxy #{smart_proxy.name} " \
-          "but the Foreman TaskJob row could not be created: #{e.class}: #{e.message}"
+          "but the Foreman TaskJob row could not be created",
+          e
         )
-        # Log the original backtrace. The PartialLaunchError raised below points
-        # to its own raise site, not the underlying cause.
-        logger.error(e.backtrace.join("\n")) if e.backtrace
         raise ForemanOpenbolt::Common::PartialLaunchError,
           "Task launched on the proxy (job #{job_id}) but Foreman could not " \
           "record it. The task will run on the proxy unmonitored. Error: #{e.message}"
@@ -155,11 +156,11 @@ module ForemanOpenbolt
           job_id,
           smart_proxy.id)
       rescue StandardError => e
-        logger.error(
+        Foreman::Logging.exception(
           "OpenBolt job #{job_id} launched on proxy #{smart_proxy.name} " \
-          "but PollTaskStatus could not be scheduled: #{e.class}: #{e.message}"
+          "but PollTaskStatus could not be scheduled",
+          e
         )
-        logger.error(e.backtrace.join("\n")) if e.backtrace
         # Capture the on-disk status before update! so the log message reflects
         # what's persisted, not the in-memory assignment that just failed.
         previous_status = task_job.status
@@ -167,12 +168,11 @@ module ForemanOpenbolt
           task_job.update!(status: 'exception')
         rescue StandardError => persist_error
           # Inner rescue keeps a descriptive name so the outer `e` isn't shadowed.
-          logger.error(
+          Foreman::Logging.exception(
             "Could not mark TaskJob #{job_id} as exception after polling-" \
-            "schedule failure: #{persist_error.class}: #{persist_error.message}. " \
-            "Row will remain in '#{previous_status}' state."
+            "schedule failure. Row will remain in '#{previous_status}' state.",
+            persist_error
           )
-          logger.error(persist_error.backtrace.join("\n")) if persist_error.backtrace
         end
         raise ForemanOpenbolt::Common::PartialLaunchError,
           "Task launched on the proxy (job #{job_id}) but background polling " \

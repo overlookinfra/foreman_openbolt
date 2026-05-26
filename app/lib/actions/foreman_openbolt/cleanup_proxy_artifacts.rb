@@ -19,8 +19,7 @@ module Actions
         Rails.logger.debug { "Cleaned up artifacts for job #{input[:job_id]} on proxy #{proxy.name}: #{response}" }
       rescue StandardError => e
         # Don't fail the action if cleanup fails - it's not critical
-        Rails.logger.error("Failed to cleanup artifacts for job #{input[:job_id]}: #{e.class}: #{e.message}")
-        Rails.logger.error(e.backtrace.join("\n")) if e.backtrace
+        Foreman::Logging.exception("Failed to cleanup artifacts for job #{input[:job_id]}", e)
       end
 
       def rescue_strategy
