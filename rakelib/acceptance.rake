@@ -400,18 +400,20 @@ namespace :acceptance do
 
   desc 'Verify that the acceptance set of gems are installed before running tests'
   task :verify_acceptance_gems do
-    require 'capybara'
-  rescue LoadError
-    abort <<~MSG.red
-      FATAL: cannot load 'capybara'. Acceptance test gems are not installed.
+    %w[capybara faraday].each do |gem_name|
+      require gem_name
+    rescue LoadError
+      abort <<~MSG.red
+        FATAL: cannot load '#{gem_name}'. Acceptance test gems are not installed.
 
-      The :acceptance group is optional in the Gemfile. Install it with:
+        The :acceptance group is optional in the Gemfile. Install it with:
 
-          bundle config set --local with acceptance
-          bundle install
+            bundle config set --local with acceptance
+            bundle install
 
-      Then re-run this task.
-    MSG
+        Then re-run this task.
+      MSG
+    end
   end
 
   desc 'Stop acceptance test containers'
