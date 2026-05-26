@@ -42,9 +42,9 @@ class TaskControllerTest < ActionController::TestCase
     test 'returns bad_gateway when proxy is unreachable' do
       stub_request(:get, "#{@proxy.url}/openbolt/tasks").to_timeout
 
-      # ProxyAPI::Openbolt now wraps transport-layer failures as
-      # ProxyException, so render_openbolt_api_call hits the bad_gateway
-      # rescue rather than the generic StandardError fallback.
+      # ProxyAPI::Openbolt wraps transport-layer failures as ProxyException,
+      # so the controller's rescue_from ProxyException handler renders 502
+      # instead of letting the error propagate to Foreman's default handler.
       get :fetch_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :bad_gateway
     end
