@@ -6,16 +6,20 @@ require 'proxy_api/openbolt'
 
 module ForemanOpenbolt
   class TaskController < ApplicationController
+    # Rails checks rescue_from handlers in reverse registration order (last
+    # registered is checked first). The StandardError catch-all must be
+    # registered BEFORE the include so that the specific handlers registered
+    # by Common's included block are checked first.
+    rescue_from StandardError do |error|
+      Foreman::Logging.exception('OpenBolt UI unexpected error', error)
+      render_json_error("Internal server error: #{error.message}", :internal_server_error)
+    end
+
     include ForemanOpenbolt::Tasks
 
     before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
     before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
     before_action :load_task_job, only: [:job_status, :job_result]
-
-    rescue_from StandardError do |error|
-      Foreman::Logging.exception('OpenBolt UI unexpected error', error)
-      render_json_error("Internal server error: #{error.message}", :internal_server_error)
-    end
 
     # React-rendered pages
     def page_launch_task
