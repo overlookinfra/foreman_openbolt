@@ -138,9 +138,9 @@ const TaskHistory = () => {
             <Tr key={job.job_id}>
               <Td hasRightBorder>
                 <TaskPopover
-                  taskName={job.task_name}
-                  taskDescription={job.task_description}
-                  taskParameters={job.task_parameters}
+                  taskName={job.name}
+                  taskDescription={job.description}
+                  taskParameters={job.parameters}
                 />
               </Td>
               <Td hasRightBorder>{getStatusLabel(job.status)}</Td>

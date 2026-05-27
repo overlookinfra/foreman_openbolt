@@ -30,14 +30,14 @@ module ForemanOpenbolt
     def task_job_status(task_job)
       {
         job_id: task_job.job_id,
-        kind: 'task',
+        kind: task_job.kind,
         status: task_job.status,
         submitted_at: task_job.submitted_at,
         completed_at: task_job.completed_at,
         duration: task_job.duration,
-        task_name: task_job.task_name,
-        task_description: task_job.task_description,
-        task_parameters: task_job.task_parameters,
+        name: task_job.task_name,
+        description: task_job.task_description,
+        parameters: task_job.task_parameters,
         targets: task_job.targets,
         smart_proxy: {
           id: task_job.smart_proxy_id,
@@ -48,7 +48,7 @@ module ForemanOpenbolt
 
     def task_job_result(task_job)
       {
-        kind: 'task',
+        kind: task_job.kind,
         status: task_job.status,
         command: task_job.command,
         value: task_job.result,

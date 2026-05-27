@@ -47,7 +47,7 @@ class ApiJobsTest < ApiAcceptanceTestCase
     assert_equal 200, resp.status, resp.body.inspect
     assert_equal 'task', resp.body['kind']
     assert_includes %w[success failure exception invalid], resp.body['status']
-    assert_equal 'acceptance::noop_task', resp.body['task_name']
+    assert_equal 'acceptance::noop_task', resp.body['name']
     assert resp.body['smart_proxy'].is_a?(Hash)
     assert_equal smart_proxy_id, resp.body.dig('smart_proxy', 'id')
   end

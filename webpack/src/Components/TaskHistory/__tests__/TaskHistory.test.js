@@ -18,9 +18,9 @@ afterEach(() => {
 const sampleJobs = [
   {
     job_id: 'job-1',
-    task_name: 'mymod::install',
-    task_description: 'Install a package',
-    task_parameters: { name: 'nginx' },
+    name: 'mymod::install',
+    description: 'Install a package',
+    parameters: { name: 'nginx' },
     status: 'success',
     targets: ['host1.example.com'],
     submitted_at: '2026-01-15T10:00:00Z',
@@ -29,9 +29,9 @@ const sampleJobs = [
   },
   {
     job_id: 'job-2',
-    task_name: 'mymod::mytask',
-    task_description: 'Restart a service',
-    task_parameters: {},
+    name: 'mymod::mytask',
+    description: 'Restart a service',
+    parameters: {},
     status: 'running',
     targets: ['host2.example.com'],
     submitted_at: '2026-01-15T11:00:00Z',

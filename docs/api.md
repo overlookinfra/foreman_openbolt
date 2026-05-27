@@ -111,7 +111,7 @@ that has no saved Foreman default returns 400.
 OpenBolt scrubs values you pass under `options` if they correspond to a
 Foreman setting marked `encrypted` (today: `password`, `sudo-password`).
 Values you pass under `parameters` are **not** scrubbed and are stored
-verbatim in the recorded job. They show up in `task_parameters` on the
+verbatim in the recorded job. They show up in the `parameters` field on the
 `/jobs` and `/jobs/:job_id/status` responses, and embedded in the proxy-
 rendered `command` string on `/jobs/:job_id/result`. Any user with
 `:execute_openbolt` can read them.

@@ -229,7 +229,7 @@ class TaskControllerTest < ActionController::TestCase
 
       body = JSON.parse(response.body)
       assert_equal 'running', body['status']
-      assert_equal job.task_name, body['task_name']
+      assert_equal job.task_name, body['name']
       assert_equal job.targets, body['targets']
       assert_equal @proxy.id, body['smart_proxy']['id']
       assert_equal @proxy.name, body['smart_proxy']['name']
