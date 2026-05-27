@@ -56,7 +56,7 @@ class TaskControllerTest < ActionController::TestCase
       stub_request(:get, "#{@proxy.url}/openbolt/tasks/reload")
         .to_return(status: 200, body: tasks.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :reload_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
+      post :reload_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
       assert_equal tasks, JSON.parse(response.body)
     end

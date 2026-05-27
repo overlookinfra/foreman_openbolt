@@ -8,7 +8,7 @@ ForemanOpenbolt::Engine.routes.draw do
 
   # API endpoints
   get 'fetch_tasks', to: 'task#tasks'
-  get 'reload_tasks', to: 'task#reload_tasks'
+  post 'reload_tasks', to: 'task#reload_tasks'
   get 'fetch_openbolt_options', to: 'task#task_options'
   post 'launch_task', to: 'task#launch_task'
   get 'job_status', to: 'task#job_status'
