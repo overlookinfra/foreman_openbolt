@@ -6,7 +6,6 @@ require 'proxy_api/openbolt'
 
 module ForemanOpenbolt
   class TaskController < ApplicationController
-    include ForemanOpenbolt::Common
     include ForemanOpenbolt::Tasks
 
     before_action :load_smart_proxy, only: [

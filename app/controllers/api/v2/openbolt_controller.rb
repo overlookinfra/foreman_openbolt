@@ -7,7 +7,6 @@ module Api
   module V2
     class OpenboltController < Api::V2::BaseController
       include Api::Version2
-      include ForemanOpenbolt::Common
       include ForemanOpenbolt::Tasks
 
       resource_description do

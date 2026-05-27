@@ -5,6 +5,8 @@ require 'proxy_api/openbolt'
 
 module ForemanOpenbolt
   module Common
+    extend ActiveSupport::Concern
+
     ENCRYPTED_PLACEHOLDER = '[Use saved encrypted default]'
     REDACTED_PLACEHOLDER = '*****'
 
