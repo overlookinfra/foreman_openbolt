@@ -46,6 +46,10 @@ module ForemanOpenbolt
       )
     end
 
+    def kind
+      'task'
+    end
+
     def completed?
       status.in?(COMPLETED_STATUSES)
     end

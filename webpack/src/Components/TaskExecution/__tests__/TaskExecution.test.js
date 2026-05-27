@@ -53,7 +53,7 @@ describe('TaskExecution', () => {
   test('strips ANSI codes from log output when result is available', async () => {
     const statusData = {
       status: 'success',
-      task_name: 'test::task',
+      name: 'test::task',
       targets: ['host1'],
       submitted_at: '2026-01-01T00:00:00Z',
       completed_at: '2026-01-01T00:01:00Z',

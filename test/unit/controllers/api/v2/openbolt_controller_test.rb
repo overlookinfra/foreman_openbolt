@@ -438,12 +438,10 @@ module Api
           assert_equal 2, body['per_page']
           assert(body['results'].all? { |row| row['kind'] == 'task' })
 
-          # Pin the fields task_job_status produces. The helper is
-          # shared between this jobs endpoint and the UI's task-history view.
-          # Without per-field assertions a future refactor could drop a field
-          # (e.g. job_id, smart_proxy.id) and only the React UI would notice.
+          # Pin the fields task_job_status produces so a future refactor
+          # can't silently drop one (e.g. job_id, smart_proxy.id).
           row = body['results'].first
-          %w[job_id task_name task_description task_parameters targets status
+          %w[job_id name description parameters targets status
              submitted_at completed_at duration].each do |field|
             assert row.key?(field), "expected results[0] to contain '#{field}'"
           end
@@ -524,7 +522,7 @@ module Api
           body = JSON.parse(response.body)
           assert_equal 'task', body['kind']
           assert_equal 'running', body['status']
-          assert_equal job.task_name, body['task_name']
+          assert_equal job.task_name, body['name']
           assert_equal job.targets, body['targets']
           assert_equal @proxy.id, body['smart_proxy']['id']
         end
