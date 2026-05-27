@@ -109,6 +109,8 @@ Values you pass under `parameters` are **not** scrubbed and are stored
 verbatim in the recorded job. They show up in `task_parameters` on the
 `/jobs` and `/jobs/:job_id/status` responses, and embedded in the proxy-
 rendered `command` string on `/jobs/:job_id/result`. Any user with
-`:execute_openbolt` can read them.
+`:execute_openbolt` can read them. The smart proxy also logs parameters at
+INFO level, and its recent log lines are visible in Foreman on the Smart
+Proxy page's Logs pane to any user with `:view_smart_proxies`.
 
 Sensitive task parameter scrubbing will land in a later update.

@@ -15,11 +15,11 @@ module ForemanOpenbolt
       render_json_error("Internal server error: #{error.message}", :internal_server_error)
     end
 
+    include ForemanOpenbolt::Jobs
     include ForemanOpenbolt::Tasks
 
     before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
     before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
-    before_action :load_task_job, only: [:job_status, :job_result]
 
     # React-rendered pages
     def page_launch_task
@@ -56,25 +56,6 @@ module ForemanOpenbolt
         options: params[:options] || {}
       )
       render json: { job_id: job_id, kind: 'task' }, status: :created
-    end
-
-    def job_status
-      render json: task_job_status(@task_job)
-    end
-
-    def job_result
-      render json: task_job_result(@task_job)
-    end
-
-    def jobs
-      paginated = paginated_task_jobs(per_page_param: params[:per_page], page: params[:page])
-
-      render json: {
-        total: paginated.total_entries,
-        page: paginated.current_page,
-        per_page: paginated.per_page,
-        results: paginated.map { |job| task_job_status(job) },
-      }
     end
   end
 end
