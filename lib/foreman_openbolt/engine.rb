@@ -241,8 +241,8 @@ module ForemanOpenbolt
               {
                 :'foreman_openbolt/task' => [
                   :page_launch_task, :page_task_execution, :page_task_history,
-                  :fetch_tasks, :reload_tasks, :fetch_openbolt_options,
-                  :launch_task, :job_status, :job_result, :fetch_task_history, :show
+                  :tasks, :reload_tasks, :task_options,
+                  :launch_task, :job_status, :job_result, :jobs, :show
                 ],
                 :'api/v2/openbolt' => [
                   :tasks, :reload_tasks, :task_options, :launch_task,
