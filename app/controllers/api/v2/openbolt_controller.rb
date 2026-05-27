@@ -23,26 +23,6 @@ module Api
       before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
       before_action :load_task_job, only: [:job_status, :job_result]
 
-      rescue_from ForemanOpenbolt::Common::LaunchError do |error|
-        logger.warn("OpenBolt API launch failed: #{error.class}: #{error.message}")
-        render_json_error(error.message, :bad_request)
-      end
-
-      rescue_from ForemanOpenbolt::Common::PartialLaunchError do |error|
-        Foreman::Logging.exception("OpenBolt API partial launch failure: #{error.message}", error)
-        render_json_error(error.message, :internal_server_error)
-      end
-
-      rescue_from ProxyAPI::ProxyException do |error|
-        Foreman::Logging.exception('OpenBolt API proxy call failed', error)
-        render_json_error("Smart Proxy error: #{error.message}", :bad_gateway)
-      end
-
-      rescue_from ForemanOpenbolt::Common::MissingEncryptedDefault do |error|
-        logger.warn("OpenBolt API missing encrypted default failure: #{error.message}")
-        render_json_error(error.message, :bad_request)
-      end
-
       api :GET, '/smart_proxies/:smart_proxy_id/tasks', N_('List bolt tasks available on a smart proxy')
       param :smart_proxy_id, Integer, required: true, desc: N_('ID of the smart proxy to query')
       def tasks

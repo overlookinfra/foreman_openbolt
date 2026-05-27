@@ -21,26 +21,6 @@ module ForemanOpenbolt
       render_json_error("Internal server error: #{error.message}", :internal_server_error)
     end
 
-    rescue_from ForemanOpenbolt::Common::LaunchError do |error|
-      logger.warn("OpenBolt UI launch failed: #{error.class}: #{error.message}")
-      render_json_error(error.message, :bad_request)
-    end
-
-    rescue_from ForemanOpenbolt::Common::PartialLaunchError do |error|
-      Foreman::Logging.exception("OpenBolt UI partial launch failure: #{error.message}", error)
-      render_json_error(error.message, :internal_server_error)
-    end
-
-    rescue_from ProxyAPI::ProxyException do |error|
-      Foreman::Logging.exception('OpenBolt UI proxy call failed', error)
-      render_json_error("Smart Proxy error: #{error.message}", :bad_gateway)
-    end
-
-    rescue_from ForemanOpenbolt::Common::MissingEncryptedDefault do |error|
-      logger.warn("OpenBolt UI missing encrypted default failure: #{error.message}")
-      render_json_error(error.message, :bad_request)
-    end
-
     # React-rendered pages
     def page_launch_task
       render 'foreman_openbolt/react_page'

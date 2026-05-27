@@ -20,6 +20,32 @@ module ForemanOpenbolt
     # cannot record or track it. The task is live, only the tracking failed.
     class PartialLaunchError < StandardError; end
 
+    included do
+      rescue_from ForemanOpenbolt::Common::LaunchError do |error|
+        logger.warn("OpenBolt #{openbolt_surface} launch failed: #{error.class}: #{error.message}")
+        render_json_error(error.message, :bad_request)
+      end
+
+      rescue_from ForemanOpenbolt::Common::PartialLaunchError do |error|
+        Foreman::Logging.exception("OpenBolt #{openbolt_surface} partial launch failure: #{error.message}", error)
+        render_json_error(error.message, :internal_server_error)
+      end
+
+      rescue_from ProxyAPI::ProxyException do |error|
+        Foreman::Logging.exception("OpenBolt #{openbolt_surface} proxy call failed", error)
+        render_json_error("Smart Proxy error: #{error.message}", :bad_gateway)
+      end
+
+      rescue_from ForemanOpenbolt::Common::MissingEncryptedDefault do |error|
+        logger.warn("OpenBolt #{openbolt_surface} missing encrypted default failure: #{error.message}")
+        render_json_error(error.message, :bad_request)
+      end
+    end
+
+    def openbolt_surface
+      self.class.name.start_with?('Api::') ? 'API' : 'UI'
+    end
+
     def openbolt_settings
       @openbolt_settings ||= Foreman.settings.select { |setting| setting.name.start_with?('openbolt_') }
     end
