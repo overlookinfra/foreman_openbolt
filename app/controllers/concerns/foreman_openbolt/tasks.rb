@@ -4,6 +4,9 @@ require 'foreman/logging'
 
 module ForemanOpenbolt
   module Tasks
+    extend ActiveSupport::Concern
+    include ForemanOpenbolt::Common
+
     def find_task_job(job_id)
       return nil if job_id.blank?
       task_job = ForemanOpenbolt::TaskJob.find_by(job_id: job_id)
@@ -67,9 +70,7 @@ module ForemanOpenbolt
     end
 
     # Submits a task to the smart proxy, saves the TaskJob, and schedules polling.
-    # Returns the proxy-issued job id. Requires the host controller
-    # to also include ForemanOpenbolt::Common for merge_encrypted_defaults
-    # and scrub_options_for_storage.
+    # Returns the proxy-issued job id.
     #
     # Partial launch failures (TaskJob row creation or PollTaskStatus scheduling)
     # leave the proxy job running. We do not attempt to delete proxy artifacts

@@ -6,7 +6,15 @@ require 'proxy_api/openbolt'
 
 module ForemanOpenbolt
   class TaskController < ApplicationController
-    include ForemanOpenbolt::Common
+    # Rails checks rescue_from handlers in reverse registration order (last
+    # registered is checked first). The StandardError catch-all must be
+    # registered BEFORE the include so that the specific handlers registered
+    # by Common's included block are checked first.
+    rescue_from StandardError do |error|
+      Foreman::Logging.exception('OpenBolt UI unexpected error', error)
+      render_json_error("Internal server error: #{error.message}", :internal_server_error)
+    end
+
     include ForemanOpenbolt::Tasks
 
     before_action :load_smart_proxy, only: [
@@ -16,31 +24,6 @@ module ForemanOpenbolt
       :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task
     ]
     before_action :load_task_job, only: [:job_status, :job_result]
-
-    rescue_from StandardError do |error|
-      Foreman::Logging.exception('OpenBolt UI unexpected error', error)
-      render_json_error("Internal server error: #{error.message}", :internal_server_error)
-    end
-
-    rescue_from ForemanOpenbolt::Common::LaunchError do |error|
-      logger.warn("OpenBolt UI launch failed: #{error.class}: #{error.message}")
-      render_json_error(error.message, :bad_request)
-    end
-
-    rescue_from ForemanOpenbolt::Common::PartialLaunchError do |error|
-      Foreman::Logging.exception("OpenBolt UI partial launch failure: #{error.message}", error)
-      render_json_error(error.message, :internal_server_error)
-    end
-
-    rescue_from ProxyAPI::ProxyException do |error|
-      Foreman::Logging.exception('OpenBolt UI proxy call failed', error)
-      render_json_error("Smart Proxy error: #{error.message}", :bad_gateway)
-    end
-
-    rescue_from ForemanOpenbolt::Common::MissingEncryptedDefault do |error|
-      logger.warn("OpenBolt UI missing encrypted default failure: #{error.message}")
-      render_json_error(error.message, :bad_request)
-    end
 
     # React-rendered pages
     def page_launch_task

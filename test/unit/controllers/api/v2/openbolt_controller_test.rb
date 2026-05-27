@@ -317,11 +317,10 @@ module Api
             ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)
           )
 
-          # Allow all logger calls, then pin the one whose correctness regressed.
-          @controller.logger.stubs(:error)
-          @controller.logger.expects(:error)
-                     .with(regexp_matches(/Row will remain in 'pending' state/))
-                     .at_least_once
+          Foreman::Logging.stubs(:exception)
+          Foreman::Logging.expects(:exception)
+                          .with(regexp_matches(/Row will remain in 'pending' state/), anything)
+                          .at_least_once
 
           post :launch_task, params: {
             smart_proxy_id: @proxy.id,
