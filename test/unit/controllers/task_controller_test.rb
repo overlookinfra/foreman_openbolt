@@ -16,26 +16,26 @@ class TaskControllerTest < ActionController::TestCase
     WebMock.reset!
   end
 
-  context 'fetch_tasks' do
+  context 'tasks' do
     test 'returns tasks from proxy as JSON' do
       tasks = { 'mymod::install' => { 'description' => 'Install a package' } }
       stub_request(:get, "#{@proxy.url}/openbolt/tasks")
         .to_return(status: 200, body: tasks.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
       assert_equal tasks, JSON.parse(response.body)
     end
 
     test 'returns error when smart_proxy_id is missing' do
-      get :fetch_tasks, session: @session
+      get :tasks, session: @session
       assert_response :bad_request
       body = JSON.parse(response.body)
       assert_match(/Smart Proxy ID is required/, body['error']['message'])
     end
 
     test 'returns error when proxy not found' do
-      get :fetch_tasks, params: { smart_proxy_id: -1 }, session: @session
+      get :tasks, params: { smart_proxy_id: -1 }, session: @session
       assert_response :not_found
     end
 
@@ -45,7 +45,7 @@ class TaskControllerTest < ActionController::TestCase
       # ProxyAPI::Openbolt wraps transport-layer failures as ProxyException,
       # so the controller's rescue_from ProxyException handler renders 502
       # instead of letting the error propagate to Foreman's default handler.
-      get :fetch_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :bad_gateway
     end
   end
@@ -329,7 +329,7 @@ class TaskControllerTest < ActionController::TestCase
     end
   end
 
-  context 'fetch_openbolt_options with settings defaults' do
+  context 'task_options with settings defaults' do
     test 'merges Foreman setting defaults into proxy options' do
       Setting['openbolt_transport'] = 'winrm'
       Setting['openbolt_user'] = 'admin'
@@ -342,7 +342,7 @@ class TaskControllerTest < ActionController::TestCase
       stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
         .to_return(status: 200, body: proxy_options.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -360,7 +360,7 @@ class TaskControllerTest < ActionController::TestCase
       stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
         .to_return(status: 200, body: proxy_options.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -382,7 +382,7 @@ class TaskControllerTest < ActionController::TestCase
         .to_return(status: 200, body: proxy_options.to_json,
           headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -404,7 +404,7 @@ class TaskControllerTest < ActionController::TestCase
         .to_return(status: 200, body: proxy_options.to_json,
           headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -413,7 +413,7 @@ class TaskControllerTest < ActionController::TestCase
     end
   end
 
-  context 'fetch_openbolt_options with Choria settings defaults' do
+  context 'task_options with Choria settings defaults' do
     # Mirrors the real GET /openbolt/tasks/options response for Choria
     # (see smart_proxy_openbolt/lib/smart_proxy_openbolt/main.rb OPENBOLT_OPTIONS).
     def self.choria_proxy_options
@@ -453,7 +453,7 @@ class TaskControllerTest < ActionController::TestCase
         .to_return(status: 200, body: self.class.choria_proxy_options.to_json,
           headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -477,7 +477,7 @@ class TaskControllerTest < ActionController::TestCase
         .to_return(status: 200, body: self.class.choria_proxy_options.to_json,
           headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -490,11 +490,11 @@ class TaskControllerTest < ActionController::TestCase
     end
   end
 
-  context 'fetch_task_history' do
+  context 'jobs' do
     test 'returns paginated task history' do
       3.times { FactoryBot.create(:task_job, smart_proxy: @proxy) }
 
-      get :fetch_task_history, params: { page: 1, per_page: 2 }, session: @session
+      get :jobs, params: { page: 1, per_page: 2 }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -506,7 +506,7 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     test 'caps per_page at 100' do
-      get :fetch_task_history, params: { per_page: 200 }, session: @session
+      get :jobs, params: { per_page: 200 }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -514,7 +514,7 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     test 'defaults per_page to 20' do
-      get :fetch_task_history, session: @session
+      get :jobs, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -526,7 +526,7 @@ class TaskControllerTest < ActionController::TestCase
     # a future change that silently un-floors per_page or drops the 'all'
     # branch would only break the API suite while the UI tests pass.
     test 'floors per_page at 1 when zero is requested' do
-      get :fetch_task_history, params: { per_page: 0 }, session: @session
+      get :jobs, params: { per_page: 0 }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -534,7 +534,7 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     test 'floors per_page at 1 when a negative value is requested' do
-      get :fetch_task_history, params: { per_page: -5 }, session: @session
+      get :jobs, params: { per_page: -5 }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -544,7 +544,7 @@ class TaskControllerTest < ActionController::TestCase
     test "per_page='all' returns every job in a single page" do
       4.times { FactoryBot.create(:task_job, smart_proxy: @proxy) }
 
-      get :fetch_task_history, params: { per_page: 'all' }, session: @session
+      get :jobs, params: { per_page: 'all' }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -555,7 +555,7 @@ class TaskControllerTest < ActionController::TestCase
     test "per_page='all' on empty DB does not 500" do
       # Guards against will_paginate rejecting per_page: 0 when the table
       # is empty. paginated_task_jobs floors the count at 1.
-      get :fetch_task_history, params: { per_page: 'all' }, session: @session
+      get :jobs, params: { per_page: 'all' }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)

@@ -7,15 +7,15 @@ ForemanOpenbolt::Engine.routes.draw do
   get 'page_task_history', to: 'task#page_task_history', as: :page_task_history
 
   # API endpoints
-  get 'fetch_tasks', to: 'task#fetch_tasks'
+  get 'fetch_tasks', to: 'task#tasks'
   get 'reload_tasks', to: 'task#reload_tasks'
-  get 'fetch_openbolt_options', to: 'task#fetch_openbolt_options'
+  get 'fetch_openbolt_options', to: 'task#task_options'
   post 'launch_task', to: 'task#launch_task'
   get 'job_status', to: 'task#job_status'
   get 'job_result', to: 'task#job_result'
 
   # Task job management endpoints
-  get 'fetch_task_history', to: 'task#fetch_task_history'
+  get 'fetch_task_history', to: 'task#jobs'
 end
 
 Foreman::Application.routes.draw do

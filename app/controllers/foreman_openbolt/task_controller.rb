@@ -8,12 +8,8 @@ module ForemanOpenbolt
   class TaskController < ApplicationController
     include ForemanOpenbolt::Tasks
 
-    before_action :load_smart_proxy, only: [
-      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task
-    ]
-    before_action :load_openbolt_api, only: [
-      :fetch_tasks, :reload_tasks, :fetch_openbolt_options, :launch_task
-    ]
+    before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
+    before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
     before_action :load_task_job, only: [:job_status, :job_result]
 
     rescue_from StandardError do |error|
@@ -34,7 +30,7 @@ module ForemanOpenbolt
       render 'foreman_openbolt/react_page'
     end
 
-    def fetch_tasks
+    def tasks
       render json: @openbolt_api.tasks
     end
 
@@ -42,7 +38,7 @@ module ForemanOpenbolt
       render json: @openbolt_api.reload_tasks
     end
 
-    def fetch_openbolt_options
+    def task_options
       render json: openbolt_options_with_defaults
     end
 
@@ -66,7 +62,7 @@ module ForemanOpenbolt
       render json: task_job_result(@task_job)
     end
 
-    def fetch_task_history
+    def jobs
       paginated = paginated_task_jobs(per_page_param: params[:per_page], page: params[:page])
 
       render json: {
