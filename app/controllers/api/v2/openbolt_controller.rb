@@ -7,6 +7,7 @@ module Api
   module V2
     class OpenboltController < Api::V2::BaseController
       include Api::Version2
+      include ForemanOpenbolt::Jobs
       include ForemanOpenbolt::Tasks
 
       resource_description do
@@ -21,7 +22,6 @@ module Api
 
       before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
       before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
-      before_action :load_task_job, only: [:job_status, :job_result]
 
       api :GET, '/smart_proxies/:smart_proxy_id/tasks', N_('List bolt tasks available on a smart proxy')
       param :smart_proxy_id, Integer, required: true, desc: N_('ID of the smart proxy to query')
@@ -67,27 +67,20 @@ module Api
       api :GET, '/jobs', N_('List OpenBolt jobs recorded in Foreman')
       param_group :pagination, Api::V2::BaseController
       def jobs
-        paginated = paginated_task_jobs(per_page_param: params[:per_page], page: params[:page])
-
-        render json: {
-          total: paginated.total_entries,
-          page: paginated.current_page,
-          per_page: paginated.per_page,
-          results: paginated.map { |job| task_job_status(job) },
-        }
+        super
       end
 
       api :GET, '/jobs/:job_id/status', N_('Get the current status of an OpenBolt job')
       param :job_id, :identifier, required: true, desc: N_('Proxy-issued job ID returned by /launch/task')
       def job_status
-        render json: task_job_status(@task_job)
+        super
       end
 
       api :GET, '/jobs/:job_id/result',
         N_('Get the full result (command, value, log) of a completed OpenBolt job')
       param :job_id, :identifier, required: true, desc: N_('Proxy-issued job ID returned by /launch/task')
       def job_result
-        render json: task_job_result(@task_job)
+        super
       end
     end
   end
