@@ -12,12 +12,10 @@ module ForemanOpenbolt
 
     class LaunchError < StandardError; end
 
-    # Raised by merge_encrypted_defaults when the caller submits the encrypted
-    # placeholder for an option that has no saved Foreman setting.
+    # The caller sent the encrypted placeholder for an option with no saved setting.
     class MissingEncryptedDefault < StandardError; end
 
-    # Raised by dispatch_task when the proxy has accepted the task but Foreman
-    # cannot record or track it. The task is live, only the tracking failed.
+    # The proxy accepted the task but Foreman could not record or track it.
     class PartialLaunchError < StandardError; end
 
     included do
@@ -47,7 +45,7 @@ module ForemanOpenbolt
     end
 
     def openbolt_settings
-      @openbolt_settings ||= Foreman.settings.select { |setting| setting.name.start_with?('openbolt_') }
+      @openbolt_settings ||= Foreman.settings.category_settings(:openbolt).values
     end
 
     def merge_encrypted_defaults(options)
@@ -115,9 +113,7 @@ module ForemanOpenbolt
       render_json_error('Failed to connect to Smart Proxy', :bad_gateway)
     end
 
-    # This shape matches Foreman's custom_error template, so UI
-    # and API responses share one form regardless of which controller
-    # produced them.
+    # Matches Foreman's custom_error template so UI and API errors share one shape.
     def render_json_error(message, status)
       render json: { error: { message: message } }, status: status
     end
