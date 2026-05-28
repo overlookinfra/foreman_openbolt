@@ -73,7 +73,7 @@ module Actions
 
         # If the smart proxy has been deleted somehow or is unknown,
         # we can't poll for status, so finish.
-        proxy = ::SmartProxy.find_by(id: input[:proxy_id])
+        proxy = SmartProxy.find_by(id: input[:proxy_id])
         unless proxy
           log("Smart Proxy with ID #{input[:proxy_id]} not found for OpenBolt job #{job_id}", :error)
           mark_exception!(task_job, 'proxy not found')
@@ -160,7 +160,7 @@ module Actions
       end
 
       def humanized_input
-        proxy_name = ::SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
+        proxy_name = SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
         task_name = ::ForemanOpenbolt::TaskJob.find_by(job_id: input[:job_id])&.task_name
         parts = ["job #{input[:job_id]} on #{proxy_name}"]
         parts << "task: #{task_name}" if task_name
