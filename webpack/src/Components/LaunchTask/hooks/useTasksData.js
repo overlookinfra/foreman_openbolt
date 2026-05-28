@@ -21,10 +21,16 @@ export const useTasksData = () => {
       setTaskParameters({});
 
       try {
-        const endpoint = forceReload
-          ? ROUTES.API.RELOAD_TASKS
-          : ROUTES.API.FETCH_TASKS;
-        const { data } = await API.get(`${endpoint}?smart_proxy_id=${proxyId}`);
+        let data;
+        if (forceReload) {
+          ({ data } = await API.post(
+            `${ROUTES.API.RELOAD_TASKS}?smart_proxy_id=${proxyId}`
+          ));
+        } else {
+          ({ data } = await API.get(
+            `${ROUTES.API.FETCH_TASKS}?smart_proxy_id=${proxyId}`
+          ));
+        }
 
         setTaskMetadata(data || {});
 

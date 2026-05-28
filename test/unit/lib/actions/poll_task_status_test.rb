@@ -129,6 +129,31 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
       assert_equal 'exception', @job.reload.status
     end
 
+    test 'does not raise when exception flip itself fails after retry exhaustion' do
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 500, body: 'Internal Server Error')
+      ::ForemanOpenbolt::TaskJob.any_instance.stubs(:update!).raises(
+        ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)
+      )
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      action.input[:retry_count] = Actions::ForemanOpenbolt::PollTaskStatus::RETRY_LIMIT
+
+      assert_nothing_raised { run_action(action) }
+      assert_equal 'running', @job.reload.status
+    end
+
+    test 'does not raise when exception flip itself fails after proxy not found' do
+      ::ForemanOpenbolt::TaskJob.any_instance.stubs(:update!).raises(
+        ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)
+      )
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, -1)
+
+      assert_nothing_raised { run_action(action) }
+      assert_equal 'running', @job.reload.status
+    end
+
     test 'does not raise when exception flip itself fails after proxy-reported error' do
       # The ProxyReportedError branch flips the row to 'exception' and finishes.
       # If that update! itself fails (e.g. DB transient), the nested rescue must

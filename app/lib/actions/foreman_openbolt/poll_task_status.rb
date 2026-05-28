@@ -44,6 +44,18 @@ module Actions
         log("Polling finished for OpenBolt job #{input[:job_id]}")
       end
 
+      def mark_exception!(task_job, reason)
+        previous_status = task_job.status
+        task_job.update!(status: 'exception')
+      rescue StandardError => e
+        log(
+          "Could not mark TaskJob #{task_job.job_id} as exception after " \
+          "#{reason}: #{e.class}: #{e.message}. Row remains " \
+          "in '#{previous_status}' state and will not be re-polled.", :error
+        )
+        log(e.backtrace.join("\n"), :error) if e.backtrace
+      end
+
       def poll_and_reschedule
         job_id = input[:job_id]
         task_job = ::ForemanOpenbolt::TaskJob.find_by(job_id: job_id)
@@ -64,7 +76,7 @@ module Actions
         proxy = ::SmartProxy.find_by(id: input[:proxy_id])
         unless proxy
           log("Smart Proxy with ID #{input[:proxy_id]} not found for OpenBolt job #{job_id}", :error)
-          task_job.update!(status: 'exception')
+          mark_exception!(task_job, 'proxy not found')
           finish
           return
         end
@@ -80,7 +92,7 @@ module Actions
 
           unless status_result&.dig('status')
             log("Proxy returned response without status for job #{job_id}: #{status_result.inspect}", :error)
-            task_job.update!(status: 'exception')
+            mark_exception!(task_job, 'missing status in proxy response')
             finish
             return
           end
@@ -118,19 +130,7 @@ module Actions
           # Proxy answered with a domain-level error envelope. Permanent: retrying
           # will get the same answer. Mark exception and stop.
           log("Proxy reported permanent error for job #{job_id}: #{e.message}", :error)
-          # Capture the persisted status before update! mutates the in-memory
-          # record so the rescue log reflects what's actually on disk.
-          previous_status = task_job.status
-          begin
-            task_job.update!(status: 'exception')
-          rescue StandardError => persist_error
-            log(
-              "Could not mark TaskJob #{job_id} as exception after proxy-reported " \
-              "error: #{persist_error.class}: #{persist_error.message}. Row remains " \
-              "in '#{previous_status}' state and will not be re-polled.", :error
-            )
-            log(persist_error.backtrace.join("\n"), :error) if persist_error.backtrace
-          end
+          mark_exception!(task_job, 'proxy-reported error')
           finish
         rescue StandardError => e
           exception("Error polling task status for job #{job_id}", e)
@@ -140,7 +140,7 @@ module Actions
 
           if retry_count > RETRY_LIMIT
             log("Polling gave up for job #{job_id} after #{retry_count} attempts", :error)
-            task_job.update!(status: 'exception')
+            mark_exception!(task_job, "retry limit exceeded (#{retry_count} attempts)")
             finish
             return
           end

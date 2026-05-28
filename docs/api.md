@@ -83,17 +83,13 @@ curl -sk -u admin:changeme \
 ```json
 {
   "total": 142,
-  "subtotal": 142,
   "page": 1,
   "per_page": 20,
   "results": [ ... ]
 }
 ```
 
-`total` is the overall job count. `subtotal` is the count after search/filter
-is applied. The endpoint does not yet accept a search parameter, so the two
-values are always equal today. When server-side search is added, `subtotal`
-will reflect the filtered count and `total` the unfiltered count.
+`total` is the overall job count.
 
 Accepts `page` and `per_page` query params. `per_page` is clamped to `[1, 100]`,
 with the special value `all` returning every recorded job in a single page.
