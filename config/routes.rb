@@ -28,17 +28,30 @@ Foreman::Application.routes.draw do
       apiv: /v1|v2/,
       constraints: ApiConstraints.new(version: 2, default: true) do
       scope '/openbolt', as: 'openbolt' do
-        get  'smart_proxies/:smart_proxy_id/tasks',         to: 'openbolt#tasks',          as: 'smart_proxy_tasks'
-        post 'smart_proxies/:smart_proxy_id/tasks/reload',  to: 'openbolt#reload_tasks',   as: 'smart_proxy_reload_tasks'
-        get  'smart_proxies/:smart_proxy_id/tasks/options', to: 'openbolt#task_options',   as: 'smart_proxy_task_options'
+        # Proxy-scoped task operations
+        resources :smart_proxies, only: [] do
+          resources :tasks, only: [], controller: 'openbolt_tasks' do
+            collection do
+              get  '/',      action: :tasks
+              post :reload,  action: :reload_tasks
+              get  :options, action: :task_options
+            end
+          end
+        end
 
         # Launch is kind-specific (future: POST 'launch/plan').
-        post 'launch/task', to: 'openbolt#launch_task', as: 'launch_task'
+        post 'launch/task', to: 'openbolt_tasks#launch_task', as: 'launch_task'
 
         # Job queries are kind-agnostic. Reads come from the Foreman DB, populated by PollTaskStatus.
-        get 'jobs',                to: 'openbolt#jobs',       as: 'jobs'
-        get 'jobs/:job_id/status', to: 'openbolt#job_status', as: 'job_status'
-        get 'jobs/:job_id/result', to: 'openbolt#job_result', as: 'job_result'
+        resources :jobs, only: [], controller: 'openbolt_jobs', param: :job_id do
+          collection do
+            get '/', action: :jobs
+          end
+          member do
+            get :status, action: :job_status
+            get :result, action: :job_result
+          end
+        end
       end
     end
   end
