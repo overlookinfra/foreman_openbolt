@@ -47,7 +47,7 @@ module ForemanOpenbolt
     end
 
     def openbolt_settings
-      @openbolt_settings ||= Foreman.settings.select { |setting| setting.name.start_with?('openbolt_') }
+      @openbolt_settings ||= Foreman.settings.category_settings(:openbolt).values
     end
 
     def merge_encrypted_defaults(options)
