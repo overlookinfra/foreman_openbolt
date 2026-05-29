@@ -18,9 +18,6 @@ module ForemanOpenbolt
     include ForemanOpenbolt::Jobs
     include ForemanOpenbolt::Tasks
 
-    before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
-    before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
-
     # React-rendered pages
     def page_launch_task
       render 'foreman_openbolt/react_page'
@@ -34,28 +31,8 @@ module ForemanOpenbolt
       render 'foreman_openbolt/react_page'
     end
 
-    def tasks
-      render json: @openbolt_api.tasks
-    end
-
-    def reload_tasks
-      render json: @openbolt_api.reload_tasks
-    end
-
-    def task_options
-      render json: openbolt_options_with_defaults
-    end
-
-    def launch_task
-      job_id = dispatch_task(
-        smart_proxy: @smart_proxy,
-        openbolt_api: @openbolt_api,
-        task_name: params[:task_name],
-        targets: params[:targets],
-        parameters: params[:parameters] || {},
-        options: params[:options] || {}
-      )
-      render json: { job_id: job_id, kind: 'task' }, status: :created
-    end
+    # tasks, reload_tasks, task_options, and launch_task come from
+    # ForemanOpenbolt::Tasks; job_status, job_result, and jobs from
+    # ForemanOpenbolt::Jobs.
   end
 end

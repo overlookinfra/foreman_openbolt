@@ -11,23 +11,23 @@ module Actions
       end
 
       def run
-        proxy = SmartProxy.find_by(id: input[:proxy_id])
+        proxy = ::SmartProxy.find_by(id: input[:proxy_id])
         unless proxy
-          Rails.logger.warn("Proxy #{input[:proxy_id]} not found during cleanup for job #{input[:job_id]}, skipping")
+          ::Rails.logger.warn("Proxy #{input[:proxy_id]} not found during cleanup for job #{input[:job_id]}, skipping")
           return
         end
 
-        api = ProxyAPI::Openbolt.new(url: proxy.url)
+        api = ::ProxyAPI::Openbolt.new(url: proxy.url)
         response = api.delete_job_artifacts(job_id: input[:job_id])
-        Rails.logger.debug { "Cleaned up artifacts for job #{input[:job_id]} on proxy #{proxy.name}: #{response}" }
+        ::Rails.logger.debug { "Cleaned up artifacts for job #{input[:job_id]} on proxy #{proxy.name}: #{response}" }
       rescue StandardError => e
         # Don't fail the action if cleanup fails - it's not critical
-        Foreman::Logging.exception("Failed to cleanup artifacts for job #{input[:job_id]}", e)
+        ::Foreman::Logging.exception("Failed to cleanup artifacts for job #{input[:job_id]}", e)
       end
 
       def rescue_strategy
         # Skip rescue - if cleanup fails, we don't want to retry
-        Dynflow::Action::Rescue::Skip
+        ::Dynflow::Action::Rescue::Skip
       end
 
       def humanized_name
@@ -35,7 +35,7 @@ module Actions
       end
 
       def humanized_input
-        proxy_name = SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
+        proxy_name = ::SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
         "job #{input[:job_id]} on #{proxy_name}"
       end
     end

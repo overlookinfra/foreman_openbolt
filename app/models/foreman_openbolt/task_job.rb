@@ -71,6 +71,10 @@ module ForemanOpenbolt
       end
 
       transaction do
+        # status and command guard on presence so a blank value never clobbers a
+        # good one. result and log guard on key? on purpose: an empty or null
+        # value is a legitimate result we still want to store, not a reason to
+        # skip the write.
         self.status = proxy_result['status'] if proxy_result['status'].present?
         self.command = proxy_result['command'] if proxy_result['command'].present?
         self.result = proxy_result['value'] if proxy_result.key?('value')

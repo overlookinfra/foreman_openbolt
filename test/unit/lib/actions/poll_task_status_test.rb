@@ -106,6 +106,69 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
       assert_equal 'exception', @job.reload.status
     end
 
+    test 'does not strand the job when result fetch fails transiently after completion' do
+      # The status fetch reports completion, but the result endpoint has a
+      # transient failure (HTTP 500 wraps as a transport ProxyException, not a
+      # ProxyReportedError). The completed status must NOT be persisted: if it
+      # were, the next poll would see completed? at the top and finish with an
+      # empty result column. Instead the row stays running so a later poll can
+      # re-fetch the result, and retry_count increments toward the limit.
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 200, body: { 'status' => 'success' }.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+      result_stub = stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/result")
+                    .to_return(status: 500, body: 'Internal Server Error')
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      run_action(action)
+
+      assert_requested(result_stub)
+      @job.reload
+      assert_equal 'running', @job.status
+      assert_nil @job.result
+      assert_equal 1, action.input[:retry_count]
+    end
+
+    test 'marks exception when the result fetch keeps failing past the retry limit after completion' do
+      # The completed path deliberately does NOT reset retry_count, so a
+      # persistently failing result endpoint must terminate at RETRY_LIMIT
+      # rather than poll forever. This pins that guarantee: if a retry_count
+      # reset were ever reintroduced before the result fetch, the count would
+      # never exceed the limit and this would stay 'running' instead.
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 200, body: { 'status' => 'success' }.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/result")
+        .to_return(status: 500, body: 'Internal Server Error')
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      action.input[:retry_count] = Actions::ForemanOpenbolt::PollTaskStatus::RETRY_LIMIT
+      run_action(action)
+
+      @job.reload
+      assert_equal 'exception', @job.status
+      assert_nil @job.result
+    end
+
+    test 'records completed status when proxy returns a blank result body' do
+      # Proxy says completed but the result body is empty. We still persist the
+      # completed status (job_status is authoritative) so the row does not finish
+      # stuck in a running state, even though there is no result to store.
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 200, body: { 'status' => 'success' }.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/result")
+        .to_return(status: 200, body: {}.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      run_action(action)
+
+      @job.reload
+      assert_equal 'success', @job.status
+      assert_nil @job.result
+    end
+
     test 'marks exception immediately when proxy response has no status' do
       stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
         .to_return(status: 200, body: { 'unexpected' => 'data' }.to_json,

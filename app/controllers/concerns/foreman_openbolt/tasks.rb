@@ -7,6 +7,39 @@ module ForemanOpenbolt
     extend ActiveSupport::Concern
     include ForemanOpenbolt::Common
 
+    included do
+      before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
+      before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
+    end
+
+    # Actions shared by the API (Api::V2::OpenboltTasksController) and UI
+    # (ForemanOpenbolt::TaskController) controllers. The API controller wraps
+    # each in a `super`-calling method so it can attach apipie documentation;
+    # the UI controller inherits them directly.
+    def tasks
+      render json: @openbolt_api.tasks
+    end
+
+    def reload_tasks
+      render json: @openbolt_api.reload_tasks
+    end
+
+    def task_options
+      render json: openbolt_options_with_defaults
+    end
+
+    def launch_task
+      job_id = dispatch_task(
+        smart_proxy: @smart_proxy,
+        openbolt_api: @openbolt_api,
+        task_name: params[:task_name],
+        targets: params[:targets],
+        parameters: params[:parameters] || {},
+        options: params[:options] || {}
+      )
+      render json: { job_id: job_id, kind: 'task' }, status: :created
+    end
+
     # Submits a task to the smart proxy, saves the TaskJob, and schedules polling.
     # Returns the proxy-issued job id.
     #

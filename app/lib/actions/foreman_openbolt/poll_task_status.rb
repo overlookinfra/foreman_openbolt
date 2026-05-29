@@ -31,8 +31,8 @@ module Actions
 
       def log(msg, level = :debug)
         output[:log] ||= []
-        output[:log] << "[#{Time.now.getlocal.strftime('%Y-%m-%d %H:%M:%S')}] [#{level.upcase}] #{msg}"
-        Rails.logger.send(level, msg)
+        output[:log] << "[#{::Time.now.getlocal.strftime('%Y-%m-%d %H:%M:%S')}] [#{level.upcase}] #{msg}"
+        ::Rails.logger.send(level, msg)
       end
 
       def exception(msg, e)
@@ -56,6 +56,10 @@ module Actions
         log(e.backtrace.join("\n"), :error) if e.backtrace
       end
 
+      def completed_status?(status)
+        ::ForemanOpenbolt::TaskJob::COMPLETED_STATUSES.include?(status)
+      end
+
       def poll_and_reschedule
         job_id = input[:job_id]
         task_job = ::ForemanOpenbolt::TaskJob.find_by(job_id: job_id)
@@ -73,7 +77,7 @@ module Actions
 
         # If the smart proxy has been deleted somehow or is unknown,
         # we can't poll for status, so finish.
-        proxy = SmartProxy.find_by(id: input[:proxy_id])
+        proxy = ::SmartProxy.find_by(id: input[:proxy_id])
         unless proxy
           log("Smart Proxy with ID #{input[:proxy_id]} not found for OpenBolt job #{job_id}", :error)
           mark_exception!(task_job, 'proxy not found')
@@ -82,7 +86,7 @@ module Actions
         end
 
         begin
-          api = ProxyAPI::Openbolt.new(url: proxy.url)
+          api = ::ProxyAPI::Openbolt.new(url: proxy.url)
 
           # Fetch current status. ProxyAPI::Openbolt raises ProxyReportedError
           # for a 200 + {"error": ...} envelope, which is handled below as
@@ -97,8 +101,41 @@ module Actions
             return
           end
 
-          input[:retry_count] = 0
           new_status = status_result['status']
+
+          # For a completed job, fetch the result and persist the completed
+          # status together. Writing the completed status first would strand the
+          # job on a transient result-fetch failure: that failure drops to the
+          # retry rescue below, but the next poll would see completed? at the top
+          # and finish without ever capturing the result. We also leave
+          # retry_count untouched on this path so a persistently failing result
+          # endpoint accumulates toward the retry limit instead of looping
+          # forever (a successful status read would otherwise keep resetting it).
+          #
+          # A ProxyReportedError from job_result (e.g. "Result file not found")
+          # is permanent and propagates to the dedicated rescue below.
+          if completed_status?(new_status)
+            result = api.job_result(job_id: job_id)
+
+            task_job.update_from_proxy_result!(result) if result.present?
+            # update_from_proxy_result! already set the status when the result
+            # body carried one (that value wins). This fallback covers a blank or
+            # status-less result: persist the status job_status reported so the
+            # row never finishes stuck as running.
+            task_job.update!(status: new_status) unless task_job.completed?
+
+            if result.present?
+              log("OpenBolt job #{job_id} completed with status '#{task_job.status}'", :info)
+            else
+              log("No result returned from proxy for completed OpenBolt job #{job_id}; recorded status '#{task_job.status}'", :error)
+            end
+            finish
+            return
+          end
+
+          # Still running. A successful status read clears the transient-error
+          # counter; record any status change and schedule the next poll.
+          input[:retry_count] = 0
           if new_status == task_job.status
             log("Poll for OpenBolt job #{job_id}: status=#{new_status}")
           else
@@ -107,26 +144,10 @@ module Actions
             log("OpenBolt job #{job_id} status changed from '#{previous_status}' to '#{new_status}'", :info)
           end
 
-          # If completed, fetch full results. A ProxyReportedError here
-          # (e.g. "Result file not found") is permanent, so let it propagate
-          # to the dedicated rescue below rather than retrying 60 times.
-          if task_job.completed?
-            result = api.job_result(job_id: job_id)
-            if result.present?
-              task_job.update_from_proxy_result!(result)
-              log("OpenBolt job #{job_id} completed with status '#{task_job.status}'", :info)
-            else
-              log("No result returned from proxy for completed OpenBolt job #{job_id}", :error)
-            end
-            finish
-            return
-          end
-
-          # Still running, schedule next poll in 5 seconds
           suspend do |suspended_action|
             world.clock.ping(suspended_action, POLL_INTERVAL.from_now.to_time, :poll)
           end
-        rescue ProxyAPI::Openbolt::ProxyReportedError => e
+        rescue ::ProxyAPI::Openbolt::ProxyReportedError => e
           # Proxy answered with a domain-level error envelope. Permanent: retrying
           # will get the same answer. Mark exception and stop.
           log("Proxy reported permanent error for job #{job_id}: #{e.message}", :error)
@@ -152,7 +173,7 @@ module Actions
       end
 
       def rescue_strategy
-        Dynflow::Action::Rescue::Skip
+        ::Dynflow::Action::Rescue::Skip
       end
 
       def humanized_name
@@ -160,7 +181,7 @@ module Actions
       end
 
       def humanized_input
-        proxy_name = SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
+        proxy_name = ::SmartProxy.find_by(id: input[:proxy_id])&.name || '(unknown)'
         task_name = ::ForemanOpenbolt::TaskJob.find_by(job_id: input[:job_id])&.task_name
         parts = ["job #{input[:job_id]} on #{proxy_name}"]
         parts << "task: #{task_name}" if task_name
