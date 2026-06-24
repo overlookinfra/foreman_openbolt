@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.1](https://github.com/overlookinfra/foreman_openbolt/tree/1.2.1) (2026-06-24)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.2.0...1.2.1)
+
+**Merged pull requests:**
+
+- Relax foreman-tasks dependency upper bound to \< 14 [\#64](https://github.com/overlookinfra/foreman_openbolt/pull/64) ([ogajduse](https://github.com/ogajduse))
+- Small fixes [\#61](https://github.com/overlookinfra/foreman_openbolt/pull/61) ([nmburgan](https://github.com/nmburgan))
+- Add backport rake command [\#58](https://github.com/overlookinfra/foreman_openbolt/pull/58) ([nmburgan](https://github.com/nmburgan))
+
 ## [1.2.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.2.0) (2026-05-01)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.1.1...1.2.0)
