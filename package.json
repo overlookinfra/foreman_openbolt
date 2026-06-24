@@ -1,6 +1,6 @@
 {
   "name": "foreman_openbolt",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "OpenBolt integration into Foreman",
   "main": "index.js",
   "scripts": {
