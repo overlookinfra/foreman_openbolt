@@ -20,5 +20,5 @@ Gem::Specification.new do |s|
 
   s.required_ruby_version = '>= 3.0', '< 5'
 
-  s.add_dependency 'foreman-tasks', '>= 11.0.0', '< 13'
+  s.add_dependency 'foreman-tasks', '>= 11.0.0', '< 14'
 end
