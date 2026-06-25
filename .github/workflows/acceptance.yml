@@ -20,10 +20,10 @@ jobs:
     name: Acceptance (Foreman ${{ matrix.foreman_version }})
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
         with:
           ruby-version: '3.3'
           bundler-cache: true
@@ -32,7 +32,7 @@ jobs:
       # (not docker build, because we need systemd), so Buildx layer caching doesn't apply.
       # Cache the full image as a tarball instead.
       - name: Cache Foreman container image
-        uses: actions/cache@v6
+        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
         with:
           path: /tmp/foreman-image.tar
           key: foreman-image-${{ matrix.foreman_version }}-${{ hashFiles('test/acceptance/docker/foreman/Dockerfile') }}
@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload logs on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: acceptance-logs-${{ matrix.foreman_version }}
           path: /tmp/*.log
