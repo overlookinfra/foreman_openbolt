@@ -15,26 +15,23 @@ module Api
         api_base_url '/api/v2/openbolt'
       end
 
-      before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
-      before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
-
       api :GET, '/smart_proxies/:smart_proxy_id/tasks', N_('List bolt tasks available on a smart proxy')
       param :smart_proxy_id, Integer, required: true, desc: N_('ID of the smart proxy to query')
       def tasks
-        render json: @openbolt_api.tasks
+        super
       end
 
       api :POST, '/smart_proxies/:smart_proxy_id/tasks/reload', N_("Reload the smart proxy's bolt task cache")
       param :smart_proxy_id, Integer, required: true, desc: N_('ID of the smart proxy to reload')
       def reload_tasks
-        render json: @openbolt_api.reload_tasks
+        super
       end
 
       api :GET, '/smart_proxies/:smart_proxy_id/tasks/options',
         N_('Get OpenBolt options metadata for a smart proxy, with Foreman setting defaults merged in')
       param :smart_proxy_id, Integer, required: true, desc: N_('ID of the smart proxy to query')
       def task_options
-        render json: openbolt_options_with_defaults
+        super
       end
 
       api :POST, '/launch/task', N_('Launch a bolt task on a smart proxy')
@@ -48,15 +45,7 @@ module Api
       param :options, Hash, required: false,
         desc: N_('OpenBolt options (transport, user, run-as, etc.) as accepted by the bolt CLI')
       def launch_task
-        job_id = dispatch_task(
-          smart_proxy: @smart_proxy,
-          openbolt_api: @openbolt_api,
-          task_name: params[:task_name],
-          targets: params[:targets],
-          parameters: params[:parameters] || {},
-          options: params[:options] || {}
-        )
-        render json: { job_id: job_id, kind: 'task' }, status: :created
+        super
       end
     end
   end

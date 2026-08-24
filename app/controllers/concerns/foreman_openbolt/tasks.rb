@@ -7,29 +7,54 @@ module ForemanOpenbolt
     extend ActiveSupport::Concern
     include ForemanOpenbolt::Common
 
-    # Submits a task to the smart proxy, saves the TaskJob, and schedules polling.
-    # Returns the proxy-issued job id.
-    #
-    # Partial launch failures (TaskJob row creation or PollTaskStatus scheduling)
-    # leave the proxy job running. We do not attempt to delete proxy artifacts
-    # in those branches: at that point the job is still queued or executing, so
-    # the artifacts don't exist yet and the proxy has no per-job cancel hook.
-    # Result files left behind on the proxy are small so we don't worry about it.
-    # The priority is surfacing the failure via PartialLaunchError and, when the
-    # TaskJob row exists, flipping its status to 'exception' so the error is exposed.
+    included do
+      before_action :load_smart_proxy, only: [:tasks, :reload_tasks, :task_options, :launch_task]
+      before_action :load_openbolt_api, only: [:tasks, :reload_tasks, :task_options, :launch_task]
+    end
+
+    # Shared by the API and UI controllers. The API controller wraps each
+    # action with super so it can attach apipie docs.
+    def tasks
+      render json: @openbolt_api.tasks
+    end
+
+    def reload_tasks
+      render json: @openbolt_api.reload_tasks
+    end
+
+    def task_options
+      render json: openbolt_options_with_defaults
+    end
+
+    def launch_task
+      job_id = dispatch_task(
+        smart_proxy: @smart_proxy,
+        openbolt_api: @openbolt_api,
+        task_name: params[:task_name],
+        targets: params[:targets],
+        parameters: params[:parameters] || {},
+        options: params[:options] || {}
+      )
+      render json: { job_id: job_id, kind: 'task' }, status: :created
+    end
+
+    # Submits a task to the proxy, saves the TaskJob, and schedules polling.
+    # Returns the proxy-issued job id. Failures after the proxy accepts the
+    # launch raise PartialLaunchError. The proxy job keeps running and there
+    # is no proxy-side cancel hook right now, so we only surface the failure.
     def dispatch_task(smart_proxy:, openbolt_api:, task_name:, targets:, parameters:, options:)
       task_name = task_name.to_s.strip
       targets = targets.to_s.strip
       raise ForemanOpenbolt::Common::LaunchError, 'Task name and targets cannot be empty' if task_name.empty? || targets.empty?
 
-      merged_options = merge_encrypted_defaults(options || {})
+      merged_options = merge_encrypted_defaults(options)
 
       logger.info { "Launching OpenBolt task '#{task_name}' on targets '#{targets}' via proxy #{smart_proxy.name}" }
 
       response = openbolt_api.launch_task(
         name: task_name,
         targets: targets,
-        parameters: parameters || {},
+        parameters: parameters,
         options: merged_options
       )
       logger.debug { "Task execution response: #{response.inspect}" }
@@ -40,16 +65,11 @@ module ForemanOpenbolt
       end
       raise ForemanOpenbolt::Common::LaunchError, 'Task execution failed: No job ID returned' unless response['id']
 
-      # Past this point the proxy is running the task. Any failure below is partial
-      # state: the task is live but Foreman's record is incomplete. Raise
-      # PartialLaunchError so callers don't retry and duplicate proxy-side work.
+      # The proxy is now running the task so any failures below are partial state.
       job_id = response['id']
 
       task_job = begin
-        # Treat task metadata as optional. ProxyAPI::Openbolt wraps transport
-        # errors as ProxyException, but a metadata-fetch failure (any cause)
-        # should not abort a perfectly running proxy job over a missing
-        # description. Catch broadly and degrade to an empty description.
+        # Metadata is optional and a fetch failure should not abort a running job.
         metadata = begin
           fetched = openbolt_api.tasks[task_name]
           if fetched.nil?
@@ -62,9 +82,7 @@ module ForemanOpenbolt
         rescue StandardError => e
           logger.warn(
             "Could not fetch task metadata for #{task_name} after launching " \
-            "job #{job_id}: #{e.class}: #{e.message}. The next poll will " \
-            "likely also fail if the proxy is unreachable. Proceeding " \
-            "without description."
+            "job #{job_id}: #{e.class}: #{e.message}. Proceeding without description."
           )
           {}
         end
@@ -74,7 +92,7 @@ module ForemanOpenbolt
           task_name: task_name,
           task_description: metadata['description'] || '',
           targets: targets.split(',').map(&:strip),
-          parameters: parameters || {},
+          parameters: parameters,
           options: scrub_options_for_storage(merged_options),
           job_id: job_id
         )
@@ -99,8 +117,7 @@ module ForemanOpenbolt
           "but PollTaskStatus could not be scheduled",
           e
         )
-        # Capture the on-disk status before update! so the log message reflects
-        # what's persisted, not the in-memory assignment that just failed.
+        # Capture before update! flips the in-memory status.
         previous_status = task_job.status
         begin
           task_job.update!(status: 'exception')
