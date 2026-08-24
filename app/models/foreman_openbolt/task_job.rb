@@ -71,6 +71,8 @@ module ForemanOpenbolt
       end
 
       transaction do
+        # status and command guard on presence so blanks never clobber good
+        # values; result and log use key? because empty values are legitimate.
         self.status = proxy_result['status'] if proxy_result['status'].present?
         self.command = proxy_result['command'] if proxy_result['command'].present?
         self.result = proxy_result['value'] if proxy_result.key?('value')

@@ -72,8 +72,6 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
     end
 
     test 'marks exception immediately on proxy application error from job_status' do
-      # ProxyAPI::Openbolt raises ProxyReportedError for 200 + {"error":...}.
-      # The action's dedicated rescue marks exception without retrying.
       status_stub = stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
                     .to_return(status: 200, body: { 'error' => { 'message' => 'Job not found: test-job' } }.to_json,
                       headers: { 'Content-Type' => 'application/json' })
@@ -86,9 +84,6 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
     end
 
     test 'marks exception immediately on proxy application error from job_result' do
-      # The status fetch succeeds and reports completion, but the result fetch
-      # comes back with the proxy's error envelope (e.g. "Result file not
-      # found").
       stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
         .to_return(status: 200, body: { 'status' => 'success' }.to_json,
           headers: { 'Content-Type' => 'application/json' })
@@ -102,6 +97,55 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
 
       assert_requested(result_stub)
       assert_equal 'exception', @job.reload.status
+    end
+
+    test 'does not strand the job when result fetch fails transiently after completion' do
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 200, body: { 'status' => 'success' }.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+      result_stub = stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/result")
+                    .to_return(status: 500, body: 'Internal Server Error')
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      run = run_action(action)
+
+      assert_requested(result_stub)
+      @job.reload
+      assert_equal 'running', @job.status
+      assert_nil @job.result
+      assert_equal 1, run.input[:retry_count]
+    end
+
+    test 'marks exception when the result fetch keeps failing past the retry limit after completion' do
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 200, body: { 'status' => 'success' }.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/result")
+        .to_return(status: 500, body: 'Internal Server Error')
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      action.input[:retry_count] = Actions::ForemanOpenbolt::PollTaskStatus::RETRY_LIMIT
+      run_action(action)
+
+      @job.reload
+      assert_equal 'exception', @job.status
+      assert_nil @job.result
+    end
+
+    test 'records completed status when proxy returns a blank result body' do
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 200, body: { 'status' => 'success' }.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/result")
+        .to_return(status: 200, body: {}.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      run_action(action)
+
+      @job.reload
+      assert_equal 'success', @job.status
+      assert_nil @job.result
     end
 
     test 'marks exception immediately when proxy response has no status' do
@@ -120,11 +164,35 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
         .to_return(status: 500, body: 'Internal Server Error')
 
       action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
-      # Set retry count to just above the limit so the next error triggers exhaustion
       action.input[:retry_count] = Actions::ForemanOpenbolt::PollTaskStatus::RETRY_LIMIT
       run_action(action)
 
       assert_equal 'exception', @job.reload.status
+    end
+
+    test 'does not raise when exception flip itself fails after retry exhaustion' do
+      stub_request(:get, "#{@proxy.url}/openbolt/job/#{@job.job_id}/status")
+        .to_return(status: 500, body: 'Internal Server Error')
+      ::ForemanOpenbolt::TaskJob.any_instance.stubs(:update!).raises(
+        ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)
+      )
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
+      action.input[:retry_count] = Actions::ForemanOpenbolt::PollTaskStatus::RETRY_LIMIT
+
+      assert_nothing_raised { run_action(action) }
+      assert_equal 'running', @job.reload.status
+    end
+
+    test 'does not raise when exception flip itself fails after proxy not found' do
+      ::ForemanOpenbolt::TaskJob.any_instance.stubs(:update!).raises(
+        ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)
+      )
+
+      action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, -1)
+
+      assert_nothing_raised { run_action(action) }
+      assert_equal 'running', @job.reload.status
     end
 
     test 'does not raise when exception flip itself fails after proxy-reported error' do
@@ -139,16 +207,13 @@ class PollTaskStatusTest < ForemanOpenbolt::PluginTestCase
       action = create_and_plan_action(Actions::ForemanOpenbolt::PollTaskStatus, @job.job_id, @proxy.id)
       action.input[:retry_count] = 5
 
+      run = nil
       assert_nothing_raised do
-        run_action(action)
+        run = run_action(action)
       end
-      # Row stays in its persisted pre-update state (the :running factory trait)
-      # because the stubbed update! never actually wrote 'exception'.
+      # The stubbed update! never wrote 'exception'.
       assert_equal 'running', @job.reload.status
-      # retry_count stays at the pre-seeded value. If the nested rescue is
-      # removed, the StandardError rescue catches the persist failure,
-      # increments retry_count, and re-suspends. This assertion catches that.
-      assert_equal 5, action.input[:retry_count]
+      assert_equal 5, run.input[:retry_count]
     end
   end
 end
