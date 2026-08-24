@@ -12,7 +12,7 @@ module ForemanOpenbolt
     # by the other concerns' includes are checked first.
     rescue_from StandardError do |error|
       Foreman::Logging.exception('OpenBolt UI unexpected error', error)
-      render_json_error("Internal server error: #{error.message}", :internal_server_error)
+      render_json_error('Internal server error', :internal_server_error)
     end
 
     include ForemanOpenbolt::Jobs

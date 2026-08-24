@@ -556,6 +556,19 @@ class TaskControllerTest < ActionController::TestCase
     end
   end
 
+  context 'unexpected errors' do
+    test 'renders a generic 500 without the exception message' do
+      ForemanOpenbolt::TaskJob.stubs(:includes).raises(StandardError, 'secret internals')
+
+      get :jobs, session: @session
+      assert_response :internal_server_error
+
+      body = JSON.parse(response.body)
+      assert_equal 'Internal server error', body['error']['message']
+      assert_no_match(/secret internals/, response.body)
+    end
+  end
+
   context 'authorization' do
     test 'forbids unprivileged users from launching tasks' do
       unprivileged = FactoryBot.create(:user)
