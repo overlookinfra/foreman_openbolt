@@ -14,6 +14,7 @@ RUN dnf module enable -y nodejs:22 postgresql:16 && \
       ruby ruby-devel rubygem-bundler \
       gcc gcc-c++ make \
       postgresql-devel postgresql \
+      libcap-devel \
       libffi-devel \
       nodejs npm \
       git-core \
