@@ -54,15 +54,17 @@ jobs:
             exit 1
           }
 
-      - name: Bump version in package.json
+      - name: Bump version in package.json and package-lock.json
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
-          grep -q "\"version\": \"$VERSION\"" package.json || {
-            echo "::error::Failed to update version in package.json"
-            exit 1
-          }
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          for file in package.json package-lock.json; do
+            grep -q "\"version\": \"$VERSION\"" "$file" || {
+              echo "::error::Failed to update version in $file"
+              exit 1
+            }
+          done
 
       - name: Generate changelog
         env:
