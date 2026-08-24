@@ -253,7 +253,7 @@ module ForemanOpenbolt
               }
           end
 
-          role 'OpenBolt Executor', [:execute_openbolt]
+          role 'OpenBolt Executor', [:execute_openbolt, :view_smart_proxies]
           add_all_permissions_to_default_roles
 
           sub_menu :top_menu, :openbolt,
