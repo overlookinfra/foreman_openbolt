@@ -92,6 +92,7 @@ equal `total`.
 
 Accepts `page` and `per_page` query params. `per_page` is clamped to `[1, 100]`,
 with the special value `all` returning every recorded job in a single page.
+`page` values below 1, or non-numeric, are treated as 1.
 
 ## Encrypted options
 

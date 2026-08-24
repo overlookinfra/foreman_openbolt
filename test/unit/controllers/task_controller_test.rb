@@ -42,9 +42,7 @@ class TaskControllerTest < ActionController::TestCase
     test 'returns bad_gateway when proxy is unreachable' do
       stub_request(:get, "#{@proxy.url}/openbolt/tasks").to_timeout
 
-      # ProxyAPI::Openbolt wraps transport-layer failures as ProxyException,
-      # so the controller's rescue_from ProxyException handler renders 502
-      # instead of letting the error propagate to Foreman's default handler.
+      # Transport failures wrap as ProxyException and render 502.
       get :tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :bad_gateway
     end
@@ -365,11 +363,7 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     test 'omits default when a non-encrypted setting is set to empty string' do
-      # openbolt_options_with_defaults skips a saved value when
-      # `setting.value.to_s.empty?`, so an empty-string setting must not
-      # produce a `default` key. Without this pinned, a regression that
-      # treats empty strings as valid defaults would push "" to the UI as
-      # the chosen default and override the proxy's real default.
+      # An empty-string setting must not override the proxy's real default.
       Setting['openbolt_user'] = ''
 
       proxy_options = {
@@ -388,9 +382,6 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     test 'omits encrypted placeholder when an encrypted setting is set to empty string' do
-      # An empty saved value must not produce the ENCRYPTED_PLACEHOLDER, otherwise
-      # the UI would show "[Use saved encrypted default]" for a setting that has no
-      # real value.
       Setting['openbolt_password'] = ''
 
       proxy_options = {
@@ -531,6 +522,14 @@ class TaskControllerTest < ActionController::TestCase
 
       body = JSON.parse(response.body)
       assert_equal 1, body['per_page']
+    end
+
+    test 'floors page at 1 when zero is requested' do
+      get :jobs, params: { page: 0 }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 1, body['page']
     end
 
     test "per_page='all' returns every job in a single page" do

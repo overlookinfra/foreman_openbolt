@@ -91,6 +91,36 @@ module Api
           assert_equal 0, body['total']
         end
 
+        test 'floors page at 1 when zero is requested' do
+          get :jobs, params: { page: 0 }, session: @session
+          assert_response :success
+          body = JSON.parse(response.body)
+          assert_equal 1, body['page']
+        end
+
+        test 'floors page at 1 when a negative value is requested' do
+          get :jobs, params: { page: -5 }, session: @session
+          assert_response :success
+          body = JSON.parse(response.body)
+          assert_equal 1, body['page']
+        end
+
+        test 'floors page at 1 when a non-numeric value is requested' do
+          get :jobs, params: { page: 'bogus' }, session: @session
+          assert_response :success
+          body = JSON.parse(response.body)
+          assert_equal 1, body['page']
+        end
+
+        test 'page beyond the last page returns empty results' do
+          FactoryBot.create(:task_job, smart_proxy: @proxy)
+          get :jobs, params: { page: 99 }, session: @session
+          assert_response :success
+          body = JSON.parse(response.body)
+          assert_equal [], body['results']
+          assert_equal 1, body['total']
+        end
+
         test 'returns rows in DESC submitted_at order' do
           oldest = FactoryBot.create(:task_job, smart_proxy: @proxy, submitted_at: 3.hours.ago)
           middle = FactoryBot.create(:task_job, smart_proxy: @proxy, submitted_at: 2.hours.ago)
@@ -181,9 +211,6 @@ module Api
           assert_response :forbidden
         end
 
-        # The /jobs read endpoints intentionally do NOT scope by smart-proxy
-        # view permissions. A user with only :execute_openbolt sees every
-        # recorded job, regardless of which proxy ran it.
         test 'execute_openbolt without view_smart_proxies still lists jobs' do
           FactoryBot.create(:task_job, smart_proxy: @proxy)
           reset_api_credentials

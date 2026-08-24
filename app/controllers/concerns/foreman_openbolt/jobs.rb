@@ -51,6 +51,7 @@ module ForemanOpenbolt
     end
 
     def paginated_task_jobs(per_page_param:, page:)
+      page = [page.to_i, 1].max
       per_page = if per_page_param == 'all'
                    [ForemanOpenbolt::TaskJob.count, 1].max
                  elsif per_page_param.present?
