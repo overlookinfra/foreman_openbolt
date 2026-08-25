@@ -101,6 +101,15 @@ namespace :build do
       image: build_rpm_builder_image(FOREMAN_VERSION),
       cmd: <<~BASH,
         set -e
+        # The mounted packaging checkout can be owned by a different uid than
+        # the container user (the CI runner owns it on GitHub Actions), which
+        # makes git refuse to read it. The gem2rpm template needs git rev-parse
+        # there to locate licenses.json, so mark the checkout safe through the
+        # environment rather than writing git config.
+        export GIT_CONFIG_COUNT=1
+        export GIT_CONFIG_KEY_0=safe.directory
+        export GIT_CONFIG_VALUE_0=/opt/foreman-packaging
+
         GEM=~/rpmbuild/SOURCES/#{GEM_FILENAME}
         SPEC=~/rpmbuild/SPECS/rubygem-foreman_openbolt.spec
 
