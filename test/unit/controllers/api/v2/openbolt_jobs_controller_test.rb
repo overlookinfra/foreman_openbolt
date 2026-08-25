@@ -151,7 +151,7 @@ module Api
         test 'returns not_found when job does not exist' do
           get :job_status, params: { job_id: 'nonexistent' }, session: @session
           assert_response :not_found
-          assert_match(/Task job nonexistent not found/,
+          assert_match(/Job nonexistent not found/,
             JSON.parse(response.body)['error']['message'])
         end
       end
@@ -174,7 +174,7 @@ module Api
         test 'returns not_found when job does not exist' do
           get :job_result, params: { job_id: 'nonexistent' }, session: @session
           assert_response :not_found
-          assert_match(/Task job nonexistent not found/,
+          assert_match(/Job nonexistent not found/,
             JSON.parse(response.body)['error']['message'])
         end
       end

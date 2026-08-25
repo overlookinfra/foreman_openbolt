@@ -18,7 +18,7 @@ module ForemanOpenbolt
       @task_job = ForemanOpenbolt::TaskJob.find_by(job_id: job_id)
       logger.debug { "TaskJob lookup #{job_id.inspect}: #{@task_job ? @task_job.status : 'not found'}" }
       return if @task_job
-      render_json_error("Task job #{job_id} not found", :not_found)
+      render_json_error("Job #{job_id} not found", :not_found)
     end
 
     def task_job_status(task_job)
