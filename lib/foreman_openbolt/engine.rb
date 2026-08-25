@@ -253,7 +253,8 @@ module ForemanOpenbolt
               }
           end
 
-          role 'OpenBolt Executor', [:execute_openbolt, :view_smart_proxies]
+          role 'OpenBolt Executor', [:execute_openbolt, :view_smart_proxies],
+            'Role granting permissions to list and launch OpenBolt actions through a smart proxy and to view the resulting jobs'
           add_all_permissions_to_default_roles
 
           sub_menu :top_menu, :openbolt,
