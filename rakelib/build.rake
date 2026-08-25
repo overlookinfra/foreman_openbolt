@@ -44,6 +44,10 @@ def build_rpm_builder_image(foreman_version)
     base_image: 'foreman-packaging-base', setup_name: 'rpm-builder-setup') do |runner|
     runner.run(<<~BASH, platform: 'linux/amd64')
       set -e
+      # The base image ships a git-annex repo hosted on downloads.kitenet.net,
+      # which is unreliable and breaks every dnf run when unreachable. Nothing
+      # in the RPM build needs it, so drop the repo file.
+      rm -f /etc/yum.repos.d/git-annex.repo
       dnf install -y glibc-langpack-en
       dnf install -y https://yum.theforeman.org/releases/#{foreman_version}/el9/x86_64/foreman-release.rpm
       dnf install -y rubygems-devel foreman-plugin foreman-assets rubygem-foreman-tasks
