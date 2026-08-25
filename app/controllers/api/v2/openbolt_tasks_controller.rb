@@ -15,13 +15,13 @@ module Api
         api_base_url '/api/v2/openbolt'
       end
 
-      api :GET, '/smart_proxies/:smart_proxy_id/tasks', N_('List bolt tasks available on a smart proxy')
+      api :GET, '/smart_proxies/:smart_proxy_id/tasks', N_('List Bolt tasks available on a smart proxy')
       param :smart_proxy_id, Integer, required: true, desc: N_('ID of the smart proxy to query')
       def tasks
         super
       end
 
-      api :POST, '/smart_proxies/:smart_proxy_id/tasks/reload', N_("Reload the smart proxy's bolt task cache")
+      api :POST, '/smart_proxies/:smart_proxy_id/tasks/reload', N_("Reload the smart proxy's Bolt task cache")
       param :smart_proxy_id, Integer, required: true, desc: N_('ID of the smart proxy to reload')
       def reload_tasks
         super
@@ -34,10 +34,10 @@ module Api
         super
       end
 
-      api :POST, '/launch/task', N_('Launch a bolt task on a smart proxy')
+      api :POST, '/launch/task', N_('Launch a Bolt task on a smart proxy')
       param :smart_proxy_id, Integer, required: true,
         desc: N_('ID of the smart proxy that will execute the task')
-      param :task_name, String, required: true, desc: N_('Name of the bolt task to run')
+      param :task_name, String, required: true, desc: N_('Name of the Bolt task to run')
       param :targets, String, required: true,
         desc: N_('Comma-separated list of target hosts the task should run on')
       param :parameters, Hash, required: false,
