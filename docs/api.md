@@ -73,6 +73,94 @@ curl -sk -u admin:changeme \
   https://foreman.example.com/api/v2/openbolt/jobs/abc123.../result
 ```
 
+Example result of a successful run:
+
+```json
+{
+  "kind": "task",
+  "status": "success",
+  "command": "bolt task run service --targets host1.example.com,host2.example.com --no-save-rerun --concurrency=100 --connect-timeout=30 --project /etc/puppetlabs/code/environments/production --format json --no-color --transport=ssh --private-key=/usr/share/foreman-proxy/.ssh/id_rsa-foreman --no-host-key-check action=status name=puppet",
+  "value": {
+    "items": [
+      {
+        "value": {
+          "status": "MainPID=789,LoadState=loaded,ActiveState=active",
+          "enabled": "enabled"
+        },
+        "action": "task",
+        "object": "service",
+        "status": "success",
+        "target": "host1.example.com"
+      },
+      {
+        "value": {
+          "status": "MainPID=806,LoadState=loaded,ActiveState=active",
+          "enabled": "enabled"
+        },
+        "action": "task",
+        "object": "service",
+        "status": "success",
+        "target": "host2.example.com"
+      }
+    ],
+    "elapsed_time": 1,
+    "target_count": 2
+  },
+  "log": ""
+}
+```
+
+A failed run keeps the same envelope, with per-target errors under
+`value.items[].value._error`. This example is from a run over the Choria
+transport, with the command and log truncated:
+
+```json
+{
+  "kind": "task",
+  "status": "failure",
+  "command": "bolt task run facts --targets host1.example.com,host2.example.com --no-save-rerun ... --transport=choria ...",
+  "value": {
+    "items": [
+      {
+        "value": {
+          "_error": {
+            "msg": "No agent information available for host1.example.com (node did not respond to discovery)",
+            "kind": "bolt/choria-agent-not-available",
+            "details": {}
+          }
+        },
+        "action": "task",
+        "object": null,
+        "status": "failure",
+        "target": "host1.example.com"
+      },
+      {
+        "value": {
+          "_error": {
+            "msg": "No agent information available for host2.example.com (node did not respond to discovery)",
+            "kind": "bolt/choria-agent-not-available",
+            "details": {}
+          }
+        },
+        "action": "task",
+        "object": null,
+        "status": "failure",
+        "target": "host2.example.com"
+      }
+    ],
+    "elapsed_time": 30,
+    "target_count": 2
+  },
+  "log": "Started with 100 max thread(s)\n..."
+}
+```
+
+The `value` field is the OpenBolt CLI's JSON output passed through
+unmodified. Its exact layout depends on the OpenBolt version, the
+transport, and the job kind, and is not a stable part of this API. The
+per-target `items` layout shown above is what task runs produce, and plan
+results may differ.
+
 ## Pagination
 
 `GET /api/v2/openbolt/jobs` returns the standard Foreman pagination envelope,
