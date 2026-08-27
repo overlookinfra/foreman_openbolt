@@ -42,6 +42,9 @@ describe('useOpenBoltOptions', () => {
       await result.current.fetchOpenBoltOptions(42);
     });
 
+    expect(API.get).toHaveBeenCalledWith(
+      expect.stringContaining('smart_proxy_id=42')
+    );
     expect(result.current.openBoltOptionsMetadata).toEqual(options);
     expect(result.current.openBoltOptions).toEqual({
       transport: 'ssh',

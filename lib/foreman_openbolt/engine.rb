@@ -238,15 +238,23 @@ module ForemanOpenbolt
 
           security_block :foreman_openbolt do
             permission :execute_openbolt,
-              { :'foreman_openbolt/task' => [
-                :page_launch_task, :page_task_execution, :page_task_history,
-                :fetch_tasks, :reload_tasks, :fetch_openbolt_options,
-                :launch_task, :job_status, :job_result, :fetch_task_history, :show
-              ] }
-            permission :view_smart_proxies_openbolt, :smart_proxies => [:index, :show], :resource_type => 'SmartProxy'
+              {
+                :'foreman_openbolt/task' => [
+                  :page_launch_task, :page_task_execution, :page_task_history,
+                  :tasks, :reload_tasks, :task_options,
+                  :launch_task, :job_status, :job_result, :jobs
+                ],
+                :'api/v2/openbolt_tasks' => [
+                  :tasks, :reload_tasks, :task_options, :launch_task
+                ],
+                :'api/v2/openbolt_jobs' => [
+                  :jobs, :job_status, :job_result
+                ],
+              }
           end
 
-          role 'OpenBolt Executor', [:execute_openbolt]
+          role 'OpenBolt Executor', [:execute_openbolt, :view_smart_proxies],
+            'Role granting permissions to list and launch OpenBolt actions through a smart proxy and to view the resulting jobs'
           add_all_permissions_to_default_roles
 
           sub_menu :top_menu, :openbolt,

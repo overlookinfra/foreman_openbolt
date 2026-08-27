@@ -22,9 +22,9 @@ describe('useJobPolling', () => {
       status: 'success',
       submitted_at: '2026-01-01T00:00:00Z',
       completed_at: '2026-01-01T00:01:00Z',
-      task_name: 'test::task',
-      task_description: 'A test task',
-      task_parameters: { name: 'nginx' },
+      name: 'test::task',
+      description: 'A test task',
+      parameters: { name: 'nginx' },
       targets: ['host1.example.com'],
       smart_proxy: { id: 1, name: 'proxy1' },
     };
@@ -60,7 +60,7 @@ describe('useJobPolling', () => {
   test('does not fetch result for INVALID status', async () => {
     const statusData = {
       status: 'invalid',
-      task_name: 'broken::task',
+      name: 'broken::task',
       targets: [],
     };
 
@@ -96,7 +96,7 @@ describe('useJobPolling', () => {
   test('handles result fetch failure gracefully', async () => {
     const statusData = {
       status: 'success',
-      task_name: 'test::task',
+      name: 'test::task',
       targets: [],
     };
 
@@ -119,7 +119,7 @@ describe('useJobPolling', () => {
   test('cancels polling on unmount', async () => {
     const statusData = {
       status: 'running',
-      task_name: 'long::task',
+      name: 'long::task',
       targets: [],
     };
     API.get.mockResolvedValue({ data: statusData });
@@ -145,12 +145,12 @@ describe('useJobPolling', () => {
   test('loads metadata only once across multiple polls', async () => {
     API.get
       .mockResolvedValueOnce({
-        data: { status: 'running', task_name: 'my::task', targets: ['host1'] },
+        data: { status: 'running', name: 'my::task', targets: ['host1'] },
       })
       .mockResolvedValueOnce({
         data: {
           status: 'success',
-          task_name: 'changed::name',
+          name: 'changed::name',
           targets: ['host2'],
         },
       })

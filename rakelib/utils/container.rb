@@ -37,6 +37,17 @@ class Container
   def self.prepare_image(target_tag:, base_image:, setup_name:)
     return target_tag if image_exists?(target_tag)
     runner = new(name: setup_name, image: base_image)
+
+    # A leftover setup container (from an interrupted or killed run) would
+    # make docker run fail with a name conflict
+    if runner.running?
+      abort "Container #{setup_name} is already running, so another build may be in progress. " \
+            "If not, remove it with 'docker rm -f #{setup_name}' and retry.".red
+    elsif runner.exists?
+      warn "Removing leftover #{setup_name} container from a previous run.".yellow
+      runner.teardown
+    end
+
     begin
       yield runner
       runner.commit(target_tag)
@@ -63,6 +74,18 @@ class Container
   end
 
   # --- Instance methods for named container lifecycle ---
+
+  # exit 1 = container doesn't exist
+  def exists?
+    Shell.capture(['docker', 'container', 'inspect', name],
+      print_command: false, allowed_exit_codes: [0, 1]).exitcode.zero?
+  end
+
+  def running?
+    result = Shell.capture(['docker', 'container', 'inspect', '--format', '{{.State.Running}}', name],
+      print_command: false, allowed_exit_codes: [0, 1])
+    result.exitcode.zero? && result.output == 'true'
+  end
 
   # Run a command in a new named container (blocks until done).
   def run(cmd, platform: nil)

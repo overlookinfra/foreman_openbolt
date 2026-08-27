@@ -16,34 +16,35 @@ class TaskControllerTest < ActionController::TestCase
     WebMock.reset!
   end
 
-  context 'fetch_tasks' do
+  context 'tasks' do
     test 'returns tasks from proxy as JSON' do
       tasks = { 'mymod::install' => { 'description' => 'Install a package' } }
       stub_request(:get, "#{@proxy.url}/openbolt/tasks")
         .to_return(status: 200, body: tasks.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_tasks, params: { proxy_id: @proxy.id }, session: @session
+      get :tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
       assert_equal tasks, JSON.parse(response.body)
     end
 
-    test 'returns error when proxy_id is missing' do
-      get :fetch_tasks, session: @session
+    test 'returns error when smart_proxy_id is missing' do
+      get :tasks, session: @session
       assert_response :bad_request
       body = JSON.parse(response.body)
-      assert_match(/Smart Proxy ID is required/, body['error'])
+      assert_match(/Smart Proxy ID is required/, body['error']['message'])
     end
 
     test 'returns error when proxy not found' do
-      get :fetch_tasks, params: { proxy_id: -1 }, session: @session
+      get :tasks, params: { smart_proxy_id: -1 }, session: @session
       assert_response :not_found
     end
 
-    test 'returns internal_server_error when proxy is unreachable' do
+    test 'returns bad_gateway when proxy is unreachable' do
       stub_request(:get, "#{@proxy.url}/openbolt/tasks").to_timeout
 
-      get :fetch_tasks, params: { proxy_id: @proxy.id }, session: @session
-      assert_response :internal_server_error
+      # Transport failures wrap as ProxyException and render 502.
+      get :tasks, params: { smart_proxy_id: @proxy.id }, session: @session
+      assert_response :bad_gateway
     end
   end
 
@@ -53,7 +54,7 @@ class TaskControllerTest < ActionController::TestCase
       stub_request(:get, "#{@proxy.url}/openbolt/tasks/reload")
         .to_return(status: 200, body: tasks.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :reload_tasks, params: { proxy_id: @proxy.id }, session: @session
+      post :reload_tasks, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
       assert_equal tasks, JSON.parse(response.body)
     end
@@ -72,16 +73,17 @@ class TaskControllerTest < ActionController::TestCase
 
     test 'launches task and returns job_id' do
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'mymod::install',
         targets: 'host1.example.com',
-        params: { 'name' => 'nginx' },
+        parameters: { 'name' => 'nginx' },
         options: { 'transport' => 'ssh' },
       }, session: @session
 
       assert_response :success
       body = JSON.parse(response.body)
       assert_equal 'launched-job-1', body['job_id']
+      assert_equal 'task', body['kind']
     end
 
     test 'schedules polling after creating task' do
@@ -92,7 +94,7 @@ class TaskControllerTest < ActionController::TestCase
       )
 
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'mymod::install',
         targets: 'host1.example.com',
       }, session: @session
@@ -103,7 +105,7 @@ class TaskControllerTest < ActionController::TestCase
     test 'creates a TaskJob record' do
       assert_difference('ForemanOpenbolt::TaskJob.count', 1) do
         post :launch_task, params: {
-          proxy_id: @proxy.id,
+          smart_proxy_id: @proxy.id,
           task_name: 'mymod::install',
           targets: 'host1.example.com,host2.example.com',
         }, session: @session
@@ -116,15 +118,15 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     test 'returns error when task_name is missing' do
-      post :launch_task, params: { proxy_id: @proxy.id, targets: 'host1' }, session: @session
+      post :launch_task, params: { smart_proxy_id: @proxy.id, targets: 'host1' }, session: @session
       assert_response :bad_request
-      assert_match(/task_name/, JSON.parse(response.body)['error'])
+      assert_match(/Task name and targets cannot be empty/, JSON.parse(response.body)['error']['message'])
     end
 
     test 'returns error when targets is missing' do
-      post :launch_task, params: { proxy_id: @proxy.id, task_name: 'test::task' }, session: @session
+      post :launch_task, params: { smart_proxy_id: @proxy.id, task_name: 'test::task' }, session: @session
       assert_response :bad_request
-      assert_match(/targets/, JSON.parse(response.body)['error'])
+      assert_match(/Task name and targets cannot be empty/, JSON.parse(response.body)['error']['message'])
     end
 
     test 'returns error when proxy returns error in response' do
@@ -133,12 +135,12 @@ class TaskControllerTest < ActionController::TestCase
           headers: { 'Content-Type' => 'application/json' })
 
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'missing::task',
         targets: 'host1',
       }, session: @session
       assert_response :bad_request
-      assert_match(/Task execution failed/, JSON.parse(response.body)['error'])
+      assert_match(/Task execution failed/, JSON.parse(response.body)['error']['message'])
     end
 
     test 'returns bad_gateway when proxy returns invalid JSON' do
@@ -147,12 +149,12 @@ class TaskControllerTest < ActionController::TestCase
           headers: { 'Content-Type' => 'application/json' })
 
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'mymod::install',
         targets: 'host1',
       }, session: @session
       assert_response :bad_gateway
-      assert_match(/Smart Proxy error/, JSON.parse(response.body)['error'])
+      assert_match(/Smart Proxy error/, JSON.parse(response.body)['error']['message'])
     end
 
     test 'returns error when proxy returns no job ID' do
@@ -161,12 +163,55 @@ class TaskControllerTest < ActionController::TestCase
           headers: { 'Content-Type' => 'application/json' })
 
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'test::task',
         targets: 'host1',
       }, session: @session
       assert_response :bad_request
-      assert_match(/No job ID returned/, JSON.parse(response.body)['error'])
+      assert_match(/No job ID returned/, JSON.parse(response.body)['error']['message'])
+    end
+
+    test 'rejects whitespace-only task_name and targets' do
+      post :launch_task, params: {
+        smart_proxy_id: @proxy.id,
+        task_name: '   ',
+        targets: '   ',
+      }, session: @session
+      assert_response :bad_request
+      assert_match(/Task name and targets cannot be empty/,
+        JSON.parse(response.body)['error']['message'])
+    end
+
+    test 'returns 500 with error shape when TaskJob persistence fails' do
+      ForemanOpenbolt::TaskJob.stubs(:create_from_execution!).raises(
+        ActiveRecord::RecordInvalid.new(ForemanOpenbolt::TaskJob.new)
+      )
+
+      post :launch_task, params: {
+        smart_proxy_id: @proxy.id,
+        task_name: 'mymod::install',
+        targets: 'host1.example.com',
+      }, session: @session
+
+      assert_response :internal_server_error
+      body = JSON.parse(response.body)
+      assert_match(/launched-job-1/, body['error']['message'])
+      assert_match(/could not.*record/i, body['error']['message'])
+    end
+
+    test 'returns 500 with error shape when async polling cannot be scheduled' do
+      ForemanTasks.stubs(:async_task).raises(StandardError, 'dynflow down')
+
+      post :launch_task, params: {
+        smart_proxy_id: @proxy.id,
+        task_name: 'mymod::install',
+        targets: 'host1.example.com',
+      }, session: @session
+
+      assert_response :internal_server_error
+      body = JSON.parse(response.body)
+      assert_match(/launched-job-1/, body['error']['message'])
+      assert_match(/background polling could not be scheduled/i, body['error']['message'])
     end
   end
 
@@ -179,10 +224,11 @@ class TaskControllerTest < ActionController::TestCase
 
       body = JSON.parse(response.body)
       assert_equal 'running', body['status']
-      assert_equal job.task_name, body['task_name']
+      assert_equal job.task_name, body['name']
       assert_equal job.targets, body['targets']
       assert_equal @proxy.id, body['smart_proxy']['id']
       assert_equal @proxy.name, body['smart_proxy']['name']
+      assert_equal 'task', body['kind']
     end
 
     test 'returns error when job_id is missing' do
@@ -209,6 +255,7 @@ class TaskControllerTest < ActionController::TestCase
       assert_equal job.result, body['value']
       assert_equal job.log, body['log']
       assert_equal job.command, body['command']
+      assert_equal 'task', body['kind']
     end
 
     test 'returns not_found when job does not exist' do
@@ -232,7 +279,7 @@ class TaskControllerTest < ActionController::TestCase
       Setting['openbolt_password'] = 'real-secret-password'
 
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'mymod::install',
         targets: 'host1.example.com',
         options: { 'password' => '[Use saved encrypted default]', 'transport' => 'ssh' },
@@ -252,19 +299,19 @@ class TaskControllerTest < ActionController::TestCase
 
     test 'returns error when encrypted placeholder used for nonexistent setting' do
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'mymod::install',
         targets: 'host1.example.com',
         options: { 'nonexistent-option' => '[Use saved encrypted default]' },
       }, session: @session
 
       assert_response :bad_request
-      assert_match(/No saved value for encrypted option/, JSON.parse(response.body)['error'])
+      assert_match(/No saved value for encrypted option/, JSON.parse(response.body)['error']['message'])
     end
 
     test 'passes non-encrypted options through unchanged' do
       post :launch_task, params: {
-        proxy_id: @proxy.id,
+        smart_proxy_id: @proxy.id,
         task_name: 'mymod::install',
         targets: 'host1.example.com',
         options: { 'transport' => 'ssh', 'user' => 'admin' },
@@ -277,7 +324,7 @@ class TaskControllerTest < ActionController::TestCase
     end
   end
 
-  context 'fetch_openbolt_options with settings defaults' do
+  context 'task_options with settings defaults' do
     test 'merges Foreman setting defaults into proxy options' do
       Setting['openbolt_transport'] = 'winrm'
       Setting['openbolt_user'] = 'admin'
@@ -290,7 +337,7 @@ class TaskControllerTest < ActionController::TestCase
       stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
         .to_return(status: 200, body: proxy_options.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -308,15 +355,52 @@ class TaskControllerTest < ActionController::TestCase
       stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
         .to_return(status: 200, body: proxy_options.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
       assert_equal '[Use saved encrypted default]', body['password']['default']
     end
+
+    test 'omits default when a non-encrypted setting is set to empty string' do
+      # An empty-string setting must not override the proxy's real default.
+      Setting['openbolt_user'] = ''
+
+      proxy_options = {
+        'user' => { 'type' => 'string', 'default' => 'bolt' },
+      }
+      stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
+        .to_return(status: 200, body: proxy_options.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      # Proxy default ('bolt') stays untouched. Empty Foreman setting doesn't override.
+      assert_equal 'bolt', body['user']['default']
+    end
+
+    test 'omits encrypted placeholder when an encrypted setting is set to empty string' do
+      Setting['openbolt_password'] = ''
+
+      proxy_options = {
+        'password' => { 'type' => 'string', 'sensitive' => true },
+      }
+      stub_request(:get, "#{@proxy.url}/openbolt/tasks/options")
+        .to_return(status: 200, body: proxy_options.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_not body['password'].key?('default'),
+        "expected 'password' to have no 'default' key when the setting is empty"
+    end
   end
 
-  context 'fetch_openbolt_options with Choria settings defaults' do
+  context 'task_options with Choria settings defaults' do
     # Mirrors the real GET /openbolt/tasks/options response for Choria
     # (see smart_proxy_openbolt/lib/smart_proxy_openbolt/main.rb OPENBOLT_OPTIONS).
     def self.choria_proxy_options
@@ -356,7 +440,7 @@ class TaskControllerTest < ActionController::TestCase
         .to_return(status: 200, body: self.class.choria_proxy_options.to_json,
           headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -380,7 +464,7 @@ class TaskControllerTest < ActionController::TestCase
         .to_return(status: 200, body: self.class.choria_proxy_options.to_json,
           headers: { 'Content-Type' => 'application/json' })
 
-      get :fetch_openbolt_options, params: { proxy_id: @proxy.id }, session: @session
+      get :task_options, params: { smart_proxy_id: @proxy.id }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -393,11 +477,11 @@ class TaskControllerTest < ActionController::TestCase
     end
   end
 
-  context 'fetch_task_history' do
+  context 'jobs' do
     test 'returns paginated task history' do
       3.times { FactoryBot.create(:task_job, smart_proxy: @proxy) }
 
-      get :fetch_task_history, params: { page: 1, per_page: 2 }, session: @session
+      get :jobs, params: { page: 1, per_page: 2 }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -405,10 +489,11 @@ class TaskControllerTest < ActionController::TestCase
       assert_equal 3, body['total']
       assert_equal 1, body['page']
       assert_equal 2, body['per_page']
+      assert(body['results'].all? { |row| row['kind'] == 'task' })
     end
 
     test 'caps per_page at 100' do
-      get :fetch_task_history, params: { per_page: 200 }, session: @session
+      get :jobs, params: { per_page: 200 }, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
@@ -416,11 +501,84 @@ class TaskControllerTest < ActionController::TestCase
     end
 
     test 'defaults per_page to 20' do
-      get :fetch_task_history, session: @session
+      get :jobs, session: @session
       assert_response :success
 
       body = JSON.parse(response.body)
       assert_equal 20, body['per_page']
+    end
+
+    test 'floors per_page at 1 when zero is requested' do
+      get :jobs, params: { per_page: 0 }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 1, body['per_page']
+    end
+
+    test 'floors per_page at 1 when a negative value is requested' do
+      get :jobs, params: { per_page: -5 }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 1, body['per_page']
+    end
+
+    test 'floors page at 1 when zero is requested' do
+      get :jobs, params: { page: 0 }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 1, body['page']
+    end
+
+    test "per_page='all' returns every job in a single page" do
+      4.times { FactoryBot.create(:task_job, smart_proxy: @proxy) }
+
+      get :jobs, params: { per_page: 'all' }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal 4, body['results'].length
+      assert_equal 4, body['per_page']
+    end
+
+    test "per_page='all' on empty DB does not 500" do
+      # Guards against will_paginate rejecting per_page: 0 when the table
+      # is empty. paginated_task_jobs floors the count at 1.
+      get :jobs, params: { per_page: 'all' }, session: @session
+      assert_response :success
+
+      body = JSON.parse(response.body)
+      assert_equal [], body['results']
+      assert_equal 0, body['total']
+    end
+  end
+
+  context 'unexpected errors' do
+    test 'renders a generic 500 without the exception message' do
+      ForemanOpenbolt::TaskJob.stubs(:includes).raises(StandardError, 'secret internals')
+
+      get :jobs, session: @session
+      assert_response :internal_server_error
+
+      body = JSON.parse(response.body)
+      assert_equal 'Internal server error', body['error']['message']
+      assert_no_match(/secret internals/, response.body)
+    end
+  end
+
+  context 'authorization' do
+    test 'forbids unprivileged users from launching tasks' do
+      unprivileged = FactoryBot.create(:user)
+      User.current = unprivileged
+
+      post :launch_task, params: {
+        smart_proxy_id: @proxy.id,
+        task_name: 'mymod::install',
+        targets: 'host1.example.com',
+      }, session: set_session_user(unprivileged)
+      assert_response :forbidden
     end
   end
 end

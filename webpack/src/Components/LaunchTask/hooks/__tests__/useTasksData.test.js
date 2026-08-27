@@ -42,14 +42,14 @@ describe('useTasksData', () => {
       expect.stringContaining('fetch_tasks')
     );
     expect(API.get).toHaveBeenCalledWith(
-      expect.stringContaining('proxy_id=42')
+      expect.stringContaining('smart_proxy_id=42')
     );
     expect(result.current.taskMetadata).toEqual(tasks);
     expect(result.current.isLoadingTasks).toBe(false);
   });
 
-  test('fetchTasks uses reload endpoint when forceReload is true', async () => {
-    API.get.mockResolvedValue({ data: {} });
+  test('fetchTasks uses POST to the reload endpoint when forceReload is true', async () => {
+    API.post.mockResolvedValue({ data: {} });
 
     const { result } = renderHook(() => useTasksData(), { wrapper });
 
@@ -57,9 +57,10 @@ describe('useTasksData', () => {
       await result.current.fetchTasks(42, true);
     });
 
-    expect(API.get).toHaveBeenCalledWith(
+    expect(API.post).toHaveBeenCalledWith(
       expect.stringContaining('reload_tasks')
     );
+    expect(API.get).not.toHaveBeenCalled();
   });
 
   test('fetchTasks resets state before fetching', async () => {

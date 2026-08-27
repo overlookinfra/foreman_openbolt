@@ -55,9 +55,9 @@ const useJobPolling = jobId => {
           // Task metadata only needs to be set once since it never changes
           if (!metadataLoaded.current) {
             setSubmittedAt(statusData.submitted_at || null);
-            setTaskName(statusData.task_name || null);
-            setTaskDescription(statusData.task_description || null);
-            setTaskParameters(statusData.task_parameters || {});
+            setTaskName(statusData.name || null);
+            setTaskDescription(statusData.description || null);
+            setTaskParameters(statusData.parameters || {});
             setTargets(statusData.targets || []);
             setSmartProxy(statusData.smart_proxy || null);
             metadataLoaded.current = true;

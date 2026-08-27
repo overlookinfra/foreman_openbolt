@@ -200,6 +200,17 @@ class TaskJobTest < ForemanOpenbolt::PluginTestCase
       end
       assert_equal({ 'items' => [] }, job.reload.result)
     end
+
+    test 'cleanup_proxy_artifacts schedules Dynflow action when log is saved without result' do
+      job = FactoryBot.create(:task_job, status: 'success', completed_at: Time.current)
+      ForemanTasks.expects(:async_task).with(
+        ::Actions::ForemanOpenbolt::CleanupProxyArtifacts,
+        job.smart_proxy_id,
+        job.job_id
+      )
+
+      job.update!(log: 'task finished')
+    end
   end
 
   context 'create_from_execution!' do

@@ -29,11 +29,11 @@ class ProxyApiOpenboltTest < ForemanOpenbolt::PluginTestCase
       assert_equal tasks, result
     end
 
-    test 'raises on proxy HTTP error' do
+    test 'wraps proxy HTTP errors as ProxyException' do
       stub_request(:get, "#{PROXY_URL}/openbolt/tasks")
         .to_return(status: 500, body: 'Internal Server Error')
 
-      assert_raises(RestClient::InternalServerError) { @api.fetch_tasks }
+      assert_raises(ProxyAPI::ProxyException) { @api.fetch_tasks }
     end
 
     test 'raises ProxyException on unparseable response body' do
@@ -159,16 +159,131 @@ class ProxyApiOpenboltTest < ForemanOpenbolt::PluginTestCase
   end
 
   context 'connection errors' do
-    test 'raises on timeout' do
+    test 'wraps timeouts as ProxyException' do
       stub_request(:get, "#{PROXY_URL}/openbolt/tasks").to_timeout
 
-      assert_raises(RestClient::Exceptions::OpenTimeout) { @api.fetch_tasks }
+      assert_raises(ProxyAPI::ProxyException) { @api.fetch_tasks }
     end
 
-    test 'raises on connection refused' do
+    test 'wraps connection refused as ProxyException' do
       stub_request(:get, "#{PROXY_URL}/openbolt/tasks").to_raise(Errno::ECONNREFUSED)
 
-      assert_raises(Errno::ECONNREFUSED) { @api.fetch_tasks }
+      assert_raises(ProxyAPI::ProxyException) { @api.fetch_tasks }
+    end
+
+    test 'wraps SocketError as ProxyException' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks").to_raise(SocketError.new('host not found'))
+
+      assert_raises(ProxyAPI::ProxyException) { @api.fetch_tasks }
+    end
+
+    test 'wraps SSL errors as ProxyException' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks")
+        .to_raise(OpenSSL::SSL::SSLError.new('bad cert'))
+
+      assert_raises(ProxyAPI::ProxyException) { @api.fetch_tasks }
+    end
+  end
+
+  # The proxy reports domain errors as HTTP 200 with {"error": {"message":
+  # ...}}. ProxyReportedError makes those loud everywhere except launch_task,
+  # which passes the envelope through so the caller renders a 400.
+  context 'proxy-reported errors (200 + error envelope)' do
+    error_body = { 'error' => { 'message' => 'Job not found: bogus' } }.to_json
+
+    test 'fetch_tasks raises ProxyReportedError' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      error = assert_raises(ProxyAPI::Openbolt::ProxyReportedError) { @api.fetch_tasks }
+      assert_match(/Job not found: bogus/, error.message)
+    end
+
+    test 'reload_tasks raises ProxyReportedError' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks/reload")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      assert_raises(ProxyAPI::Openbolt::ProxyReportedError) { @api.reload_tasks }
+    end
+
+    test 'openbolt_options raises ProxyReportedError' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks/options")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      assert_raises(ProxyAPI::Openbolt::ProxyReportedError) { @api.openbolt_options }
+    end
+
+    test 'job_status raises ProxyReportedError' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/job/test-123/status")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      assert_raises(ProxyAPI::Openbolt::ProxyReportedError) { @api.job_status(job_id: 'test-123') }
+    end
+
+    test 'job_result raises ProxyReportedError' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/job/test-123/result")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      assert_raises(ProxyAPI::Openbolt::ProxyReportedError) { @api.job_result(job_id: 'test-123') }
+    end
+
+    test 'delete_job_artifacts raises ProxyReportedError' do
+      stub_request(:delete, "#{PROXY_URL}/openbolt/job/test-123/artifacts")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      assert_raises(ProxyAPI::Openbolt::ProxyReportedError) { @api.delete_job_artifacts(job_id: 'test-123') }
+    end
+
+    test 'launch_task returns the error envelope unchanged' do
+      stub_request(:post, "#{PROXY_URL}/openbolt/launch/task")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      result = @api.launch_task(name: 'bogus', targets: 'host1', parameters: {}, options: {})
+      assert_equal('Job not found: bogus', result['error']['message'])
+    end
+
+    test 'launch_task still wraps transport errors' do
+      stub_request(:post, "#{PROXY_URL}/openbolt/launch/task").to_timeout
+
+      assert_raises(ProxyAPI::ProxyException) do
+        @api.launch_task(name: 'mymod::install', targets: 'host1', parameters: {}, options: {})
+      end
+    end
+
+    test 'ProxyReportedError is a ProxyException so existing rescue_from chains catch it' do
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks")
+        .to_return(status: 200, body: error_body, headers: { 'Content-Type' => 'application/json' })
+
+      assert_raises(ProxyAPI::ProxyException) { @api.fetch_tasks }
+    end
+
+    test 'a task named error does not raise ProxyReportedError' do
+      tasks = {
+        'error' => { 'description' => 'Raise an error on the target' },
+        'mymod::install' => { 'description' => 'Install a package' },
+      }
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks")
+        .to_return(status: 200, body: tasks.to_json, headers: { 'Content-Type' => 'application/json' })
+
+      assert_equal tasks, @api.fetch_tasks
+    end
+
+    test 'top-level error key with a string value is not treated as an envelope' do
+      body = { 'error' => 'Plain string error' }
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks")
+        .to_return(status: 200, body: body.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      assert_equal body, @api.fetch_tasks
+    end
+
+    test 'error hash without a message key is not treated as an envelope' do
+      body = { 'error' => { 'code' => 42 } }
+      stub_request(:get, "#{PROXY_URL}/openbolt/tasks")
+        .to_return(status: 200, body: body.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      assert_equal body, @api.fetch_tasks
     end
   end
 end
