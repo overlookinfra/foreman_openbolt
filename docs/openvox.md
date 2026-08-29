@@ -3,7 +3,7 @@
 ## Preamble
 
 There are two ways to get started.
-Foreman provides the foreman-installer.
+Foreman provides the [foreman-installer](https://github.com/theforeman/foreman-installer).
 This is an interactive CLI that vendors certain modules.
 It uses `puppet apply` to install Foreman and openvox-server.
 
