@@ -6,7 +6,7 @@
 [![RubyGem Version](https://img.shields.io/gem/v/foreman_openbolt.svg)](https://rubygems.org/gems/foreman_openbolt)
 [![RubyGem Downloads](https://img.shields.io/gem/dt/foreman_openbolt.svg)](https://rubygems.org/gems/foreman_openbolt)
 
-Bringing OpenBolt Task & Plans into Foreman!
+Bringing [OpenBolt](https://docs.openvoxproject.org/openbolt/latest/) Task & Plans into [Foreman](https://theforeman.org/)!
 
 ## Introduction
 
