@@ -8,18 +8,21 @@ This is an interactive CLI that vendors certain modules.
 It uses `puppet apply` to install Foreman and openvox-server.
 
 An alternative way, if you already have a running openvox-server, is using their modules directly.
-This will be used for this demo.
+This will be used for this example.
 
-## Precondition
+## Preconditions
 
-We assume that you have a working openvox-server 8.x or newer.
+We assume that you have a working OpenVox Server & OpenVoxDB 8.x or newer.
 You can install Foreman on the same system or a dedicated VM.
-Foreman can interact with other tools, for example openvox-server, OpenBolt or you beloved DHCP and DNS server.
+Foreman can interact with other tools, for example OpenVox Server, OpenBolt or your beloved DHCP and DNS server.
 This communication is done by the foreman-proxy, which runs on the same system as the tool you want to interact with.
 Foreman-proxy and Foreman communicate via HTTPS and you can have multiple proxies.
 
-To make this demo more fun/realistic, we will install Foreman on a dedicated box.
+To make this example more fun/realistic, we will install Foreman on a dedicated box.
 The hostnames are `openvoxserver` & `foreman` (will be referenced in Hiera).
+
+To properly test this, you should add a couple of agents.
+Every system has to use the same domain and you need working DNS.
 
 ## Naming things
 
@@ -58,23 +61,23 @@ choria::logfile: 'stdout'
 mcollective_choria::config:
   security.serializer: "json"
   use_srv: false
-  puppetserver_host: "puppet.%{facts.networking.domain}"
+  puppetserver_host: "openvoxserver.%{facts.networking.domain}"
   puppetserver_port: 8140
-  puppetca_host: "puppet.%{facts.networking.domain}"
+  puppetca_host: "openvoxserver.%{facts.networking.domain}"
   puppetca_port: 8140
-  puppetdb_host: "puppet.%{facts.networking.domain}"
+  puppetdb_host: "openvoxserver.%{facts.networking.domain}"
   puppetdb_port: 8081
-  middleware_hosts: "puppet.%{facts.networking.domain}:4222"
+  middleware_hosts: "openvoxserver.%{facts.networking.domain}:4222"
 
 choria::server_config:
-  plugin.choria.puppetserver_host: "puppet.%{facts.networking.domain}"
+  plugin.choria.puppetserver_host: "openvoxserver.%{facts.networking.domain}"
   plugin.choria.puppetserver_port: 8140
-  plugin.choria.puppetca_host: "puppet.%{facts.networking.domain}"
+  plugin.choria.puppetca_host: "openvoxserver.%{facts.networking.domain}"
   plugin.choria.puppetca_port: 8140
-  plugin.choria.puppetdb_host: "puppet.%{facts.networking.domain}"
+  plugin.choria.puppetdb_host: "openvoxserver.%{facts.networking.domain}"
   plugin.choria.puppetdb_port: 8081
-  plugin.choria.middleware_hosts: "puppet.%{facts.networking.domain}:4222"
-  # this allows us to reuse existing Puppet Certs for Choria auth
+  plugin.choria.middleware_hosts: "openvoxserver.%{facts.networking.domain}:4222"
+  # this allows us to reuse existing OpenVox Certs for Choria auth
   # .mcollective is the default domain from the upstream docs & for CLI users - but you don't have to use it
   plugin.choria.security.certname_whitelist: "\\.mcollective$,\\.%{facts.networking.domain}$"
 
@@ -99,7 +102,7 @@ mcollective::site_policies:
     facts: "*"
     classes: "*"
   - action: "allow"
-    callers: "choria=puppet.%{facts.networking.domain}"
+    callers: "choria=openvoxserver.%{facts.networking.domain}"
     actions: "*"
     facts: "*"
     classes: "*"
@@ -118,6 +121,10 @@ mcollective::plugin_classes:
 
 # don't use legacy cron to cache facts
 mcollective::facts_refresh_type: 'systemd'
+
+# used by OpenVox Server & Foreman systems
+# set it to latest $major.$minor, omit the patch version
+foreman::repo::repo: '3.19'
 ```
 
 Hiera data for the OpenVox Server:
@@ -139,11 +146,30 @@ mcollective::plugin_classes:
 mcollective::client_config:
   plugin.choria.network.system.user: 'admin'
   plugin.choria.network.system.password: 'secret'
+
+# import ssh hostkeys
+profiles::base::storeconfigs_enabled: true
+```
+
+Data for the Foreman node:
+
+```yaml
+---
+# import ssh hostkeys
+profiles::base::storeconfigs_enabled: true
 ```
 
 ### Puppetfile
 
 ```
+mod 'theforeman-dns', '12.2.0'
+mod 'theforeman-foreman', '30.0.0'
+mod 'theforeman-foreman_proxy', '31.0.0'
+mod 'saz-ssh', '15.0.0'
+mod 'puppet-mosquitto', :latest
+mod 'puppet-redis', '13.0.0'
+mod 'theforeman/puppetserver_foreman', :latest
+
 # latest choria* module releases aren't published to forge.puppet.com, so we use git tags
 mod 'choria-choria',
   git: 'https://github.com/choria-io/puppet-choria',
@@ -187,6 +213,125 @@ mod 'choria-mcollective_agent_process',
 mod 'choria-mcollective_agent_iptables',
   git: 'https://github.com/choria-plugins/iptables-agent',
   ref: '4.1.0'
+```
+
+### OpenVox Code
+
+Base profile, assign this to all nodes
+
+```puppet
+class profiles::base {
+  # set this to true in Hiera for all smartproxies
+  Boolean $storeconfigs_enabled  = false,
+) {
+  # writes all ssh hostkeys into OpenVoxDB. Allows smartproxies to connect to all nodes while validating hostkeys
+  class { 'ssh':
+    client_storeconfigs_enabled => $storeconfigs_enabled, # collects exported resources
+    server_storeconfigs_enabled => true, # exports resources
+    validate_sshd_file          => true,
+    server_options              => { 'PermitRootLogin' => 'without-password', },
+  }
+  contain ssh
+
+  # adds the foreman smartproxy ssh key to the root user at all nodes
+  # openbolt will use this key for the ssh transport
+  include 'foreman_proxy::plugin::remote_execution::ssh_user'
+
+  # configures choria and mcollective
+  contain choria
+}
+```
+
+MCO demo user, assign this to one node where you want to explore the `mco` and `choria` CLI
+(usually used on the choria-broker, to make local debugging easier)
+
+```puppet
+class profiles::mco {
+  # profiles::base pulls in choria, and choria includes mcollective
+  # mcollective is required for our exec resource
+  require profiles::base
+  user { 'mco':
+    ensure         => 'present',
+    system         => true,
+    managehome     => true,
+    purge_ssh_keys => true,
+    shell          => '/bin/bash',
+  }
+  group { 'mco':
+    ensure => 'present',
+    system => true,
+  }
+  exec { 'setup certificate':
+    # choria prints the help if command is passed as array?!
+    command     => 'choria enroll',
+    user        => 'mco',
+    group       => 'mco',
+    cwd         => '/home/mco',
+    path        => $facts['path'],
+    provider    => 'shell',
+    creates     => '/home/mco/.puppetlabs/etc/puppet/ssl/certs/mco.mcollective.pem',
+    # one would assume that you have those environnment variable with provider=shell
+    environment => ['USER=mco','HOME=/home/mco',],
+    require     => Class['mcollective'],
+  }
+}
+```
+
+smartproxy profile, assign this to the Foreman box and to the OpenVox Server.
+**As a bonus this works with Puppet Enterprise**
+
+```
+class infrastructure::foreman_proxy {
+  # foreman_proxy module doesn't create the repo
+  require foreman::repo
+
+  # On an OpenVox Server, the private key is owned by `puppet:puppet` and `foreman-proxy` is part of that group, so it can read the private key
+  # on systems with just a OpenVox-Agent, the private key is owned by `root:root`
+  # so we need to copy the priv key into the foreman-proxy dir
+  $foreman_priv_key = "/etc/foreman-proxy/${facts['networking']['fqdn']}.pem"
+  file { $foreman_priv_key:
+    ensure => 'file',
+    source => $ssl_key,
+    owner  => 'foreman-proxy',
+    group  => 'foreman-proxy',
+    mode   => '0400',
+    notify => Service['foreman-proxy'],
+  }
+  class { 'foreman_proxy':
+    puppet           => true,
+    puppetca         => true,
+    tftp             => false,
+    dhcp             => false,
+    dns              => false,
+    bmc              => false,
+    realm            => false,
+    trusted_hosts    => ["foreman.${facts['networking']['domain']}"],
+    foreman_base_url => "https://foreman.${facts['networking']['domain']}",
+    ssl_key          => $foreman_priv_key,
+    puppet_ssl_key   => $foreman_priv_key,
+    log              => 'JOURNAL',
+  }
+  contain foreman_proxy
+  include foreman_proxy::plugin::openbolt
+
+  # create an ssh key for the foreman-proxy user
+  contain foreman_proxy::plugin::remote_execution::script
+
+  # setup ssh defaults for openbolt to use the key from ↑
+  ssh::client::config::user { 'foreman-proxy-bolt':
+    ensure              => present,
+    user                => 'foreman-proxy',
+    user_home_dir       => '/usr/share/foreman-proxy',
+    manage_user_ssh_dir => false,
+    options             => {
+      'Host *' => {
+        'IdentityFile' => '~/.ssh/id_rsa_foreman_proxy',
+        'User'         => 'root',
+      },
+    },
+    require             => Class['foreman_proxy::plugin::remote_execution::script'], # creates ~/.ssh/id_rsa_foreman_proxy
+  }
+}
 ```
 
 ## Further documentation
