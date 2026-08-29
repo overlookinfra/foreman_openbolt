@@ -5,6 +5,7 @@
 [![Release](https://github.com/overlookinfra/foreman_openbolt/actions/workflows/release.yml/badge.svg)](https://github.com/overlookinfra/foreman_openbolt/actions/workflows/release.yml)
 [![RubyGem Version](https://img.shields.io/gem/v/foreman_openbolt.svg)](https://rubygems.org/gems/foreman_openbolt)
 [![RubyGem Downloads](https://img.shields.io/gem/dt/foreman_openbolt.svg)](https://rubygems.org/gems/foreman_openbolt)
+[![Foreman Landscape](https://img.shields.io/badge/Foreman-Landscape-blue.svg)](https://theforeman.github.io/foreman-plugin-overview/)
 
 Bringing [OpenBolt](https://docs.openvoxproject.org/openbolt/latest/) Task & Plans into [Foreman](https://theforeman.org/)!
 
