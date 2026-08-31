@@ -352,6 +352,67 @@ class profiles::foreman_proxy {
 }
 ```
 
+The OpenVox Server profile:
+
+```
+class profiles::openvoxserver {
+  if $facts['implementation'] == 'openvox' {
+    # check if we've one node with Foreman running
+    $foreman = puppetdb_query('nodes[certname] {resources {type = "Class" and title = "Foreman"}}').map |$r| { $r["certname"] }
+    if $foreman.count > 0 {
+      # needs to be include, otherwise dependency issues
+      # We need to configure the ENC *after* foreman is installed
+      include profiles::foreman_proxy
+      $external_nodes = undef
+      $reports = 'puppetdb,foreman'
+    } else {
+      $external_nodes = ''
+      $reports = 'puppetdb'
+    }
+    class { 'puppet::server':
+      reports                      => $reports,
+      storeconfigs                 => true,
+      check_for_updates            => false,
+      server_ca_allow_auto_renewal => true,
+      ca_allow_sans                => true,
+      ca_allow_auth_extensions     => true,
+      autosign                     => '/etc/puppetlabs/puppet/autosign.conf',
+      autosign_entries             => ['*'],
+      external_nodes               => $external_nodes,
+      foreman_url                  => "https://foreman.${facts['networking']['domain']}",
+      common_modules_path          => [],
+    }
+    contain puppet::server
+  } else {
+    $foreman = puppetdb_query('nodes[certname] {resources {type = "Class" and title = "Foreman"}}').map |$r| { $r["certname"] }
+    if $foreman.count > 0 {
+      # needs to be include, otherwise dependency issues
+      # We need to configure the ENC *after* foreman is available
+      include profiles::foreman_proxy
+      # https://github.com/puppetlabs/puppet-enterprise_issues/issues/55
+      ini_setting { 'enable reporting into Foreman':
+        ensure  => 'present',
+        path    => '/etc/puppetlabs/puppet/puppet.conf',
+        setting => 'reports',
+        value   => 'puppetdb,foreman',
+        section => 'master',
+        notify  => Service['pe-puppetserver'],
+      }
+    }
+    class { 'puppetserver_foreman':
+      puppet_user          => 'pe-puppet',
+      puppet_group         => 'pe-puppet',
+      enc                  => true,
+      foreman_url          => "https://foreman.${facts['networking']['domain']}",
+      fact_watcher_service => true,
+    }
+  }
+
+  # setup mco user for demos
+  include profiles::mco
+}
+```
+
 ## Further documentation
 
 * Choria [can use SRV records](https://choria.io/docs/deployment/dns/) to discover the OpenVoxDB and OpenVox Server FQDNs and ports. But they are a bit uncommon in demo environments, so we use Hiera instead.
