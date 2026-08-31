@@ -413,6 +413,31 @@ class profiles::openvoxserver {
 }
 ```
 
+The OpenVoxDB profile, use this on the same box as the server profile:
+
+```puppet
+class profiles::puppetdb {
+  require profiles::puppetserver
+  class { 'openvoxdb':
+    listen_address      => '0.0.0.0',
+    manage_firewall     => false,
+    postgres_version    => '18',
+    manage_package_repo => true,
+  }
+  class { 'puppet::server::puppetdb':
+    server => $trusted['certname'],
+  }
+  # puppet-openvoxdb has a fact to get the version from the CLI
+  # when puppet runs as daemon, /opt/puppetlabs/bin/ might be missing in $PATH
+  # fixed in OpenFact
+  # https://github.com/OpenVoxProject/openfact/pull/138
+  file { '/usr/local/bin/puppetdb':
+    ensure => 'link',
+    target => '/opt/puppetlabs/bin/puppetdb',
+  }
+}
+```
+
 ## Further documentation
 
 * Choria [can use SRV records](https://choria.io/docs/deployment/dns/) to discover the OpenVoxDB and OpenVox Server FQDNs and ports. But they are a bit uncommon in demo environments, so we use Hiera instead.
