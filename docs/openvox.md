@@ -239,6 +239,24 @@ class profiles::base {
 
   # configures choria and mcollective
   contain choria
+
+  # This is not required. But it was hard to write and I want to distribute it into the world
+  # People like to reuse agent certificates for various things.
+  # It helps if the certificate contains all IP addresses
+  $all_ips = $facts['networking']['interfaces']       # get a hash for all interfaces
+  .filter |$name, $data| { $name != 'lo' }            # remove lo interface
+  .map |$name, $data| { [$data['ip'], $data['ip6']] } # get all ips as array
+  .flatten                                            # flatten the array
+  .delete_undef_values                                # delete undef (in case we don't have IPv6
+  .filter |$ip| { $ip !~ /(?i:^fe80)/ }               # Remove link-locale addresses
+  .sort                                               # sort it for an idempotent list
+  .map |$ip| { "IP:${ip}" }                           # update format for certificates
+  class { 'puppet':
+    unavailable_runmodes  => ['systemd.timer'],
+    agent_server_hostname => "puppet.${facts['networking']['domain']}",
+    dns_alt_names         => [$trusted['certname']] + $all_ips,
+  }
+  contain puppet
 }
 ```
 
