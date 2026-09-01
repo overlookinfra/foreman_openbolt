@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.3.0) (2026-09-01)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.2.1...1.3.0)
+
+**Merged pull requests:**
+
+- Remove git annex repo [\#90](https://github.com/overlookinfra/foreman_openbolt/pull/90) ([nmburgan](https://github.com/nmburgan))
+- Fix for unit test image and package-lock.json version bumps [\#89](https://github.com/overlookinfra/foreman_openbolt/pull/89) ([nmburgan](https://github.com/nmburgan))
+- Add /api/v2/openbolt API [\#88](https://github.com/overlookinfra/foreman_openbolt/pull/88) ([nmburgan](https://github.com/nmburgan))
+- Add CODEOWNERS file [\#70](https://github.com/overlookinfra/foreman_openbolt/pull/70) ([bastelfreak](https://github.com/bastelfreak))
+- Add foreman 3.19 support [\#69](https://github.com/overlookinfra/foreman_openbolt/pull/69) ([bastelfreak](https://github.com/bastelfreak))
+- pin all external actions [\#68](https://github.com/overlookinfra/foreman_openbolt/pull/68) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [1.2.1](https://github.com/overlookinfra/foreman_openbolt/tree/1.2.1) (2026-06-24)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.2.0...1.2.1)
