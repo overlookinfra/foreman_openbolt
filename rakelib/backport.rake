@@ -4,6 +4,33 @@ require 'tmpdir'
 require_relative 'utils/shell'
 
 FOREMAN_PACKAGING_UPSTREAM_URL = 'https://github.com/theforeman/foreman-packaging'
+BACKPORT_GEMS = %w[smart_proxy_openbolt foreman_openbolt].freeze
+
+def backport_gems
+  only = ENV['ONLY']
+  if only
+    abort "Unknown gem '#{only}'. Valid values for ONLY are #{BACKPORT_GEMS.join(', ')}.".red unless BACKPORT_GEMS.include?(only)
+    return [only]
+  end
+
+  if ENV['RPM_COMMIT'] || ENV['DEB_COMMIT'] || ENV['VERSION']
+    abort 'RPM_COMMIT, DEB_COMMIT and VERSION apply to a single gem. Set ONLY=<gem> to name it.'.red
+  end
+
+  BACKPORT_GEMS
+end
+
+# With a single commit override, only that package type gets backported.
+def backport_prefixes
+  overrides = %w[rpm deb].select { |prefix| ENV["#{prefix.upcase}_COMMIT"] }
+  overrides.empty? ? %w[rpm deb] : overrides
+end
+
+def packaging_name(gem_name, branch_prefix)
+  return "rubygem-#{gem_name}" if branch_prefix == 'rpm'
+
+  "ruby-#{gem_name.tr('_', '-')}"
+end
 
 def backport_github_username
   return ENV['GITHUB_USER'] if ENV['GITHUB_USER']
@@ -37,6 +64,14 @@ def clone_foreman_packaging
   dir
 end
 
+def parse_bump_commit(line)
+  sha, message = line.split(' ', 2)
+  version_match = message.match(/to (\d+\.\d+\.\d+)/)
+  gem_version = version_match ? version_match[1] : 'unknown'
+
+  { sha: sha, message: message, version: gem_version }
+end
+
 def find_bump_commit(dir, branch, package_name)
   result = Shell.capture(
     ['git', '-C', dir, 'log', branch, '-1', '--format=%H %s', '--grep', package_name],
@@ -45,11 +80,56 @@ def find_bump_commit(dir, branch, package_name)
   line = result.output.strip
   abort "No commit found for '#{package_name}' on #{branch}".red if line.empty?
 
-  sha, message = line.split(' ', 2)
-  version_match = message.match(/to (\d+\.\d+\.\d+)/)
-  gem_version = version_match ? version_match[1] : 'unknown'
+  parse_bump_commit(line)
+end
 
-  { sha: sha, message: message, version: gem_version }
+def specified_commit(dir, sha, develop_ref)
+  ancestor = Shell.capture(
+    ['git', '-C', dir, 'merge-base', '--is-ancestor', sha, develop_ref],
+    print_command: false, allowed_exit_codes: [0, 1]
+  )
+  abort "Commit #{sha} is not on #{develop_ref}".red unless ancestor.exitcode.zero?
+
+  result = Shell.capture(['git', '-C', dir, 'log', '-1', '--format=%H %s', sha], print_command: false)
+  parse_bump_commit(result.output.strip)
+end
+
+# Cherry-picks a commit, pausing for manual resolution if it does not apply cleanly.
+# Returns true if the commit landed, false if it was aborted or skipped during resolution.
+def cherry_pick_commit(dir, sha)
+  head_before = Shell.capture(['git', '-C', dir, 'rev-parse', 'HEAD'], print_command: false).output
+  exitcode = Shell.run(['git', '-C', dir, 'cherry-pick', sha], allowed_exit_codes: [0, 1])
+  return true if exitcode.zero?
+
+  puts "\nCherry-pick of #{sha[0..7]} did not apply cleanly.".yellow
+  puts "Resolve it in #{dir} and finish with git cherry-pick --continue.".yellow
+  loop do
+    print 'Press Enter once the cherry-pick is finished (Ctrl-C aborts the backport)... '
+    $stdout.flush
+    abort 'Stdin is closed, cannot wait for conflict resolution.'.red if $stdin.gets.nil?
+    break unless File.exist?(File.join(dir, '.git', 'CHERRY_PICK_HEAD'))
+
+    puts 'The cherry-pick is still in progress, finish it first.'.yellow
+  end
+
+  head_after = Shell.capture(['git', '-C', dir, 'rev-parse', 'HEAD'], print_command: false).output
+  return true unless head_after == head_before
+
+  puts "  Cherry-pick of #{sha[0..7]} did not add a commit (aborted or skipped), leaving it out".yellow
+  false
+end
+
+# Asks a yes/no question when running interactively. Returns true without
+# asking when stdin is not a TTY so non-interactive runs keep working.
+def confirm?(question)
+  return true unless $stdin.tty?
+
+  print "#{question} [y/N] "
+  $stdout.flush
+  answer = $stdin.gets
+  return false if answer.nil?
+
+  %w[y yes].include?(answer.strip.downcase)
 end
 
 def gh_available?
@@ -103,22 +183,25 @@ def verify_gh_permissions
   end
 end
 
-def backport_to_branches(dir, branch_prefix:, timestamp:, pr_urls:)
+def backport_to_branches(dir, gems:, branch_prefix:, timestamp:, pr_urls:)
   develop_ref = "upstream/#{branch_prefix}/develop"
-
-  smart_proxy_pkg, foreman_pkg = if branch_prefix == 'rpm'
-                                   ['rubygem-smart_proxy_openbolt', 'rubygem-foreman_openbolt']
-                                 else
-                                   ['ruby-smart-proxy-openbolt', 'ruby-foreman-openbolt']
-                                 end
+  override_sha = ENV["#{branch_prefix.upcase}_COMMIT"]
+  override_version = ENV['VERSION']
 
   puts "\nLooking for package bump commits on #{develop_ref}...".magenta
 
-  smart_proxy_commit = find_bump_commit(dir, develop_ref, smart_proxy_pkg)
-  puts "  #{smart_proxy_pkg}: #{smart_proxy_commit[:sha][0..7]} (#{smart_proxy_commit[:version]})".green
-
-  foreman_commit = find_bump_commit(dir, develop_ref, foreman_pkg)
-  puts "  #{foreman_pkg}: #{foreman_commit[:sha][0..7]} (#{foreman_commit[:version]})".green
+  commits = gems.map do |gem_name|
+    package = packaging_name(gem_name, branch_prefix)
+    found = if override_sha
+              specified_commit(dir, override_sha, develop_ref)
+            else
+              find_bump_commit(dir, develop_ref, package)
+            end
+    commit = found.merge(gem: gem_name)
+    commit[:version] = override_version if override_version
+    puts "  #{package}: #{commit[:sha][0..7]} (#{commit[:version]})".green
+    commit
+  end
 
   versions = supported_foreman_releases
   use_gh = gh_available?
@@ -133,16 +216,27 @@ def backport_to_branches(dir, branch_prefix:, timestamp:, pr_urls:)
     Shell.run(['git', '-C', dir, 'checkout', '--force', target_ref], print_command: false)
     Shell.run(['git', '-C', dir, 'clean', '-fd'], print_command: false)
     Shell.run(['git', '-C', dir, 'checkout', '-b', branch_name])
-    Shell.run(['git', '-C', dir, 'cherry-pick', smart_proxy_commit[:sha]])
-    Shell.run(['git', '-C', dir, 'cherry-pick', foreman_commit[:sha]])
+    landed = commits.select { |commit| cherry_pick_commit(dir, commit[:sha]) }
+    if landed.empty?
+      puts "  Nothing was cherry-picked for #{branch_prefix}/#{version}, skipping".yellow
+      next
+    end
     Shell.run(['git', '-C', dir, 'push', 'origin', branch_name])
     puts "  Pushed #{branch_name}".green
 
     next unless use_gh
 
-    pr_title = "Cherry pick smart_proxy_openbolt #{smart_proxy_commit[:version]} " \
-               "and foreman_openbolt #{foreman_commit[:version]} " \
-               "to #{branch_prefix}/#{version}"
+    picked = landed.map { |commit| "#{commit[:gem]} #{commit[:version]}" }.join(' and ')
+    pr_title = "Cherry pick #{picked} to #{branch_prefix}/#{version}"
+    if $stdin.tty?
+      puts "\nChanges for the #{branch_prefix}/#{version} PR:".magenta
+      Shell.run(['git', '-C', dir, '--no-pager', 'log', '-p', "#{target_ref}..#{branch_name}"], print_command: false)
+    end
+    unless confirm?("  Create PR '#{pr_title}'?")
+      puts "  Skipped PR for #{branch_prefix}/#{version}".yellow
+      next
+    end
+
     result = Shell.capture(
       ['gh', 'pr', 'create',
        '--repo', 'theforeman/foreman-packaging',
@@ -161,19 +255,26 @@ def backport_to_branches(dir, branch_prefix:, timestamp:, pr_urls:)
   end
 end
 
-desc 'Cherry-pick OpenBolt package bumps to all supported Foreman release branches in foreman-packaging'
+desc 'Cherry-pick OpenBolt package bumps to all supported Foreman release branches in foreman-packaging ' \
+     '(set ONLY=<gem> to backport a single gem, RPM_COMMIT/DEB_COMMIT to pick commits instead of the latest, ' \
+     'VERSION to override the version in PR titles)'
 task :backport do
+  gems = backport_gems
+  prefixes = backport_prefixes
   verify_gh_permissions
   dir = clone_foreman_packaging
   timestamp = Time.now.utc.strftime('%Y-%m-%d_%H-%M-%S')
   versions = supported_foreman_releases
 
+  puts "Backporting gems: #{gems.join(', ')}".magenta
+  puts "Package types: #{prefixes.join(', ')}".magenta
   puts "Supported Foreman releases: #{versions.join(', ')}".magenta
   puts "Backport timestamp: #{timestamp}".magenta
 
   pr_urls = []
-  backport_to_branches(dir, branch_prefix: 'rpm', timestamp: timestamp, pr_urls: pr_urls)
-  backport_to_branches(dir, branch_prefix: 'deb', timestamp: timestamp, pr_urls: pr_urls)
+  prefixes.each do |prefix|
+    backport_to_branches(dir, gems: gems, branch_prefix: prefix, timestamp: timestamp, pr_urls: pr_urls)
+  end
 
   puts "\nBackport complete!".green
   unless pr_urls.empty?

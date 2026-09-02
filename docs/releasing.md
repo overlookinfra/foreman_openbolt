@@ -2,10 +2,11 @@
 
 ## Version locations
 
-The version is maintained in two files:
+The version is maintained in three files:
 
 1. `lib/foreman_openbolt/version.rb` -- the gem version (authoritative source)
 2. `package.json` -- the npm package version (must match)
+2. `package-lock.json` -- also the npm package version
 
 If the minimum Foreman version changes, also update:
 
@@ -43,12 +44,38 @@ This will:
 1. Determine the supported Foreman version range (from `engine.rb` and the latest Foreman release tag)
 2. Clone `foreman-packaging` with your fork as `origin` (detected via `gh auth`)
 3. Find the latest `smart_proxy_openbolt` and `foreman_openbolt` bump commits on `rpm/develop` and `deb/develop`
-4. For each supported version, create a cherry-pick branch, apply both commits, and push to your fork
-5. If `gh` is available and authenticated, create PRs against `theforeman/foreman-packaging`
+4. For each supported version, create a cherry-pick branch, apply the commits, and push to your fork
+5. If `gh` is available and authenticated, create PRs against `theforeman/foreman-packaging` (shows the changes and asks for confirmation before each PR when running in a terminal)
 
 The task requires `gh` to be authenticated with a classic token that has the `public_repo` scope, or a fine-grained token with `read:org` access to `theforeman` and push access to your fork.
 
 You can override the GitHub username with `GITHUB_USER=<username> rake backport`.
+
+By default the task backports both gems. If only one gem has a new release, set `ONLY` to its name:
+
+```bash
+ONLY=foreman_openbolt rake backport
+```
+
+The task finds the latest bump commit for each gem automatically. To cherry-pick a specific commit instead, set `RPM_COMMIT` and/or `DEB_COMMIT` to a commit sha on `rpm/develop` or `deb/develop`. A sha names one commit, so these require `ONLY`:
+
+```bash
+ONLY=foreman_openbolt RPM_COMMIT=abc1234 DEB_COMMIT=def5678 rake backport
+```
+
+If only one of the two is set, the task backports just that package type. `RPM_COMMIT` alone touches only the `rpm/*` branches.
+
+The PR title normally shows the version parsed from the bump commit message. To show a different version (for example a package revision such as `1.2.1-2`), set `VERSION`. It also requires `ONLY`:
+
+```bash
+ONLY=foreman_openbolt VERSION=1.2.1-2 rake backport
+```
+
+When a cherry-pick hits a conflict, the task pauses and prints the path of its clone. Resolve the conflict there in another terminal, finish with `git cherry-pick --continue`, then press Enter to resume. A commit you resolve with `git cherry-pick --abort` or `--skip` is left out of that PR. Ctrl-C stops the whole backport.
+
+NOTE: The PR automation that tests building the packages sometimes gets a bit cranky for debs when you open multiple PRs at once for the same package. If PR checks fail, try closing the PRs and reopening them one at a time.
+
+Additionally, RPM PRs must contain exactly ONE package version bump. If the package was bumped on the `develop` branch previously and it never got backported, those bumps must be backported first in their own PRs in the correct historical order.
 
 PRs against stable branches should be labeled "Stable branch".
 
