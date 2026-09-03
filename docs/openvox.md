@@ -162,13 +162,27 @@ profiles::base::storeconfigs_enabled: true
 ### Puppetfile
 
 ```
-mod 'theforeman-dns', '12.2.0'
+# we won't add *all* foreman modules here
+# if you want to manage DNS,DHCP,TFTP, you will need a few more modules
+mod 'puppet-extlib', '8.0.0'
+mod 'puppet-mosquitto', '3.0.0'
+mod 'puppet-openvoxdb', '9.1.1'
+mod 'puppet-redis', '13.0.0'
+mod 'puppet-systemd', '9.4.0'
+mod 'puppetlabs-apache', '13.4.0'
+mod 'puppetlabs-apt', '11.3.2'
+mod 'puppetlabs-concat', '10.0.1'
+mod 'puppetlabs-inifile', '6.4.1'
+mod 'puppetlabs-stdlib', '9.7.0'
+mod 'richardc-datacat', '0.6.2'
+mod 'saz-ssh', '15.0.0'
 mod 'theforeman-foreman', '30.0.0'
 mod 'theforeman-foreman_proxy', '31.0.0'
-mod 'saz-ssh', '15.0.0'
-mod 'puppet-mosquitto', :latest
-mod 'puppet-redis', '13.0.0'
-mod 'theforeman/puppetserver_foreman', :latest
+mod 'theforeman/puppetserver_foreman', '4.3.0'
+# pin to commit until https://github.com/theforeman/puppet-puppet/pull/982 is merged
+mod 'theforeman-puppet',
+  git: 'https://github.com/bastelfreak/puppet-puppet',
+  ref: '54cec7ac965f637508e3a3f78fd283c9dd0a0cd8'
 
 # latest choria* module releases aren't published to forge.puppet.com, so we use git tags
 mod 'choria-choria',
