@@ -73,7 +73,7 @@ A handful of core/default Tasks & Plans are also included in the [OpenBolt rpm/d
 - [Development](docs/development.md): linting, unit tests, acceptance tests, building packages
 - [Releasing](docs/releasing.md): version locations, release steps, RPM/DEB packaging
 - [Choria Testing](docs/choria-testing.md): setting up Choria on a Foreman install for transport testing
-- [OpenVox Example Code](docs/openvox.md): Example Hiera and Puppet code to get started with Foreman and OpenBolt and Choria
+- [Foreman + Choria Example Code](docs/choria.md): Example Hiera and Puppet code to get started with Foreman and OpenBolt and Choria
 
 ## Contributing & support
 
