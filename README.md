@@ -5,8 +5,9 @@
 [![Release](https://github.com/overlookinfra/foreman_openbolt/actions/workflows/release.yml/badge.svg)](https://github.com/overlookinfra/foreman_openbolt/actions/workflows/release.yml)
 [![RubyGem Version](https://img.shields.io/gem/v/foreman_openbolt.svg)](https://rubygems.org/gems/foreman_openbolt)
 [![RubyGem Downloads](https://img.shields.io/gem/dt/foreman_openbolt.svg)](https://rubygems.org/gems/foreman_openbolt)
+[![Foreman Landscape](https://img.shields.io/badge/Foreman-Landscape-blue.svg)](https://theforeman.github.io/foreman-plugin-overview/)
 
-Bringing OpenBolt Task & Plans into Foreman!
+Bringing [OpenBolt](https://docs.openvoxproject.org/openbolt/latest/) Task & Plans into [Foreman](https://theforeman.org/)!
 
 ## Introduction
 
@@ -72,6 +73,7 @@ A handful of core/default Tasks & Plans are also included in the [OpenBolt rpm/d
 - [Development](docs/development.md): linting, unit tests, acceptance tests, building packages
 - [Releasing](docs/releasing.md): version locations, release steps, RPM/DEB packaging
 - [Choria Testing](docs/choria-testing.md): setting up Choria on a Foreman install for transport testing
+- [Foreman + Choria Example Code](docs/choria.md): Example Hiera and Puppet code to get started with Foreman and OpenBolt and Choria
 
 ## Contributing & support
 
