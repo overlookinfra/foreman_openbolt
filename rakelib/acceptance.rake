@@ -345,7 +345,7 @@ namespace :acceptance do
     puts "==> Registering targets with Foreman...".magenta
     all_hosts = foreman_api('GET', '/hosts?per_page=all')
     abort "FATAL: Could not list hosts from Foreman: #{all_hosts}".red unless all_hosts.is_a?(Hash)
-    known_hosts = all_hosts['results']&.map { |host| host['name'] } || []
+    known_hosts = all_hosts['results']&.pluck('name') || []
 
     TARGETS.each do |target|
       fqdn = target_ssh_capture(target, 'hostname -f')
