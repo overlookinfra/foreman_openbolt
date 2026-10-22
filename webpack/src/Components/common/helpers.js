@@ -46,3 +46,49 @@ export const formatDate = dateString => {
   if (Number.isNaN(date.getTime())) return '-';
   return date.toLocaleString();
 };
+
+export const enumStringToArray = input => {
+  const m = input.match(/^Enum\s*\[(.*)\]\s*$/i);
+  if (!m) return input;
+
+  const body = m[1];
+  const result = [];
+  let current = '';
+  let quote = null;
+
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+
+    if (ch === "'" || ch === '"') {
+      if (quote === ch) quote = null;
+      else if (!quote) quote = ch;
+      current += ch;
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+
+    if (ch === ',' && !quote) {
+      result.push(cleanToken(current));
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+
+  if (current.length || body.endsWith(',')) {
+    result.push(cleanToken(current));
+  }
+
+  return result;
+}
+
+function cleanToken(token) {
+  token = token.trim();
+  if (
+      (token.startsWith("'") && token.endsWith("'")) ||
+      (token.startsWith('"') && token.endsWith('"'))
+  ) {
+    token = token.slice(1, -1);
+  }
+  return token;
+}
