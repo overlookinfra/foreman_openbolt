@@ -7,6 +7,7 @@ import {
   TextInput,
 } from '@patternfly/react-core';
 import { ENCRYPTED_DEFAULT_PLACEHOLDER } from '../common/constants';
+import {enumStringToArray} from '../common/helpers';
 
 /* Example task parameter metadata from the proxy:
  * {
@@ -64,15 +65,23 @@ const ParameterField = ({
   onChange,
   isRequired = false,
 }) => {
-  const {
-    type,
+  let {
     sensitive,
     default: defaultValue = null,
     description = null,
   } = metadata;
+  const {
+    type 
+  } = metadata;
 
   const fieldId = `param_${name}`;
   const hasEncryptedDefault = defaultValue === ENCRYPTED_DEFAULT_PLACEHOLDER;
+
+  // if the type starts with Enum[ it will be recognized as string not as array,
+  // so we're converting the string to an array
+  if (type.toString().startsWith('Enum[')) {
+    type = enumStringToArray(type);
+  }
 
   // Enums (arrays of strings) are rendered as dropdowns. We don't show
   // the type label for these since the options are self-evident. Also
