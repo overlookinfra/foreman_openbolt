@@ -9,6 +9,7 @@
 FROM rockylinux:9
 
 # System packages -- cached across all Foreman versions.
+# openssl-devel required by latest net-ssh gem
 RUN dnf module enable -y nodejs:22 postgresql:16 && \
     dnf install -y \
       ruby ruby-devel rubygem-bundler \
@@ -18,6 +19,7 @@ RUN dnf module enable -y nodejs:22 postgresql:16 && \
       libffi-devel \
       nodejs npm \
       git-core \
+      openssl-devel \
       redhat-rpm-config && \
     dnf clean all
 
@@ -40,6 +42,10 @@ RUN printf "test:\n  adapter: postgresql\n  host: db\n  port: 5432\n  username: 
 # expensive layer but only changes when the Foreman version changes.
 ENV BUNDLE_WITHOUT="release console journald libvirt ec2 openstack vmware telemetry"
 ENV BUNDLE_PATH="/opt/bundle"
+
+# workaround for json 3.x, which isn't compatible with Foreman 3.18 and older
+RUN printf "gem 'json', '< 3'\n" > bundler.d/json.rb
+
 RUN bundle install --jobs=4
 
 COPY test/unit/docker/entrypoint.sh /entrypoint.sh
