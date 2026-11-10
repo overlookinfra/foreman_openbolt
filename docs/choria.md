@@ -368,7 +368,7 @@ class profiles::foreman_proxy {
 
 The OpenVox Server profile:
 
-```
+```puppet
 class profiles::openvoxserver {
   if $facts['implementation'] == 'openvox' {
     # check if we've one node with Foreman running
