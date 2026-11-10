@@ -312,7 +312,7 @@ class profiles::mco {
 smartproxy profile, assign this to the Foreman box and to the OpenVox Server.
 **As a bonus this works with Puppet Enterprise**
 
-```
+```puppet
 class profiles::foreman_proxy {
   # foreman_proxy module doesn't create the repo
   require foreman::repo
