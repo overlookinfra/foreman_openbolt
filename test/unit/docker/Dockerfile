@@ -9,6 +9,7 @@
 FROM rockylinux:9
 
 # System packages -- cached across all Foreman versions.
+# openssl-devel required by latest net-ssh gem
 RUN dnf module enable -y nodejs:22 postgresql:16 && \
     dnf install -y \
       ruby ruby-devel rubygem-bundler \
@@ -18,6 +19,7 @@ RUN dnf module enable -y nodejs:22 postgresql:16 && \
       libffi-devel \
       nodejs npm \
       git-core \
+      openssl-devel \
       redhat-rpm-config && \
     dnf clean all
 
