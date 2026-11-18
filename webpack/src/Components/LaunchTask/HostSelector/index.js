@@ -86,9 +86,13 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
       }
 
       // Add host groups
+      const hostGroupNames = [];
       if (selectedTargets.hostGroups.length > 0) {
         const groupQueries = selectedTargets.hostGroups
-          .map(g => `hostgroup_fullname = "${g.name.replace(/"/g, '\\"')}"`)
+          .map(g => {
+            hostGroupNames.push(g.name);
+            return `hostgroup_fullname = "${g.name.replace(/"/g, '\\"')}"`;
+          })
           .join(' or ');
         searchParts.push(`(${groupQueries})`);
       }
@@ -99,7 +103,7 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
       }
 
       if (searchParts.length === 0) {
-        onChange([]);
+        onChange({});
         return;
       }
 
@@ -119,12 +123,15 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
         if (!cancelled) {
           const hostNames =
             response.data?.results?.map(host => host.name) || [];
-          onChange(hostNames);
+          onChange({
+            hostNames,
+            hostGroupNames,
+          });
         }
       } catch (error) {
         if (!cancelled) {
           setFetchError(extractErrorMessage(error));
-          onChange([]);
+          onChange({});
         }
       } finally {
         if (!cancelled) {

@@ -14,6 +14,7 @@ const ExecutionDisplay = ({
   jobStatus,
   isPolling,
   targets,
+  hostGroups,
   submittedAt,
   completedAt,
   taskName,
@@ -44,6 +45,7 @@ const ExecutionDisplay = ({
           jobStatus={jobStatus}
           isPolling={isPolling}
           targets={targets}
+          hostGroups={hostGroups}
           submittedAt={submittedAt}
           completedAt={completedAt}
         />
@@ -79,6 +81,7 @@ ExecutionDisplay.propTypes = {
   jobStatus: PropTypes.string.isRequired,
   isPolling: PropTypes.bool.isRequired,
   targets: PropTypes.arrayOf(PropTypes.string).isRequired,
+  hostGroups: PropTypes.arrayOf(PropTypes.string),
   submittedAt: PropTypes.string,
   completedAt: PropTypes.string,
   taskName: PropTypes.string,
@@ -93,6 +96,7 @@ ExecutionDisplay.defaultProps = {
   taskName: null,
   taskDescription: null,
   taskParameters: {},
+  hostGroups: null,
 };
 
 export default ExecutionDisplay;

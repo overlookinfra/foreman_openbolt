@@ -28,21 +28,7 @@ import { useSmartProxies } from './hooks/useSmartProxies';
 import { useTasksData } from './hooks/useTasksData';
 import { useOpenBoltOptions } from './hooks/useOpenBoltOptions';
 import { useShowMessage, extractErrorMessage } from '../common/helpers';
-
-// Exported so tests can use the launch wire format
-export const buildLaunchPayload = ({
-  proxyId,
-  taskName,
-  targets,
-  parameters,
-  options,
-}) => ({
-  smart_proxy_id: proxyId,
-  task_name: taskName,
-  targets: targets.join(','),
-  parameters,
-  options,
-});
+import { buildLaunchPayload } from './helpers';
 
 const LaunchTask = () => {
   const history = useHistory();
@@ -51,6 +37,7 @@ const LaunchTask = () => {
   /* States */
   const [selectedProxy, setSelectedProxy] = useState('');
   const [targets, setTargets] = useState([]);
+  const [hostGroups, setHostGroups] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* Custom hooks for data fetching */
@@ -145,10 +132,11 @@ const LaunchTask = () => {
   }, [selectedProxy, fetchTasks]);
 
   const handleTargetsChange = useCallback(
-    targetArray => {
-      setTargets(targetArray);
+    value => {
+      setTargets(value.hostNames || []);
+      setHostGroups(value.hostGroupNames || []);
     },
-    [setTargets]
+    [setTargets, setHostGroups]
   );
 
   const handleSubmit = useCallback(
@@ -184,6 +172,7 @@ const LaunchTask = () => {
           proxyId: selectedProxy,
           taskName: selectedTask,
           targets,
+          hostGroups,
           parameters: taskParameters,
           options: visibleOptions,
         });
@@ -208,10 +197,10 @@ const LaunchTask = () => {
       selectedProxy,
       selectedTask,
       targets,
+      hostGroups,
       taskParameters,
       openBoltOptions,
       openBoltOptionsMetadata,
-      smartProxies,
       history,
       showMessage,
     ]

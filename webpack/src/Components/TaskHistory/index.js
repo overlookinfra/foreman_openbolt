@@ -29,6 +29,7 @@ import {
   formatDate,
 } from '../common/helpers';
 import HostsPopover from '../common/HostsPopover';
+import HostGroupsPopover from '../common/HostGroupsPopover';
 import TaskPopover from './TaskPopover';
 
 const getStatusLabel = status => {
@@ -127,6 +128,7 @@ const TaskHistory = () => {
             <Th modifier="wrap">{__('Task Name')}</Th>
             <Th modifier="wrap">{__('Status')}</Th>
             <Th modifier="wrap">{__('Targets')}</Th>
+            <Th modifier="wrap">{__('Host Groups')}</Th>
             <Th modifier="wrap">{__('Submitted')}</Th>
             <Th modifier="wrap">{__('Completed')}</Th>
             <Th modifier="wrap">{__('Duration')}</Th>
@@ -146,6 +148,9 @@ const TaskHistory = () => {
               <Td hasRightBorder>{getStatusLabel(job.status)}</Td>
               <Td hasRightBorder>
                 <HostsPopover targets={job.targets || []} />
+              </Td>
+              <Td hasRightBorder>
+                <HostGroupsPopover hostGroups={job.host_groups || []} />
               </Td>
               <Td hasRightBorder>{formatDate(job.submitted_at)}</Td>
               <Td hasRightBorder>

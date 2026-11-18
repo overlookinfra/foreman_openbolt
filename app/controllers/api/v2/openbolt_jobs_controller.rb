@@ -27,6 +27,7 @@ module Api
         property :description, String, allow_nil: true, desc: N_('Description of the launched Bolt task (or later, plan)')
         property :parameters, Hash, desc: N_('Parameters the job was launched with')
         property :targets, Array, of: String, desc: N_('Target hosts the job was launched against for tasks')
+        property :host_groups, Array, of: String, desc: N_('Host groups the job was launched against')
         property :smart_proxy, Hash, desc: N_('Smart proxy that executed the job') do
           property :id, Integer, desc: N_('Smart proxy ID')
           property :name, String, desc: N_('Smart proxy name')

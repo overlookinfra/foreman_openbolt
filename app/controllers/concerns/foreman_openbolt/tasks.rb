@@ -32,6 +32,7 @@ module ForemanOpenbolt
         openbolt_api: @openbolt_api,
         task_name: params[:task_name],
         targets: params[:targets],
+        host_groups: params[:host_groups] || '',
         parameters: params[:parameters] || {},
         options: params[:options] || {}
       )
@@ -42,9 +43,10 @@ module ForemanOpenbolt
     # Returns the proxy-issued job id. Failures after the proxy accepts the
     # launch raise PartialLaunchError. The proxy job keeps running and there
     # is no proxy-side cancel hook right now, so we only surface the failure.
-    def dispatch_task(smart_proxy:, openbolt_api:, task_name:, targets:, parameters:, options:)
+    def dispatch_task(smart_proxy:, openbolt_api:, task_name:, targets:, host_groups:, parameters:, options:)
       task_name = task_name.to_s.strip
       targets = targets.to_s.strip
+      host_groups = host_groups.to_s.strip
       raise ForemanOpenbolt::Common::LaunchError, 'Task name and targets cannot be empty' if task_name.empty? || targets.empty?
 
       merged_options = merge_encrypted_defaults(options)
@@ -92,6 +94,7 @@ module ForemanOpenbolt
           task_name: task_name,
           task_description: metadata['description'] || '',
           targets: targets.split(',').map(&:strip),
+          host_groups: host_groups.split(',').map(&:strip),
           parameters: parameters,
           options: scrub_options_for_storage(merged_options),
           job_id: job_id

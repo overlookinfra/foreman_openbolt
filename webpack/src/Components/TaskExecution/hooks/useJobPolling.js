@@ -21,6 +21,7 @@ const useJobPolling = jobId => {
   const [taskDescription, setTaskDescription] = useState(null);
   const [taskParameters, setTaskParameters] = useState({});
   const [targets, setTargets] = useState([]);
+  const [hostGroups, setHostGroups] = useState([]);
   const [smartProxy, setSmartProxy] = useState(null);
   const metadataLoaded = useRef(false);
 
@@ -59,6 +60,7 @@ const useJobPolling = jobId => {
             setTaskDescription(statusData.description || null);
             setTaskParameters(statusData.parameters || {});
             setTargets(statusData.targets || []);
+            setHostGroups(statusData.host_groups || []);
             setSmartProxy(statusData.smart_proxy || null);
             metadataLoaded.current = true;
           }
@@ -136,6 +138,7 @@ const useJobPolling = jobId => {
     taskDescription,
     taskParameters,
     targets,
+    hostGroups,
     smartProxy,
   };
 };

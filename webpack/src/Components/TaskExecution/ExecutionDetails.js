@@ -24,6 +24,7 @@ import {
 import { formatDuration, formatDate } from '../common/helpers';
 import { STATUS, POLLING_CONFIG } from '../common/constants';
 import HostsPopover from '../common/HostsPopover';
+import HostGroupsPopover from '../common/HostGroupsPopover';
 
 const STATUS_CONFIGS = {
   [STATUS.SUCCESS]: {
@@ -116,6 +117,7 @@ const ExecutionDetails = ({
   jobStatus,
   isPolling,
   targets,
+  hostGroups,
   submittedAt,
   completedAt,
 }) => (
@@ -136,6 +138,10 @@ const ExecutionDetails = ({
 
         <DescriptionItem label={__('Hosts')}>
           <HostsPopover targets={targets} />
+        </DescriptionItem>
+
+        <DescriptionItem label={__('Host Groups')}>
+          <HostGroupsPopover hostGroups={hostGroups} />
         </DescriptionItem>
 
         <DescriptionItem label={__('Status')}>
@@ -175,6 +181,7 @@ ExecutionDetails.propTypes = {
   jobStatus: PropTypes.string.isRequired,
   isPolling: PropTypes.bool.isRequired,
   targets: PropTypes.arrayOf(PropTypes.string).isRequired,
+  hostGroups: PropTypes.arrayOf(PropTypes.string),
   submittedAt: PropTypes.string,
   completedAt: PropTypes.string,
 };
@@ -183,6 +190,7 @@ ExecutionDetails.defaultProps = {
   smartProxy: null,
   submittedAt: null,
   completedAt: null,
+  hostGroups: null,
 };
 
 export default ExecutionDetails;
