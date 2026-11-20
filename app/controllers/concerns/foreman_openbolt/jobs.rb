@@ -33,6 +33,7 @@ module ForemanOpenbolt
         description: task_job.task_description,
         parameters: task_job.task_parameters,
         targets: task_job.targets,
+        host_groups: task_job.host_groups,
         smart_proxy: {
           id: task_job.smart_proxy_id,
           name: task_job.smart_proxy&.name || '(unknown)',

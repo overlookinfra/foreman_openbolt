@@ -221,6 +221,7 @@ class TaskJobTest < ForemanOpenbolt::PluginTestCase
         task_name: 'mymod::mytask',
         task_description: 'Restart a service',
         targets: ['web1.example.com'],
+        host_groups: ['webservers', 'nginx'],
         job_id: 'exec-123',
         parameters: { 'service' => 'nginx' },
         options: { 'transport' => 'ssh' }
@@ -231,6 +232,7 @@ class TaskJobTest < ForemanOpenbolt::PluginTestCase
       assert_equal 'mymod::mytask', job.task_name
       assert_equal 'Restart a service', job.task_description
       assert_equal ['web1.example.com'], job.targets
+      assert_equal ['webservers', 'nginx'], job.host_groups
       assert_equal({ 'service' => 'nginx' }, job.task_parameters)
       assert_equal({ 'transport' => 'ssh' }, job.openbolt_options)
       assert_equal 'pending', job.status

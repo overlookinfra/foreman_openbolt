@@ -32,13 +32,14 @@ module ForemanOpenbolt
     after_update :cleanup_proxy_artifacts, if: :saved_result_and_log?
 
     # Class methods
-    def self.create_from_execution!(proxy:, task_name:, task_description:, targets:, job_id:, parameters: {}, options: {})
+    def self.create_from_execution!(proxy:, task_name:, task_description:, targets:, host_groups:, job_id:, parameters: {}, options: {})
       create!(
         job_id: job_id,
         smart_proxy: proxy,
         task_name: task_name,
         task_description: task_description,
         targets: targets,
+        host_groups: host_groups,
         task_parameters: parameters,
         openbolt_options: options,
         status: 'pending',

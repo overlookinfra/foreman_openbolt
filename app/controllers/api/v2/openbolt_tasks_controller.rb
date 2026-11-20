@@ -67,6 +67,8 @@ module Api
       param :task_name, String, required: true, desc: N_('Name of the Bolt task to run')
       param :targets, String, required: true,
         desc: N_('Comma-separated list of target hosts the task should run on')
+      param :host_groups, String, required: false,
+        desc: N_('Comma-separated list of host groups the task was launched against')
       param :parameters, Hash, required: false,
         desc: N_('Task-specific parameters, keyed by parameter name')
       param :options, Hash, required: false,

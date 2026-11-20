@@ -29,6 +29,7 @@ const TaskExecution = () => {
     taskDescription,
     taskParameters,
     targets,
+    hostGroups,
     smartProxy,
   } = useJobPolling(jobId);
 
@@ -86,6 +87,7 @@ const TaskExecution = () => {
           jobStatus={jobStatus}
           isPolling={isPolling}
           targets={targets}
+          hostGroups={hostGroups}
           submittedAt={submittedAt}
           completedAt={completedAt}
           taskName={taskName}
