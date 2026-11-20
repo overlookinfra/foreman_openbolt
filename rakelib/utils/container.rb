@@ -19,7 +19,7 @@ class Container
   def self.image_exists?(image_name)
     # exit 1 = image not found
     Shell.capture(['docker', 'image', 'inspect', image_name],
-      print_command: false, allowed_exit_codes: [0, 1]).exitcode.zero?
+      print_command: false, allowed_exit_codes: [0, 1, 125]).exitcode.zero? # podman returns 125 if the image doesn't exist
   end
 
   def self.build_image(dockerfile:, tag: 'latest', context: nil, build_args: {}, platform: nil)
@@ -78,12 +78,12 @@ class Container
   # exit 1 = container doesn't exist
   def exists?
     Shell.capture(['docker', 'container', 'inspect', name],
-      print_command: false, allowed_exit_codes: [0, 1]).exitcode.zero?
+      print_command: false, allowed_exit_codes: [0, 1, 125]).exitcode.zero? # podman returns 125 if the container doesn't exist
   end
 
   def running?
     result = Shell.capture(['docker', 'container', 'inspect', '--format', '{{.State.Running}}', name],
-      print_command: false, allowed_exit_codes: [0, 1])
+      print_command: false, allowed_exit_codes: [0, 1, 125]) # podman returns 125 if the container isn't running
     result.exitcode.zero? && result.output == 'true'
   end
 
