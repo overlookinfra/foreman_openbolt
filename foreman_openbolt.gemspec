@@ -18,7 +18,7 @@ Gem::Specification.new do |s|
 
   s.files = Dir['{app,config,db,lib,locale,test,webpack}/**/*'] + ['LICENSE', 'Rakefile', 'README.md', 'package.json']
 
-  s.required_ruby_version = '>= 3.0', '< 5'
+  s.required_ruby_version = '>= 3.0'
 
   s.add_dependency 'foreman-tasks', '>= 11.0.0', '< 14'
 end
