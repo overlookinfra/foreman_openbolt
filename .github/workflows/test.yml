@@ -67,6 +67,7 @@ jobs:
           - '3.17'
           - '3.18'
           - '3.19'
+          - '5.0'
           - develop
     name: Unit tests (Foreman ${{ matrix.foreman_version }})
     steps:
