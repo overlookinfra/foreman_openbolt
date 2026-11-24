@@ -45,3 +45,11 @@ For failed tasks but also for passed tasks.
 ![failed task output](../ext/task-result.png)
 
 ![service task passed on two nodes](../ext/task-successful-result.png)
+
+Starting with release 1.4.0 we added a button to re-run a task with same settings/targets.
+
+![task execution view with re-run button](../ext/task-execution-rerun.png)
+
+Clicking the button will navigate to the **Launch OpenBolt Task** view with pre-filled values.
+
+![launch task view with pre-filled values](../ext/foreman-launch-task-from-rerun.png)
