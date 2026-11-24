@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.4.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.4.0) (2026-11-24)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.3.0...1.4.0)
+
+**Implemented enhancements:**
+
+- \[Feature request\]: Display selected node groups task history [\#85](https://github.com/overlookinfra/foreman_openbolt/issues/85)
+- feat: Provide a "rerun task" option [\#129](https://github.com/overlookinfra/foreman_openbolt/pull/129) ([a-st](https://github.com/a-st))
+- foreman-tasks: Allow 14.x [\#128](https://github.com/overlookinfra/foreman_openbolt/pull/128) ([adamlazik1](https://github.com/adamlazik1))
+- CI: run PRs against Foreman 5.0 [\#122](https://github.com/overlookinfra/foreman_openbolt/pull/122) ([bastelfreak](https://github.com/bastelfreak))
+- feat: Display selected node groups task history [\#119](https://github.com/overlookinfra/foreman_openbolt/pull/119) ([a-st](https://github.com/a-st))
+
+**Fixed bugs:**
+
+- drop upper Ruby constraint [\#123](https://github.com/overlookinfra/foreman_openbolt/pull/123) ([bastelfreak](https://github.com/bastelfreak))
+
+**Merged pull requests:**
+
+- Add basic demo data for OpenVox-Server & Foreman & OpenBolt Plugin & Choria [\#91](https://github.com/overlookinfra/foreman_openbolt/pull/91) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [1.3.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.3.0) (2026-09-01)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.2.1...1.3.0)
