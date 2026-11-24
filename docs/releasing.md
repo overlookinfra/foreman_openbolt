@@ -33,6 +33,7 @@ If the minimum Foreman version changes, also update:
 After the gem is published to RubyGems, both RPM and DEB packages need to be updated in [theforeman/foreman-packaging](https://github.com/theforeman/foreman-packaging).
 
 A bot automatically creates PRs against the `rpm/develop` and `deb/develop` branches to pick up the new gem version. These PRs build packages for Foreman nightly.
+We can also start this manually by using the [Update packages](https://github.com/theforeman/foreman-packaging/actions/workflows/bump_packages.yml) workflow and `foreman_openbolt` as input.
 
 For stable Foreman releases, cherry-pick the packaging commits from the develop branches into the corresponding stable branches. The `backport` rake task automates this for all supported versions:
 
