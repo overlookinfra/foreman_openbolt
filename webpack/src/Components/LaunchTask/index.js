@@ -37,8 +37,8 @@ const LaunchTask = () => {
 
   /* States */
   const [selectedProxy, setSelectedProxy] = useState('');
-  const [targets, setTargets] = useState([]);
-  const [hostGroups, setHostGroups] = useState([]);
+  const [targets, setTargets] = useState(state?.targets || []);
+  const [hostGroups, setHostGroups] = useState(state?.hostGroups || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   /* Custom hooks for data fetching */
@@ -213,8 +213,6 @@ const LaunchTask = () => {
       handleProxyChange(null, String(state.smartProxy.id));
     if (state?.taskName) handleTaskChange(null, state.taskName);
     if (state?.taskParameters) setTaskParameters(state.taskParameters);
-    if (state?.targets) setTargets(state.targets);
-    if (state?.hostGroups) setHostGroups(state.hostGroups);
   }, []);
 
   /* Rendering */
