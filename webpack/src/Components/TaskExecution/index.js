@@ -1,7 +1,14 @@
 import React, { useEffect } from 'react';
 import { useLocation, useHistory } from 'react-router-dom';
 import { translate as __ } from 'foremanReact/common/I18n';
-import { Alert, Button, Stack, StackItem } from '@patternfly/react-core';
+import {
+  Alert,
+  Button,
+  Flex,
+  FlexItem,
+  Stack,
+  StackItem,
+} from '@patternfly/react-core';
 
 import ExecutionDisplay from './ExecutionDisplay';
 import LoadingIndicator from './LoadingIndicator';
@@ -71,13 +78,40 @@ const TaskExecution = () => {
   return (
     <Stack hasGutter>
       <StackItem>
-        <Button
-          variant="secondary"
-          onClick={() => history.push(ROUTES.PAGES.LAUNCH_TASK)}
-          className="pf-v5-u-mb-md"
+        <Flex
+          alignItems={{ default: 'alignItemsCenter' }}
+          justifyContent={{ default: 'justifyContent' }}
         >
-          {__('Run Another Task')}
-        </Button>
+          <FlexItem>
+            <Button
+              variant="secondary"
+              onClick={() => history.push(ROUTES.PAGES.LAUNCH_TASK)}
+              className="pf-v5-u-mb-md"
+            >
+              {__('Run Another Task')}
+            </Button>
+          </FlexItem>
+          <FlexItem>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                history.push({
+                  pathname: ROUTES.PAGES.LAUNCH_TASK,
+                  state: {
+                    smartProxy,
+                    taskName,
+                    taskParameters,
+                    targets,
+                    hostGroups,
+                  },
+                })
+              }
+              className="pf-v5-u-mb-md"
+            >
+              {__('Re-Run Task')}
+            </Button>
+          </FlexItem>
+        </Flex>
       </StackItem>
 
       <StackItem>

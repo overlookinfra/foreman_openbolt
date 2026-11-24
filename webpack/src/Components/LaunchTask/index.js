@@ -1,5 +1,5 @@
-import React, { useState, useCallback } from 'react';
-import { useHistory } from 'react-router-dom';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useLocation, useHistory } from 'react-router-dom';
 import { sprintf, translate as __ } from 'foremanReact/common/I18n';
 
 import { API } from 'foremanReact/redux/API';
@@ -32,6 +32,7 @@ import { buildLaunchPayload } from './helpers';
 
 const LaunchTask = () => {
   const history = useHistory();
+  const { state } = useLocation();
   const showMessage = useShowMessage();
 
   /* States */
@@ -206,6 +207,16 @@ const LaunchTask = () => {
     ]
   );
 
+  /* Restore values from state */
+  useEffect(() => {
+    if (state?.smartProxy?.id)
+      handleProxyChange(null, String(state.smartProxy.id));
+    if (state?.taskName) handleTaskChange(null, state.taskName);
+    if (state?.taskParameters) setTaskParameters(state.taskParameters);
+    if (state?.targets) setTargets(state.targets);
+    if (state?.hostGroups) setHostGroups(state.hostGroups);
+  }, []);
+
   /* Rendering */
   const isFormValid =
     selectedProxy &&
@@ -221,7 +232,6 @@ const LaunchTask = () => {
         <Grid hasGutter>
           <GridItem span={12}>
             <Flex
-              hasGutter
               alignItems={{ default: 'alignItemsCenter' }}
               justifyContent={{ default: 'justifyContentSpaceBetween' }}
             >
@@ -271,6 +281,8 @@ const LaunchTask = () => {
                   </StackItem>
                   <StackItem>
                     <HostSelector
+                      selectedHosts={targets}
+                      selectedHostGroups={hostGroups}
                       onChange={handleTargetsChange}
                       targetCount={targets.length}
                     />
