@@ -75,6 +75,11 @@ const TaskExecution = () => {
     ? `OpenBolt command: ${jobCommand}\n${stripAnsi(jobData.log)}`
     : '';
 
+  const failedTargets =
+    jobResult?.items
+      ?.filter(item => item?.status !== 'success')
+      ?.map(item => item?.target) || null;
+
   return (
     <Stack hasGutter>
       <StackItem>
@@ -111,6 +116,27 @@ const TaskExecution = () => {
               {__('Re-Run Task')}
             </Button>
           </FlexItem>
+          {failedTargets ? (
+            <FlexItem>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  history.push({
+                    pathname: ROUTES.PAGES.LAUNCH_TASK,
+                    state: {
+                      smartProxy,
+                      taskName,
+                      taskParameters,
+                      targets: failedTargets,
+                    },
+                  })
+                }
+                className="pf-v5-u-mb-md"
+              >
+                {__('Re-Run failed targets')}
+              </Button>
+            </FlexItem>
+          ) : null}
         </Flex>
       </StackItem>
 

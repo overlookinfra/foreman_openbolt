@@ -46,8 +46,12 @@ const HostSelector = ({
   const [errorText, setErrorText] = useState('');
   const [hostsSearchQuery, setHostsSearchQuery] = useState('');
   const [selectedTargets, setSelectedTargets] = useState({
-    hosts: [],
-    hostGroups: [],
+    hosts: selectedHosts?.map(name => ({ id: -1, name })) || [],
+    hostGroups:
+      selectedHostGroups?.map(name => ({
+        id: -1,
+        name,
+      })) || [],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState('');
@@ -173,13 +177,6 @@ const HostSelector = ({
       {HOST_METHOD_LABELS[hostMethod]()}
     </MenuToggle>
   );
-
-  useEffect(() => {
-    setSelectedTargets({
-      hosts: selectedHosts?.map(name => ({ id: -1, name })),
-      hostGroups: selectedHostGroups?.map(name => ({ id: -1, name })),
-    });
-  }, [selectedHosts, selectedHostGroups]);
 
   return (
     <div className="host-selector">
