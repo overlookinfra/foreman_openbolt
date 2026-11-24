@@ -35,7 +35,12 @@ const ERROR_MESSAGES = {
   searchQuery: () => __('Please enter a search query'),
 };
 
-const HostSelector = ({ onChange, targetCount = 0 }) => {
+const HostSelector = ({
+  selectedHosts,
+  selectedHostGroups,
+  onChange,
+  targetCount = 0,
+}) => {
   const [hostMethod, setHostMethod] = useState('hosts');
   const [isOpen, setIsOpen] = useState(false);
   const [errorText, setErrorText] = useState('');
@@ -169,6 +174,13 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
     </MenuToggle>
   );
 
+  useEffect(() => {
+    setSelectedTargets({
+      hosts: selectedHosts?.map(name => ({ id: -1, name })),
+      hostGroups: selectedHostGroups?.map(name => ({ id: -1, name })),
+    });
+  }, [selectedHosts, selectedHostGroups]);
+
   return (
     <div className="host-selector">
       <FormGroup fieldId="host-selector" label={__('Hosts')}>
@@ -258,6 +270,13 @@ const HostSelector = ({ onChange, targetCount = 0 }) => {
 HostSelector.propTypes = {
   onChange: PropTypes.func.isRequired,
   targetCount: PropTypes.number.isRequired,
+  selectedHosts: PropTypes.array,
+  selectedHostGroups: PropTypes.array,
+};
+
+HostSelector.defaultProps = {
+  selectedHosts: null,
+  selectedHostGroups: null,
 };
 
 export default HostSelector;
