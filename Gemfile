@@ -7,7 +7,7 @@ gemspec
 gem 'erb_lint', '~> 0.9.0'
 gem 'rake', '~> 13.0', '>= 13.0.6'
 gem 'rubocop', '~> 1.92.3'
-gem 'rubocop-capybara', '~> 2.22'
+gem 'rubocop-capybara', '~> 3.1'
 gem 'rubocop-performance', '~> 1.26'
 gem 'rubocop-rails', '~> 2.29'
 gem 'rubocop-rake', '~> 0.7'
