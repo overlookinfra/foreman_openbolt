@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.5.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.5.0) (2026-11-25)
+
+[Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.4.0...1.5.0)
+
+**Implemented enhancements:**
+
+- feat: Provide a "Re-Run failed targets" option [\#133](https://github.com/overlookinfra/foreman_openbolt/pull/133) ([a-st](https://github.com/a-st))
+
+**Merged pull requests:**
+
+- chore\(docs\): update usage documentation [\#132](https://github.com/overlookinfra/foreman_openbolt/pull/132) ([a-st](https://github.com/a-st))
+- document foreman update process [\#131](https://github.com/overlookinfra/foreman_openbolt/pull/131) ([bastelfreak](https://github.com/bastelfreak))
+
 ## [1.4.0](https://github.com/overlookinfra/foreman_openbolt/tree/1.4.0) (2026-11-24)
 
 [Full Changelog](https://github.com/overlookinfra/foreman_openbolt/compare/1.3.0...1.4.0)
